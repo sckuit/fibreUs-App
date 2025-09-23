@@ -54,21 +54,16 @@ function sanitizeCommunications(communications: Communication[], userRole: strin
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-  
   // Visitor tracking middleware (should be early in the chain)
   app.use(trackVisitor);
 
-  // Dual authentication middleware - supports both session and legacy Replit Auth
-  const isDualAuthenticated = (req: any, res: any, next: any) => {
-    // Check for session-based auth first (new email/password system)
+  // Session-based authentication middleware (email/password only)
+  const isSessionAuthenticated = (req: any, res: any, next: any) => {
     if (req.session?.userId) {
       return next();
     }
     
-    // Fall back to legacy Replit Auth
-    return isAuthenticated(req, res, next);
+    return res.status(401).json({ message: "Authentication required" });
   };
 
   // Auth routes
