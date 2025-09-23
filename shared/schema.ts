@@ -16,7 +16,7 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 // Enums for business logic
-export const userRoleEnum = pgEnum('user_role', ['client', 'admin', 'technician']);
+export const userRoleEnum = pgEnum('user_role', ['client', 'employee', 'manager', 'admin']);
 export const serviceTypeEnum = pgEnum('service_type', [
   'cctv', 'alarm', 'access_control', 'intercom', 'cloud_storage', 'monitoring', 'fiber_installation', 'maintenance'
 ]);
