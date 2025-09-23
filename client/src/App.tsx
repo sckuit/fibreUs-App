@@ -21,7 +21,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <ThemeProvider defaultTheme="light" storageKey="securetech-theme">
+        <ThemeProvider defaultTheme="light" storageKey="fibreus-theme">
           <Toaster />
           <Router />
         </ThemeProvider>

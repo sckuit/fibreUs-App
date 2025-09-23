@@ -60,8 +60,8 @@ export default function AboutSection() {
     },
     {
       year: "2024",
-      title: "SecureTech Solutions",
-      description: "Rebranded to reflect our comprehensive security expertise"
+      title: "FibreUS Tech Services",
+      description: "Rebranded to reflect our comprehensive security and fiber expertise"
     }
   ];
 
@@ -71,10 +71,10 @@ export default function AboutSection() {
         {/* Header */}
         <div className="text-center mb-12">
           <Badge variant="outline" className="mb-4">
-            About SecureTech
+            About FibreUS
           </Badge>
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Your Trusted Security Partner
+            Your Trusted Security & Fiber Partner
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
             From our humble beginnings as part of ANA Security Systems to becoming 
@@ -94,9 +94,9 @@ export default function AboutSection() {
                 for homes and businesses.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Today, SecureTech Solutions combines decades of experience with 
+                Today, FibreUS Tech Services combines decades of experience with 
                 cutting-edge technology to deliver reliable, future-proof security 
-                systems that protect your most valuable assets.
+                and fiber optic systems that protect your most valuable assets.
               </p>
               
               {/* Key Services List */}

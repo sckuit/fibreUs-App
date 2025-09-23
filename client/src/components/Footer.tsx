@@ -58,13 +58,13 @@ export default function Footer() {
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Shield className="h-8 w-8 text-primary" />
               <div>
-                <div className="text-lg font-bold">SecureTech</div>
-                <div className="text-xs text-muted-foreground">Solutions</div>
+                <div className="text-lg font-bold">FibreUS</div>
+                <div className="text-xs text-muted-foreground">Tech Services</div>
               </div>
             </Link>
             
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Professional electronic security solutions serving Dallas and surrounding areas 
+              Professional electronic security and fiber optic solutions serving Dallas and surrounding areas 
               since 2008. Licensed, insured, and committed to protecting what matters most.
             </p>
 
@@ -75,7 +75,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>info@securetech.com</span>
+                <span>info@fibreus.co</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="h-4 w-4 text-primary" />
@@ -184,7 +184,7 @@ export default function Footer() {
 
         <div className="text-center mt-4 pt-4 border-t">
           <p className="text-sm text-muted-foreground">
-            © 2024 SecureTech Solutions. All rights reserved. | Licensed Security Contractor
+            © 2024 Fibre US Tech Services. All rights reserved. | Licensed Security Contractor
           </p>
         </div>
       </div>

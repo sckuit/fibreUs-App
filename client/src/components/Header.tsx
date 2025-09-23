@@ -29,7 +29,7 @@ export default function Header() {
               </div>
               <div className="flex items-center gap-1">
                 <Mail className="h-3 w-3" />
-                <span>info@securetech.com</span>
+                <span>info@fibreus.co</span>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -49,8 +49,8 @@ export default function Header() {
           <Link href="/" className="flex items-center gap-2">
             <Shield className="h-8 w-8 text-primary" />
             <div>
-              <div className="text-lg font-bold text-foreground">SecureTech</div>
-              <div className="text-xs text-muted-foreground">Solutions</div>
+              <div className="text-lg font-bold text-foreground">FibreUS</div>
+              <div className="text-xs text-muted-foreground">Tech Services</div>
             </div>
           </Link>
 

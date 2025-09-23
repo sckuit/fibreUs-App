@@ -59,7 +59,7 @@ export default function ContactSection() {
     {
       icon: Mail,
       title: "Email Us", 
-      details: ["info@securetech.com", "support@securetech.com"],
+      details: ["info@fibreus.co", "support@fibreus.co"],
       action: "Send Email"
     },
     {

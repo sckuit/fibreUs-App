@@ -51,12 +51,12 @@ export default function Hero() {
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
             Professional 
-            <span className="text-blue-400"> Electronic Security</span> Solutions
+            <span className="text-blue-400"> Security & Fiber</span> Solutions
           </h1>
           
           <p className="text-xl md:text-2xl mb-8 text-gray-200 leading-relaxed">
             Protecting your business and home with cutting-edge CCTV, alarm systems, 
-            access control, and surveillance technology. Expert installation, maintenance, 
+            access control, fiber optic installations, and surveillance technology. Expert installation, maintenance, 
             and 24/7 monitoring services.
           </p>
 
