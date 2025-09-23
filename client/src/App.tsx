@@ -12,6 +12,7 @@ import Dashboard from "@/pages/Dashboard";
 import ServiceRequests from "@/pages/ServiceRequests";
 import Projects from "@/pages/Projects";
 import Analytics from "@/pages/Analytics";
+import LogoShowcase from "@/components/LogoShowcase";
 
 // Main application layout with navigation
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -64,7 +65,19 @@ function Router() {
     );
   }
 
-  return isAuthenticated ? <AuthenticatedRouter /> : <LandingPage />;
+  // Public routes that don't require authentication
+  return (
+    <Switch>
+      <Route path="/logos" component={() => (
+        <AppLayout>
+          <LogoShowcase />
+        </AppLayout>
+      )} />
+      <Route>
+        {isAuthenticated ? <AuthenticatedRouter /> : <LandingPage />}
+      </Route>
+    </Switch>
+  );
 }
 
 function App() {
