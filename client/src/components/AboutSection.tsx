@@ -35,18 +35,18 @@ export default function AboutSection() {
   ];
 
   const partnerships = [
-    "ANA Security Systems",
     "Southwest Airlines", 
     "ConocoPhillips",
-    "Capital One"
+    "Capital One",
+    "Enterprise Security Partners"
   ];
 
   //todo: remove mock functionality - company history
   const milestones = [
     {
       year: "2008",
-      title: "Founded as ANA Security",
-      description: "Started as a department providing total security services"
+      title: "FibreUS Founded",
+      description: "Established as an independent electronic security contractor"
     },
     {
       year: "2013", 
@@ -77,8 +77,8 @@ export default function AboutSection() {
             Your Trusted Security & Fiber Partner
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            From our humble beginnings as part of ANA Security Systems to becoming 
-            a leading independent security contractor, we've been protecting what matters most.
+            From our founding in 2008 as an independent security contractor to becoming 
+            a leading provider of comprehensive security solutions, we've been protecting what matters most.
           </p>
         </div>
 
@@ -88,10 +88,10 @@ export default function AboutSection() {
             <h3 className="text-2xl font-bold mb-6">Our Story</h3>
             <div className="space-y-6">
               <p className="text-muted-foreground leading-relaxed">
-                Since 2008, we've evolved from a small security department into a 
+                Since 2008, we've evolved from a small independent security contractor into a 
                 comprehensive electronic security solutions provider. Our journey began 
-                with ANA Security Systems, where we provided total security services 
-                for homes and businesses.
+                with a commitment to delivering reliable, cutting-edge security services 
+                for homes and businesses across the region.
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 Today, FibreUS Tech Services combines decades of experience with 
