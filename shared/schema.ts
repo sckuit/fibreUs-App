@@ -164,6 +164,23 @@ export const insertServiceRequestSchema = createInsertSchema(serviceRequests).om
   updatedAt: true,
 });
 
+// Client-only schema for creating requests (excludes admin-only fields)
+export const clientInsertServiceRequestSchema = z.object({
+  serviceType: z.enum(['cctv', 'alarm', 'access_control', 'intercom', 'cloud_storage', 'monitoring', 'fiber_installation', 'maintenance']),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  propertyType: z.string().optional(),
+  address: z.string().optional(),
+  estimatedValue: z.number().positive().optional(),
+}).strict(); // Reject unknown fields explicitly
+
+export const updateServiceRequestSchema = z.object({
+  status: z.enum(['pending', 'reviewed', 'quoted', 'approved', 'scheduled', 'in_progress', 'completed', 'cancelled']),
+  quotedAmount: z.number().min(0).optional(), // Allow 0 quotes
+  adminNotes: z.string().optional(),
+}).strict(); // Reject unknown fields explicitly
+
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
@@ -176,5 +193,7 @@ export const insertCommunicationSchema = createInsertSchema(communications).omit
 });
 
 export type InsertServiceRequestType = z.infer<typeof insertServiceRequestSchema>;
+export type ClientInsertServiceRequestType = z.infer<typeof clientInsertServiceRequestSchema>;
+export type UpdateServiceRequestType = z.infer<typeof updateServiceRequestSchema>;
 export type InsertProjectType = z.infer<typeof insertProjectSchema>;
 export type InsertCommunicationType = z.infer<typeof insertCommunicationSchema>;

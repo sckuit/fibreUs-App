@@ -3,8 +3,35 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertServiceRequestSchema } from "@shared/schema";
+import { clientInsertServiceRequestSchema, updateServiceRequestSchema, type ServiceRequest, type Communication } from "@shared/schema";
 import { z } from "zod";
+
+// Centralized sanitization functions
+function sanitizeServiceRequest(request: ServiceRequest, userRole: string): ServiceRequest {
+  if (userRole === 'admin') {
+    return request;
+  }
+  // Remove admin-only fields for non-admin users
+  const { adminNotes, ...publicFields } = request;
+  return publicFields as ServiceRequest;
+}
+
+function sanitizeCommunication(communication: Communication, userRole: string): Communication | null {
+  if (userRole === 'admin') {
+    return communication;
+  }
+  // Filter out internal communications for non-admin users
+  if (communication.isInternal) {
+    return null;
+  }
+  return communication;
+}
+
+function sanitizeCommunications(communications: Communication[], userRole: string): Communication[] {
+  return communications
+    .map(comm => sanitizeCommunication(comm, userRole))
+    .filter((comm): comm is Communication => comm !== null);
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -26,10 +53,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/service-requests", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const requestData = insertServiceRequestSchema.parse({
-        ...req.body,
+      
+      // Validate with client-only schema to prevent privilege escalation
+      const validatedData = clientInsertServiceRequestSchema.parse(req.body);
+      
+      // Construct request data with server-controlled fields
+      const requestData = {
+        ...validatedData,
         clientId: userId,
-      });
+        status: 'pending' as const, // Always start as pending
+        // adminNotes, quotedAmount, scheduledDate, completedDate not allowed for clients
+      };
       
       const serviceRequest = await storage.createServiceRequest(requestData);
       res.json(serviceRequest);
@@ -51,7 +85,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If admin, get all requests. If client, get only their requests
       const clientId = user?.role === 'admin' ? undefined : userId;
       const requests = await storage.getServiceRequests(clientId);
-      res.json(requests);
+      
+      // Sanitize requests for non-admin users
+      const sanitizedRequests = requests.map(request => 
+        sanitizeServiceRequest(request, user?.role || 'client')
+      );
+      
+      res.json(sanitizedRequests);
     } catch (error) {
       console.error("Error fetching service requests:", error);
       res.status(500).json({ message: "Failed to fetch service requests" });
@@ -74,7 +114,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      res.json(request);
+      // Sanitize request for non-admin users
+      const sanitizedRequest = sanitizeServiceRequest(request, user?.role || 'client');
+      
+      res.json(sanitizedRequest);
     } catch (error) {
       console.error("Error fetching service request:", error);
       res.status(500).json({ message: "Failed to fetch service request" });
@@ -92,13 +135,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { id } = req.params;
-      const updates = req.body;
       
-      const updatedRequest = await storage.updateServiceRequest(id, updates);
+      // Validate and whitelist allowed fields
+      const validatedUpdates = updateServiceRequestSchema.parse(req.body);
+      
+      const updatedRequest = await storage.updateServiceRequest(id, validatedUpdates);
+      
+      if (!updatedRequest) {
+        return res.status(404).json({ message: "Service request not found" });
+      }
+      
       res.json(updatedRequest);
     } catch (error) {
       console.error("Error updating service request:", error);
-      res.status(500).json({ message: "Failed to update service request" });
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid update data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update service request" });
+      }
     }
   });
 
@@ -106,8 +160,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/dashboard/client", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
       const dashboard = await storage.getClientDashboard(userId);
-      res.json(dashboard);
+      
+      // Sanitize all nested objects to prevent information disclosure
+      const sanitizedDashboard = {
+        activeRequests: dashboard.activeRequests?.map(request => 
+          sanitizeServiceRequest(request, user?.role || 'client')
+        ) || [],
+        activeProjects: dashboard.activeProjects || [],
+        recentCommunications: sanitizeCommunications(
+          dashboard.recentCommunications || [], 
+          user?.role || 'client'
+        ),
+      };
+      
+      res.json(sanitizedDashboard);
     } catch (error) {
       console.error("Error fetching client dashboard:", error);
       res.status(500).json({ message: "Failed to fetch dashboard" });
@@ -124,7 +192,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const dashboard = await storage.getAdminDashboard();
-      res.json(dashboard);
+      
+      // Admins see all data including admin-only fields
+      const sanitizedDashboard = {
+        pendingRequests: dashboard.pendingRequests?.map(request => 
+          sanitizeServiceRequest(request, 'admin')
+        ) || [],
+        activeProjects: dashboard.activeProjects || [],
+        recentCommunications: sanitizeCommunications(
+          dashboard.recentCommunications || [], 
+          'admin'
+        ),
+      };
+      
+      res.json(sanitizedDashboard);
     } catch (error) {
       console.error("Error fetching admin dashboard:", error);
       res.status(500).json({ message: "Failed to fetch admin dashboard" });

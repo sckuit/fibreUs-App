@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, Building2, Shield, Camera, Phone, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Building2, Shield, Camera, Phone, Settings, Edit, DollarSign, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // Form validation schema
 const serviceRequestSchema = z.object({
@@ -61,6 +62,183 @@ const statusColors = {
   completed: 'bg-gray-100 text-gray-800',
   cancelled: 'bg-red-100 text-red-800',
 };
+
+const statusOptions = [
+  { value: 'pending', label: 'Pending Review' },
+  { value: 'reviewed', label: 'Reviewed' },
+  { value: 'quoted', label: 'Quoted' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'scheduled', label: 'Scheduled' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
+// Admin update form schema
+const adminUpdateSchema = z.object({
+  status: z.enum(['pending', 'reviewed', 'quoted', 'approved', 'scheduled', 'in_progress', 'completed', 'cancelled']),
+  quotedAmount: z.string().optional(),
+  adminNotes: z.string().optional(),
+});
+
+type AdminUpdateForm = z.infer<typeof adminUpdateSchema>;
+
+function AdminUpdateDialog({ request, onSuccess }: { request: ServiceRequest; onSuccess: () => void }) {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  
+  const form = useForm<AdminUpdateForm>({
+    resolver: zodResolver(adminUpdateSchema),
+    defaultValues: {
+      status: request.status || 'pending',
+      quotedAmount: request.quotedAmount || '',
+      adminNotes: request.adminNotes || '',
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: AdminUpdateForm) => {
+      const updateData = {
+        status: data.status,
+        adminNotes: data.adminNotes,
+        ...(data.quotedAmount && { quotedAmount: parseFloat(data.quotedAmount) }),
+      };
+      
+      return apiRequest(`/api/service-requests/${request.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updateData),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Request updated successfully",
+        description: "The service request has been updated.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/admin'] });
+      setOpen(false);
+      onSuccess();
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to update request",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: AdminUpdateForm) => {
+    updateMutation.mutate(data);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" data-testid={`button-edit-${request.id}`}>
+          <Edit className="w-4 h-4 mr-1" />
+          Manage
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Manage Service Request</DialogTitle>
+          <DialogDescription>
+            Update status, add notes, and set quoted amounts for this request.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-admin-status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {statusOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="quotedAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quoted Amount ($)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number"
+                        step="0.01"
+                        placeholder="0.00" 
+                        {...field} 
+                        data-testid="input-quoted-amount"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="adminNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Admin Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Internal notes, updates, or instructions..."
+                      rows={4}
+                      {...field}
+                      data-testid="textarea-admin-notes"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end space-x-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setOpen(false)}
+                data-testid="button-cancel-update"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={updateMutation.isPending}
+                data-testid="button-save-update"
+              >
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function ServiceRequestForm({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
@@ -272,10 +450,29 @@ export default function ServiceRequests() {
   const typedUser = user as User | undefined;
   const [location, setLocation] = useLocation();
   const [showForm, setShowForm] = useState(location.includes('action=new'));
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('newest');
 
   const { data: requests, isLoading } = useQuery<ServiceRequest[]>({
     queryKey: ['/api/service-requests'],
   });
+
+  // Filter and sort requests
+  const filteredAndSortedRequests = requests ? requests
+    .filter(request => statusFilter === 'all' || request.status === statusFilter)
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'priority':
+          const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+          return priorityOrder[a.priority || 'medium'] - priorityOrder[b.priority || 'medium'];
+        default:
+          return 0;
+      }
+    }) : [];
 
   if (isLoading) {
     return (
@@ -347,7 +544,7 @@ export default function ServiceRequests() {
           </div>
         ) : (
           <>
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-start mb-8">
               <div>
                 <h2 className="text-3xl font-bold tracking-tight">Service Requests</h2>
                 <p className="text-muted-foreground">
@@ -366,10 +563,55 @@ export default function ServiceRequests() {
               </Button>
             </div>
 
+            {/* Admin Controls */}
+            {typedUser?.role === 'admin' && (
+              <div className="flex flex-wrap gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium">Filter by Status:</label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40" data-testid="select-status-filter">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium">Sort by:</label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-32" data-testid="select-sort-by">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest</SelectItem>
+                      <SelectItem value="oldest">Oldest</SelectItem>
+                      <SelectItem value="priority">Priority</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                  <span data-testid="text-total-requests">
+                    Total: {requests?.length || 0}
+                  </span>
+                  <span data-testid="text-filtered-requests">
+                    Showing: {filteredAndSortedRequests.length}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Service Requests List */}
             <div className="space-y-4" data-testid="list-service-requests">
-              {requests && requests.length > 0 ? (
-                requests.map((request) => {
+              {filteredAndSortedRequests && filteredAndSortedRequests.length > 0 ? (
+                filteredAndSortedRequests.map((request) => {
                   const IconComponent = serviceTypeIcons[request.serviceType as keyof typeof serviceTypeIcons];
                   return (
                     <Card key={request.id} className="hover-elevate" data-testid={`card-request-${request.id}`}>
@@ -387,28 +629,59 @@ export default function ServiceRequests() {
                             </div>
                           </div>
                           <div className="flex flex-col items-end space-y-2">
-                            <Badge 
-                              className={statusColors[request.status as keyof typeof statusColors]}
-                              data-testid={`badge-status-${request.id}`}
-                            >
-                              {request.status.replace('_', ' ')}
-                            </Badge>
+                            <div className="flex items-center space-x-2">
+                              <Badge 
+                                className={statusColors[request.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}
+                                data-testid={`badge-status-${request.id}`}
+                              >
+                                {request.status?.replace('_', ' ') || 'pending'}
+                              </Badge>
+                              {request.priority && request.priority !== 'medium' && (
+                                <Badge variant="outline" className="text-xs">
+                                  {request.priority}
+                                </Badge>
+                              )}
+                            </div>
                             <span className="text-xs text-muted-foreground">
-                              {new Date(request.createdAt).toLocaleDateString()}
+                              {new Date(request.createdAt || new Date()).toLocaleDateString()}
                             </span>
+                            {typedUser?.role === 'admin' && (
+                              <AdminUpdateDialog 
+                                request={request} 
+                                onSuccess={() => {}} 
+                              />
+                            )}
                           </div>
                         </div>
                       </CardHeader>
-                      {request.description && (
-                        <CardContent>
+                      <CardContent className="space-y-3">
+                        {request.description && (
                           <p className="text-sm text-muted-foreground">{request.description}</p>
+                        )}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           {request.address && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              <strong>Address:</strong> {request.address}
-                            </p>
+                            <div>
+                              <strong className="text-foreground">Address:</strong>
+                              <p className="text-muted-foreground">{request.address}</p>
+                            </div>
                           )}
-                        </CardContent>
-                      )}
+                          
+                          {request.quotedAmount && (
+                            <div>
+                              <strong className="text-foreground">Quoted Amount:</strong>
+                              <p className="text-muted-foreground">${Number(request.quotedAmount).toLocaleString()}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {typedUser?.role === 'admin' && request.adminNotes && (
+                          <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-200">
+                            <strong className="text-blue-900 text-sm">Admin Notes:</strong>
+                            <p className="text-blue-800 text-sm mt-1">{request.adminNotes}</p>
+                          </div>
+                        )}
+                      </CardContent>
                     </Card>
                   );
                 })
