@@ -36,10 +36,11 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (mandatory for Replit Auth)
+// User storage table (supports both Replit Auth and email/password)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
+  passwordHash: text("password_hash"), // nullable for dual auth support
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -48,7 +49,9 @@ export const users = pgTable("users", {
   company: varchar("company"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_users_email_lower").on(sql`LOWER(${table.email})`),
+]);
 
 // Service requests from clients
 export const serviceRequests = pgTable("service_requests", {
@@ -99,6 +102,23 @@ export const communications = pgTable("communications", {
   isInternal: boolean("is_internal").default(false), // true for admin-only notes
   attachments: jsonb("attachments"), // JSON array of file URLs
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Visitor tracking for marketing analytics
+export const visitors = pgTable("visitors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull(), // unique session identifier
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"), // where they came from
+  landingPage: text("landing_page"), // first page they visited
+  country: varchar("country"), // derived from IP
+  city: varchar("city"), // derived from IP
+  browser: varchar("browser"), // parsed from user agent
+  device: varchar("device"), // mobile, desktop, tablet
+  operatingSystem: varchar("operating_system"), // parsed from user agent
+  isFirstVisit: boolean("is_first_visit").default(true),
+  visitedAt: timestamp("visited_at").defaultNow(),
 });
 
 // Relations
@@ -157,6 +177,9 @@ export type Project = typeof projects.$inferSelect;
 export type InsertCommunication = typeof communications.$inferInsert;
 export type Communication = typeof communications.$inferSelect;
 
+export type InsertVisitor = typeof visitors.$inferInsert;
+export type Visitor = typeof visitors.$inferSelect;
+
 // Zod schemas for validation
 export const insertServiceRequestSchema = createInsertSchema(serviceRequests).omit({
   id: true,
@@ -192,8 +215,56 @@ export const insertCommunicationSchema = createInsertSchema(communications).omit
   createdAt: true,
 });
 
+export const insertVisitorSchema = createInsertSchema(visitors).omit({
+  id: true,
+  visitedAt: true,
+});
+
+// Authentication schemas for email/password system
+export const registerSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  password: z.string().min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+      "Password must contain uppercase, lowercase, number, and special character"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+}).strict();
+
+export const loginSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  password: z.string().min(1, "Password is required"),
+}).strict();
+
+export const resetPasswordRequestSchema = z.object({
+  email: z.string().email().toLowerCase(),
+}).strict();
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, "Reset token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+      "Password must contain uppercase, lowercase, number, and special character"),
+}).strict();
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+      "Password must contain uppercase, lowercase, number, and special character"),
+}).strict();
+
 export type InsertServiceRequestType = z.infer<typeof insertServiceRequestSchema>;
 export type ClientInsertServiceRequestType = z.infer<typeof clientInsertServiceRequestSchema>;
 export type UpdateServiceRequestType = z.infer<typeof updateServiceRequestSchema>;
 export type InsertProjectType = z.infer<typeof insertProjectSchema>;
 export type InsertCommunicationType = z.infer<typeof insertCommunicationSchema>;
+export type InsertVisitorType = z.infer<typeof insertVisitorSchema>;
+
+// Authentication types
+export type RegisterType = z.infer<typeof registerSchema>;
+export type LoginType = z.infer<typeof loginSchema>;
+export type ResetPasswordRequestType = z.infer<typeof resetPasswordRequestSchema>;
+export type ResetPasswordType = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordType = z.infer<typeof changePasswordSchema>;

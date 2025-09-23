@@ -4,6 +4,7 @@ import {
   serviceRequests,
   projects,
   communications,
+  visitors,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -12,15 +13,28 @@ import {
   type InsertProjectType,
   type Communication,
   type InsertCommunicationType,
+  type Visitor,
+  type InsertVisitorType,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or } from "drizzle-orm";
+import { eq, desc, and, or, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User operations (supports both Replit Auth and email/password)
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  createUserWithPassword(userData: {
+    email: string;
+    passwordHash: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    company?: string;
+    role?: 'client' | 'employee' | 'manager' | 'admin';
+  }): Promise<User>;
+  setPassword(userId: string, passwordHash: string): Promise<User>;
   
   // Service request operations
   createServiceRequest(request: InsertServiceRequestType): Promise<ServiceRequest>;
@@ -38,6 +52,19 @@ export interface IStorage {
   // Communication operations
   createCommunication(communication: InsertCommunicationType): Promise<Communication>;
   getCommunications(serviceRequestId?: string, projectId?: string): Promise<Communication[]>;
+  
+  // Visitor tracking operations
+  trackVisitor(visitor: InsertVisitorType): Promise<Visitor>;
+  getVisitors(limit?: number): Promise<Visitor[]>;
+  getVisitorAnalytics(): Promise<{
+    totalVisitors: number;
+    uniqueVisitors: number;
+    topReferrers: { referrer: string; count: number }[];
+    topLandingPages: { landingPage: string; count: number }[];
+    topCountries: { country: string; count: number }[];
+    topBrowsers: { browser: string; count: number }[];
+    visitorsByDate: { date: string; count: number }[];
+  }>;
   
   // Business queries
   getClientDashboard(clientId: string): Promise<{
@@ -71,6 +98,48 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date(),
         },
       })
+      .returning();
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users)
+      .where(sql`LOWER(${users.email}) = LOWER(${email})`);
+    return user;
+  }
+
+  async createUserWithPassword(userData: {
+    email: string;
+    passwordHash: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    company?: string;
+    role?: 'client' | 'employee' | 'manager' | 'admin';
+  }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: userData.email.toLowerCase(),
+        passwordHash: userData.passwordHash,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        company: userData.company,
+        role: userData.role || 'client',
+      })
+      .returning();
+    return user;
+  }
+
+  async setPassword(userId: string, passwordHash: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        passwordHash,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
       .returning();
     return user;
   }
@@ -120,9 +189,11 @@ export class DatabaseStorage implements IStorage {
 
   async getProjects(clientId?: string): Promise<Project[]> {
     if (clientId) {
-      return db.select().from(projects)
-        .where(eq(projects.clientId, clientId))
+      const result = await db.select().from(projects)
+        .innerJoin(serviceRequests, eq(projects.serviceRequestId, serviceRequests.id))
+        .where(eq(serviceRequests.clientId, clientId))
         .orderBy(desc(projects.createdAt));
+      return result.map(row => row.projects);
     }
     return db.select().from(projects)
       .orderBy(desc(projects.createdAt));
@@ -130,7 +201,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTechnicians(): Promise<User[]> {
     return db.select().from(users)
-      .where(eq(users.role, 'technician'))
+      .where(eq(users.role, 'employee'))
       .orderBy(users.firstName, users.lastName);
   }
 
@@ -171,6 +242,118 @@ export class DatabaseStorage implements IStorage {
     
     return db.select().from(communications)
       .orderBy(desc(communications.createdAt));
+  }
+
+  // Visitor tracking operations
+  async trackVisitor(visitor: InsertVisitorType): Promise<Visitor> {
+    const [newVisitor] = await db
+      .insert(visitors)
+      .values(visitor)
+      .returning();
+    return newVisitor;
+  }
+
+  async getVisitors(limit: number = 100): Promise<Visitor[]> {
+    return db.select().from(visitors)
+      .orderBy(desc(visitors.visitedAt))
+      .limit(limit);
+  }
+
+  async getVisitorAnalytics(): Promise<{
+    totalVisitors: number;
+    uniqueVisitors: number;
+    topReferrers: { referrer: string; count: number }[];
+    topLandingPages: { landingPage: string; count: number }[];
+    topCountries: { country: string; count: number }[];
+    topBrowsers: { browser: string; count: number }[];
+    visitorsByDate: { date: string; count: number }[];
+  }> {
+    // Get total visitor count
+    const totalVisitorsResult = await db.select({ count: sql`COUNT(*)` }).from(visitors);
+    const totalVisitors = Number(totalVisitorsResult[0]?.count) || 0;
+
+    // Get unique visitors count (by session ID)
+    const uniqueVisitorsResult = await db.select({ count: sql`COUNT(DISTINCT session_id)` }).from(visitors);
+    const uniqueVisitors = Number(uniqueVisitorsResult[0]?.count) || 0;
+
+    // Get top referrers
+    const topReferrers = await db.select({
+      referrer: visitors.referrer,
+      count: sql`COUNT(*)`.as('count')
+    })
+    .from(visitors)
+    .where(sql`${visitors.referrer} IS NOT NULL AND ${visitors.referrer} != ''`)
+    .groupBy(visitors.referrer)
+    .orderBy(desc(sql`COUNT(*)`))
+    .limit(10);
+
+    // Get top landing pages
+    const topLandingPages = await db.select({
+      landingPage: visitors.landingPage,
+      count: sql`COUNT(*)`.as('count')
+    })
+    .from(visitors)
+    .where(sql`${visitors.landingPage} IS NOT NULL AND ${visitors.landingPage} != ''`)
+    .groupBy(visitors.landingPage)
+    .orderBy(desc(sql`COUNT(*)`))
+    .limit(10);
+
+    // Get top countries
+    const topCountries = await db.select({
+      country: visitors.country,
+      count: sql`COUNT(*)`.as('count')
+    })
+    .from(visitors)
+    .where(sql`${visitors.country} IS NOT NULL AND ${visitors.country} != ''`)
+    .groupBy(visitors.country)
+    .orderBy(desc(sql`COUNT(*)`))
+    .limit(10);
+
+    // Get top browsers
+    const topBrowsers = await db.select({
+      browser: visitors.browser,
+      count: sql`COUNT(*)`.as('count')
+    })
+    .from(visitors)
+    .where(sql`${visitors.browser} IS NOT NULL AND ${visitors.browser} != ''`)
+    .groupBy(visitors.browser)
+    .orderBy(desc(sql`COUNT(*)`))
+    .limit(10);
+
+    // Get visitors by date (last 30 days)
+    const visitorsByDate = await db.select({
+      date: sql`DATE(${visitors.visitedAt})`.as('date'),
+      count: sql`COUNT(*)`.as('count')
+    })
+    .from(visitors)
+    .where(sql`${visitors.visitedAt} >= NOW() - INTERVAL '30 days'`)
+    .groupBy(sql`DATE(${visitors.visitedAt})`)
+    .orderBy(sql`DATE(${visitors.visitedAt})`);
+
+    return {
+      totalVisitors,
+      uniqueVisitors,
+      topReferrers: topReferrers.map(r => ({ 
+        referrer: r.referrer || 'Direct', 
+        count: Number(r.count) 
+      })),
+      topLandingPages: topLandingPages.map(p => ({ 
+        landingPage: p.landingPage || '/', 
+        count: Number(p.count) 
+      })),
+      topCountries: topCountries.map(c => ({ 
+        country: c.country || 'Unknown', 
+        count: Number(c.count) 
+      })),
+      topBrowsers: topBrowsers.map(b => ({ 
+        browser: b.browser || 'Unknown', 
+        count: Number(b.count) 
+      })),
+      visitorsByDate: visitorsByDate.map(d => ({ 
+        date: d.date as string, 
+        count: Number(d.count) 
+      })),
+    };
   }
 
   // Business dashboard queries

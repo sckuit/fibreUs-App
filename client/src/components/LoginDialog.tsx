@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +12,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { loginSchema, registerSchema, type LoginType, type RegisterType } from "@shared/schema";
+import { Shield, ArrowRight, Mail, Lock, User, Building2 } from "lucide-react";
 
 interface LoginDialogProps {
   children: React.ReactNode;
@@ -17,8 +26,91 @@ interface LoginDialogProps {
 
 export default function LoginDialog({ children }: LoginDialogProps) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleLogin = () => {
+  // Login form
+  const loginForm = useForm<LoginType>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  // Register form
+  const registerForm = useForm<RegisterType>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      company: '',
+    },
+  });
+
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: (data: LoginType) => apiRequest('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Welcome back!",
+        description: "You've been successfully signed in.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      setOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sign in failed",
+        description: error.message || "Please check your credentials and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Register mutation
+  const registerMutation = useMutation({
+    mutationFn: (data: RegisterType) => apiRequest('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' },
+    }),
+    onSuccess: () => {
+      toast({
+        title: "Account created!",
+        description: "Welcome to FibreUS. You've been automatically signed in.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      setOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Registration failed",
+        description: error.message || "Please check your information and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onLoginSubmit = (data: LoginType) => {
+    loginMutation.mutate(data);
+  };
+
+  const onRegisterSubmit = (data: RegisterType) => {
+    registerMutation.mutate(data);
+  };
+
+  const handleReplitLogin = () => {
     window.location.href = '/api/login';
   };
 
@@ -31,78 +123,220 @@ export default function LoginDialog({ children }: LoginDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Shield className="w-5 h-5 mr-2 text-primary" />
-            Sign In to FibreUS
+            {mode === 'login' ? 'Sign In to FibreUS' : 'Create Your Account'}
           </DialogTitle>
           <DialogDescription>
-            Access your security dashboard and manage your projects
+            {mode === 'login' 
+              ? 'Access your security dashboard and manage your projects'
+              : 'Join FibreUS to manage your security services'
+            }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Welcome Message */}
-          <div className="text-center py-4">
-            <h3 className="text-lg font-semibold mb-2">Welcome Back</h3>
-            <p className="text-muted-foreground">
-              Sign in to access your security service dashboard, track projects, and manage your account.
-            </p>
+          {/* Auth Mode Toggle */}
+          <div className="flex justify-center">
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={mode === 'login' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('login')}
+                data-testid="button-switch-login"
+              >
+                Sign In
+              </Button>
+              <Button
+                variant={mode === 'register' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('register')}
+                data-testid="button-switch-register"
+              >
+                Register
+              </Button>
+            </div>
           </div>
 
-          {/* Benefits */}
-          <div className="grid grid-cols-1 gap-3">
-            <Card className="p-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-4 h-4 text-blue-600" />
+          {/* Email/Password Forms */}
+          {mode === 'login' ? (
+            <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    className="pl-10"
+                    data-testid="input-login-email"
+                    {...loginForm.register('email')}
+                  />
                 </div>
-                <div>
-                  <h4 className="font-medium text-sm">Project Tracking</h4>
-                  <p className="text-xs text-muted-foreground">Monitor your security installations in real-time</p>
-                </div>
+                {loginForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>
+                )}
               </div>
-            </Card>
 
-            <Card className="p-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <ArrowRight className="w-4 h-4 text-green-600" />
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    className="pl-10"
+                    data-testid="input-login-password"
+                    {...loginForm.register('password')}
+                  />
                 </div>
-                <div>
-                  <h4 className="font-medium text-sm">Service Requests</h4>
-                  <p className="text-xs text-muted-foreground">Submit and track service requests easily</p>
-                </div>
+                {loginForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
+                )}
               </div>
-            </Card>
 
-            <Card className="p-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-4 h-4 text-secondary-foreground" />
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loginMutation.isPending}
+                data-testid="button-login-submit"
+              >
+                {loginMutation.isPending ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="firstName"
+                      placeholder="First name"
+                      className="pl-10"
+                      data-testid="input-register-firstname"
+                      {...registerForm.register('firstName')}
+                    />
+                  </div>
+                  {registerForm.formState.errors.firstName && (
+                    <p className="text-sm text-destructive">{registerForm.formState.errors.firstName.message}</p>
+                  )}
                 </div>
-                <div>
-                  <h4 className="font-medium text-sm">Secure Access</h4>
-                  <p className="text-xs text-muted-foreground">Your data is protected with enterprise security</p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    placeholder="Last name"
+                    data-testid="input-register-lastname"
+                    {...registerForm.register('lastName')}
+                  />
+                  {registerForm.formState.errors.lastName && (
+                    <p className="text-sm text-destructive">{registerForm.formState.errors.lastName.message}</p>
+                  )}
                 </div>
               </div>
-            </Card>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
+                    className="pl-10"
+                    data-testid="input-register-email"
+                    {...registerForm.register('email')}
+                  />
+                </div>
+                {registerForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Create a secure password"
+                    className="pl-10"
+                    data-testid="input-register-password"
+                    {...registerForm.register('password')}
+                  />
+                </div>
+                {registerForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone (Optional)</Label>
+                  <Input
+                    id="phone"
+                    placeholder="Phone number"
+                    data-testid="input-register-phone"
+                    {...registerForm.register('phone')}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company (Optional)</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="company"
+                      placeholder="Company name"
+                      className="pl-10"
+                      data-testid="input-register-company"
+                      {...registerForm.register('company')}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={registerMutation.isPending}
+                data-testid="button-register-submit"
+              >
+                {registerMutation.isPending ? 'Creating Account...' : 'Create Account'}
+              </Button>
+            </form>
+          )}
+
+          {/* Separator */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
           </div>
 
-          {/* Login Button */}
-          <div className="space-y-4">
-            <Button 
-              onClick={handleLogin}
-              className="w-full"
-              size="lg"
-              data-testid="button-signin-replit"
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Sign In with Replit
-            </Button>
-            
-            <p className="text-xs text-center text-muted-foreground">
-              By signing in, you agree to our Terms of Service and Privacy Policy.
-              New to FibreUS? Your account will be created automatically.
-            </p>
-          </div>
+          {/* Legacy Replit Auth */}
+          <Button 
+            onClick={handleReplitLogin}
+            variant="outline"
+            className="w-full"
+            data-testid="button-signin-replit"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            Sign In with Replit
+          </Button>
+          
+          <p className="text-xs text-center text-muted-foreground">
+            By signing in, you agree to our Terms of Service and Privacy Policy.
+          </p>
         </div>
       </DialogContent>
     </Dialog>

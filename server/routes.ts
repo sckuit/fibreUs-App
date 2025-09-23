@@ -11,7 +11,19 @@ import {
   getAccessibleRequests,
   getAccessibleProjects 
 } from "./rbacMiddleware";
-import { clientInsertServiceRequestSchema, updateServiceRequestSchema, type ServiceRequest, type Communication } from "@shared/schema";
+import { trackVisitor } from "./visitorMiddleware";
+import { hashPassword, verifyPassword, generateResetToken } from "./passwordUtils";
+import { 
+  clientInsertServiceRequestSchema, 
+  updateServiceRequestSchema, 
+  registerSchema,
+  loginSchema,
+  resetPasswordRequestSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
+  type ServiceRequest, 
+  type Communication 
+} from "@shared/schema";
 import { z } from "zod";
 
 // Centralized sanitization functions
@@ -44,12 +56,35 @@ function sanitizeCommunications(communications: Communication[], userRole: strin
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Visitor tracking middleware (should be early in the chain)
+  app.use(trackVisitor);
+
+  // Dual authentication middleware - supports both session and legacy Replit Auth
+  const isDualAuthenticated = (req: any, res: any, next: any) => {
+    // Check for session-based auth first (new email/password system)
+    if (req.session?.userId) {
+      return next();
+    }
+    
+    // Fall back to legacy Replit Auth
+    return isAuthenticated(req, res, next);
+  };
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, loadUserData, async (req: any, res) => {
+  app.get('/api/auth/user', isDualAuthenticated, loadUserData, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      // Get user ID from session (new) or legacy auth
+      const userId = req.session?.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -57,14 +92,191 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email/Password Authentication Endpoints
+  app.post('/api/auth/register', async (req: any, res) => {
+    try {
+      // Validate registration data
+      const validatedData = registerSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists with this email" });
+      }
+      
+      // Hash the password
+      const passwordHash = await hashPassword(validatedData.password);
+      
+      // Create user with hashed password
+      const user = await storage.createUserWithPassword({
+        email: validatedData.email,
+        passwordHash,
+        firstName: validatedData.firstName,
+        lastName: validatedData.lastName,
+        phone: validatedData.phone,
+        company: validatedData.company,
+      });
+      
+      // Regenerate session first to prevent session fixation
+      req.session.regenerate((err: any) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ message: "Session creation failed" });
+        }
+        
+        // Set userId in new session
+        req.session.userId = user.id;
+        
+        // Save session before responding
+        req.session.save((saveErr: any) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.status(500).json({ message: "Session creation failed" });
+          }
+          
+          res.status(201).json({
+            message: "User registered successfully",
+            user: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              role: user.role,
+            }
+          });
+        });
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid registration data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Registration failed" });
+      }
+    }
+  });
+
+  app.post('/api/auth/login', async (req: any, res) => {
+    try {
+      // Validate login data
+      const validatedData = loginSchema.parse(req.body);
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(validatedData.email);
+      if (!user || !user.passwordHash) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Verify password
+      const isValidPassword = await verifyPassword(user.passwordHash, validatedData.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Regenerate session first to prevent session fixation
+      req.session.regenerate((err: any) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({ message: "Session creation failed" });
+        }
+        
+        // Set userId in new session
+        req.session.userId = user.id;
+        
+        // Save session before responding
+        req.session.save((saveErr: any) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return res.status(500).json({ message: "Session creation failed" });
+          }
+          
+          res.json({
+            message: "Login successful",
+            user: {
+              id: user.id,
+              email: user.email,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              role: user.role,
+            }
+          });
+        });
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid login data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Login failed" });
+      }
+    }
+  });
+
+  app.post('/api/auth/logout', isDualAuthenticated, (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      
+      // Clear session cookie with proper security settings
+      res.clearCookie('connect.sid', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      
+      res.json({ message: "Logout successful" });
+    });
+  });
+
+  app.post('/api/auth/change-password', isDualAuthenticated, async (req: any, res) => {
+    try {
+      // Get user ID from session or legacy auth
+      const userId = req.session?.userId || req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      // Validate change password data
+      const validatedData = changePasswordSchema.parse(req.body);
+      
+      // Get current user
+      const user = await storage.getUser(userId);
+      if (!user || !user.passwordHash) {
+        return res.status(400).json({ message: "Cannot change password for this account" });
+      }
+      
+      // Verify current password
+      const isValidPassword = await verifyPassword(user.passwordHash, validatedData.currentPassword);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+      
+      // Hash new password and update
+      const newPasswordHash = await hashPassword(validatedData.newPassword);
+      await storage.setPassword(userId, newPasswordHash);
+      
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Change password error:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid password data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to change password" });
+      }
+    }
+  });
+
   // Service request routes
   app.post("/api/service-requests", 
-    isAuthenticated, 
+    isDualAuthenticated, 
     loadUserData,
     requirePermission('createRequests'),
     async (req: any, res) => {
       try {
-        const userId = req.user.claims.sub;
+        const userId = req.session?.userId || req.user?.claims?.sub;
         
         // Validate with client-only schema to prevent privilege escalation
         const validatedData = clientInsertServiceRequestSchema.parse(req.body);
@@ -327,6 +539,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch technicians" });
     }
   });
+
+  // Visitor analytics routes (admin and manager only)
+  app.get("/api/analytics/visitors", 
+    isAuthenticated, 
+    loadUserData,
+    requirePermission('viewReports'),
+    async (req: any, res) => {
+      try {
+        const analytics = await storage.getVisitorAnalytics();
+        res.json(analytics);
+      } catch (error) {
+        console.error("Error fetching visitor analytics:", error);
+        res.status(500).json({ message: "Failed to fetch visitor analytics" });
+      }
+    }
+  );
+
+  app.get("/api/analytics/recent-visitors", 
+    isAuthenticated, 
+    loadUserData,
+    requirePermission('viewReports'),
+    async (req: any, res) => {
+      try {
+        const limit = parseInt(req.query.limit as string) || 50;
+        const visitors = await storage.getVisitors(limit);
+        res.json(visitors);
+      } catch (error) {
+        console.error("Error fetching recent visitors:", error);
+        res.status(500).json({ message: "Failed to fetch recent visitors" });
+      }
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;

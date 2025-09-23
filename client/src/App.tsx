@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import ServiceRequests from "@/pages/ServiceRequests";
 import Projects from "@/pages/Projects";
+import Analytics from "@/pages/Analytics";
 
 // Main application layout with navigation
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,7 @@ function AuthenticatedRouter() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/requests" component={ServiceRequests} />
         <Route path="/projects" component={Projects} />
+        <Route path="/analytics" component={Analytics} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
