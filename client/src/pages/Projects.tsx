@@ -5,12 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
-import { Calendar, MapPin, DollarSign, Clock, CheckCircle } from "lucide-react";
-import type { User, Project } from "@shared/schema";
+import { Calendar, MapPin, DollarSign, Clock, CheckCircle, User } from "lucide-react";
+import AdminProjectsDialog from "@/components/AdminProjectsDialog";
+import type { User as UserType, Project } from "@shared/schema";
 
 const projectStatusColors = {
   planning: 'bg-blue-100 text-blue-800',
   approved: 'bg-green-100 text-green-800',
+  scheduled: 'bg-blue-100 text-blue-800',
   in_progress: 'bg-orange-100 text-orange-800',
   completed: 'bg-gray-100 text-gray-800',
   on_hold: 'bg-yellow-100 text-yellow-800',
@@ -20,6 +22,7 @@ const getProjectProgress = (status: string): number => {
   switch (status) {
     case 'planning': return 20;
     case 'approved': return 40;
+    case 'scheduled': return 60;
     case 'in_progress': return 70;
     case 'completed': return 100;
     case 'on_hold': return 50;
@@ -29,7 +32,7 @@ const getProjectProgress = (status: string): number => {
 
 export default function Projects() {
   const { user } = useAuth();
-  const typedUser = user as User | undefined;
+  const typedUser = user as UserType | undefined;
 
   const { data: projects, isLoading, isError } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
@@ -207,8 +210,24 @@ export default function Projects() {
                         >
                           {project.status?.replace('_', ' ')}
                         </Badge>
+                        {typedUser?.role === 'admin' && (
+                          <AdminProjectsDialog 
+                            project={project} 
+                            onSuccess={() => {
+                              // Refetch handled by mutation
+                            }} 
+                          />
+                        )}
                       </div>
                     </div>
+                    
+                    {/* Technician Assignment (Admin View) */}
+                    {typedUser?.role === 'admin' && project.assignedTechnicianId && (
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                        <User className="w-4 h-4 mr-1" />
+                        Assigned Technician: {project.assignedTechnicianId}
+                      </div>
+                    )}
                     
                     {/* Progress Bar */}
                     <div className="space-y-2">

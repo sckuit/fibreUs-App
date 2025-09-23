@@ -229,6 +229,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/projects/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const projectId = req.params.id;
+      const updates = req.body;
+      
+      // Validate status if provided
+      if (updates.status && !['scheduled', 'in_progress', 'completed', 'on_hold'].includes(updates.status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      const updatedProject = await storage.updateProject(projectId, updates);
+      res.json(updatedProject);
+    } catch (error) {
+      console.error("Error updating project:", error);
+      res.status(500).json({ message: "Failed to update project" });
+    }
+  });
+
+  app.get("/api/technicians", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (user?.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const technicians = await storage.getTechnicians();
+      res.json(technicians);
+    } catch (error) {
+      console.error("Error fetching technicians:", error);
+      res.status(500).json({ message: "Failed to fetch technicians" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -52,9 +52,9 @@
 
   --primary-foreground: 220 10% 95%;
 
-  --secondary: 220 8% 90%;
+  --secondary: 10 45% 85%;
 
-  --secondary-foreground: 220 25% 20%;
+  --secondary-foreground: 10 85% 25%;
 
   --muted: 220 10% 91%;
 
@@ -170,9 +170,9 @@
 
   --primary-foreground: 220 10% 95%;
 
-  --secondary: 220 30% 18%;
+  --secondary: 10 60% 22%;
 
-  --secondary-foreground: 220 15% 85%;
+  --secondary-foreground: 10 20% 90%;
 
   --muted: 220 25% 16%;
 

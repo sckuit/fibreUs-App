@@ -33,6 +33,7 @@ export interface IStorage {
   getProjects(clientId?: string): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project>;
+  getTechnicians(): Promise<User[]>;
   
   // Communication operations
   createCommunication(communication: InsertCommunicationType): Promise<Communication>;
@@ -125,6 +126,12 @@ export class DatabaseStorage implements IStorage {
     }
     return db.select().from(projects)
       .orderBy(desc(projects.createdAt));
+  }
+
+  async getTechnicians(): Promise<User[]> {
+    return db.select().from(users)
+      .where(eq(users.role, 'technician'))
+      .orderBy(users.firstName, users.lastName);
   }
 
   async getProject(id: string): Promise<Project | undefined> {

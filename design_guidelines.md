@@ -20,6 +20,9 @@
 - Medium Gray: 220 15% 75% (text)
 - Dark Steel: 220 30% 18% (cards, sections)
 
+**Secondary Color:**
+- Oxblood: 10 60% 30% (secondary CTAs, accents) - professional burgundy tone for trust
+
 **Accent Color:**
 - Electric Blue: 200 85% 55% (CTAs, highlights) - used sparingly for conversion elements
 
