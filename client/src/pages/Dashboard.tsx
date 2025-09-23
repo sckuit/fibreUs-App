@@ -37,43 +37,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-white dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-blue-600">FibreUS</h1>
-            <nav className="flex space-x-4">
-              <Link href="/" className="text-foreground hover:text-blue-600" data-testid="link-dashboard">
-                Dashboard
-              </Link>
-              <Link href="/requests" className="text-muted-foreground hover:text-blue-600" data-testid="link-requests">
-                Service Requests
-              </Link>
-              <Link href="/projects" className="text-muted-foreground hover:text-blue-600" data-testid="link-projects">
-                Projects
-              </Link>
-            </nav>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground">
-              Welcome, {typedUser?.firstName || typedUser?.email}
-            </span>
-            <Badge variant={typedUser?.role === 'admin' ? 'default' : 'secondary'} data-testid="badge-user-role">
-              {typedUser?.role}
-            </Badge>
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.href = '/api/logout'}
-              data-testid="button-logout"
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold tracking-tight">
             {typedUser?.role === 'admin' ? 'Admin Dashboard' : 'My Dashboard'}
@@ -230,7 +195,7 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-      </main>
+      </div>
     </div>
   );
 }
