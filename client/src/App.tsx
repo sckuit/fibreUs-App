@@ -9,6 +9,7 @@ import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import ServiceRequests from "@/pages/ServiceRequests";
+import Projects from "@/pages/Projects";
 
 // Landing page for non-authenticated users
 function LandingPage() {
@@ -21,6 +22,7 @@ function AuthenticatedRouter() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/requests" component={ServiceRequests} />
+      <Route path="/projects" component={Projects} />
       <Route component={NotFound} />
     </Switch>
   );

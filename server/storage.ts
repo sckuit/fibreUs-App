@@ -30,7 +30,7 @@ export interface IStorage {
   
   // Project operations
   createProject(project: InsertProjectType): Promise<Project>;
-  getProjects(technicianId?: string): Promise<Project[]>;
+  getProjects(clientId?: string): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project>;
   
@@ -117,10 +117,10 @@ export class DatabaseStorage implements IStorage {
     return newProject;
   }
 
-  async getProjects(technicianId?: string): Promise<Project[]> {
-    if (technicianId) {
+  async getProjects(clientId?: string): Promise<Project[]> {
+    if (clientId) {
       return db.select().from(projects)
-        .where(eq(projects.assignedTechnicianId, technicianId))
+        .where(eq(projects.clientId, clientId))
         .orderBy(desc(projects.createdAt));
     }
     return db.select().from(projects)

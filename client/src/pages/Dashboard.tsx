@@ -49,6 +49,9 @@ export default function Dashboard() {
               <Link href="/requests" className="text-muted-foreground hover:text-blue-600" data-testid="link-requests">
                 Service Requests
               </Link>
+              <Link href="/projects" className="text-muted-foreground hover:text-blue-600" data-testid="link-projects">
+                Projects
+              </Link>
             </nav>
           </div>
           <div className="flex items-center space-x-4">
@@ -139,6 +142,64 @@ export default function Dashboard() {
           </Card>
         </div>
 
+        {/* Active Requests Overview for Clients */}
+        {typedUser?.role !== 'admin' && dashboardData?.activeRequests?.length > 0 && (
+          <Card className="mb-8" data-testid="card-active-requests-overview">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <FileText className="w-5 h-5 mr-2" />
+                Your Active Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4" data-testid="list-active-requests">
+                {dashboardData.activeRequests.slice(0, 3).map((request) => (
+                  <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border hover-elevate">
+                    <div className="flex-1">
+                      <h4 className="font-medium">{request.title}</h4>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {request.serviceType?.replace('_', ' ')} • {request.priority} priority
+                      </p>
+                      {request.quotedAmount && (
+                        <p className="text-sm font-medium text-green-600 mt-1">
+                          Quote: ${request.quotedAmount}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Badge 
+                        variant="secondary" 
+                        className={`${
+                          request.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          request.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                          request.status === 'approved' ? 'bg-purple-100 text-purple-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {request.status?.replace('_', ' ')}
+                      </Badge>
+                      <Link href="/requests">
+                        <Button size="sm" variant="outline" data-testid={`button-view-request-${request.id}`}>
+                          View
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {dashboardData.activeRequests.length > 3 && (
+                <div className="mt-4 text-center">
+                  <Link href="/requests">
+                    <Button variant="outline" data-testid="button-view-all-requests">
+                      View All Requests ({dashboardData.activeRequests.length})
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Recent Activity */}
         <Card data-testid="card-recent-activity">
           <CardHeader>
@@ -156,7 +217,7 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <p className="text-sm">{comm.message}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(comm.createdAt).toLocaleDateString()}
+                        {comm.createdAt ? new Date(comm.createdAt).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
                   </div>

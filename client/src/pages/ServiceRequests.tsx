@@ -104,10 +104,7 @@ function AdminUpdateDialog({ request, onSuccess }: { request: ServiceRequest; on
         ...(data.quotedAmount && { quotedAmount: parseFloat(data.quotedAmount) }),
       };
       
-      return apiRequest(`/api/service-requests/${request.id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updateData),
-      });
+      return apiRequest('PUT', `/api/service-requests/${request.id}`, updateData);
     },
     onSuccess: () => {
       toast({
@@ -257,10 +254,7 @@ function ServiceRequestForm({ onSuccess }: { onSuccess: () => void }) {
 
   const createMutation = useMutation({
     mutationFn: async (data: ServiceRequestForm) => {
-      return apiRequest('/api/service-requests', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/service-requests', data);
     },
     onSuccess: () => {
       toast({
@@ -463,9 +457,9 @@ export default function ServiceRequests() {
     .sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0);
         case 'oldest':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
         case 'priority':
           const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
           return priorityOrder[a.priority || 'medium'] - priorityOrder[b.priority || 'medium'];
@@ -498,6 +492,9 @@ export default function ServiceRequests() {
               </Link>
               <Link href="/requests" className="text-foreground hover:text-blue-600" data-testid="link-requests">
                 Service Requests
+              </Link>
+              <Link href="/projects" className="text-muted-foreground hover:text-blue-600" data-testid="link-projects">
+                Projects
               </Link>
             </nav>
           </div>
