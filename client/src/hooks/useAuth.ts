@@ -1,5 +1,7 @@
 // From javascript_log_in_with_replit integration
 import { useQuery } from "@tanstack/react-query";
+import { hasPermission, canAccessRoute, getDefaultRoute, UserRole } from "@shared/permissions";
+import type { User } from "@shared/schema";
 
 // Custom auth query function that handles 401 gracefully
 async function fetchAuthUser() {
@@ -37,8 +39,25 @@ export function useAuth() {
   });
 
   return {
-    user,
+    user: user as User | null,
     isLoading,
     isAuthenticated: !!user,
+    role: user?.role as UserRole | null,
+  };
+}
+
+// Hook for checking user permissions
+export function usePermissions() {
+  const { user, role } = useAuth();
+  
+  return {
+    hasPermission: (permission: keyof import("@shared/permissions").Permission) => 
+      role ? hasPermission(role, permission) : false,
+    canAccessRoute: (route: string) => 
+      role ? canAccessRoute(role, route) : false,
+    getDefaultRoute: () => 
+      role ? getDefaultRoute(role) : '/',
+    role,
+    user,
   };
 }

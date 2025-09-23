@@ -3,6 +3,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { 
+  loadUserData, 
+  requirePermission, 
+  requireRole, 
+  requireOwnership,
+  getAccessibleRequests,
+  getAccessibleProjects 
+} from "./rbacMiddleware";
 import { clientInsertServiceRequestSchema, updateServiceRequestSchema, type ServiceRequest, type Communication } from "@shared/schema";
 import { z } from "zod";
 
@@ -38,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, loadUserData, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -50,111 +58,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Service request routes
-  app.post("/api/service-requests", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      // Validate with client-only schema to prevent privilege escalation
-      const validatedData = clientInsertServiceRequestSchema.parse(req.body);
-      
-      // Construct request data with server-controlled fields
-      const requestData = {
-        ...validatedData,
-        clientId: userId,
-        status: 'pending' as const, // Always start as pending
-        // adminNotes, quotedAmount, scheduledDate, completedDate not allowed for clients
-      };
-      
-      const serviceRequest = await storage.createServiceRequest(requestData);
-      res.json(serviceRequest);
-    } catch (error) {
-      console.error("Error creating service request:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid request data", errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Failed to create service request" });
+  app.post("/api/service-requests", 
+    isAuthenticated, 
+    loadUserData,
+    requirePermission('createRequests'),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        
+        // Validate with client-only schema to prevent privilege escalation
+        const validatedData = clientInsertServiceRequestSchema.parse(req.body);
+        
+        // Construct request data with server-controlled fields
+        const requestData = {
+          ...validatedData,
+          clientId: userId,
+          status: 'pending' as const, // Always start as pending
+          // adminNotes, quotedAmount, scheduledDate, completedDate not allowed for clients
+        };
+        
+        const serviceRequest = await storage.createServiceRequest(requestData);
+        res.json(serviceRequest);
+      } catch (error) {
+        console.error("Error creating service request:", error);
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ message: "Invalid request data", errors: error.errors });
+        } else {
+          res.status(500).json({ message: "Failed to create service request" });
+        }
       }
     }
-  });
+  );
 
-  app.get("/api/service-requests", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      // If admin, get all requests. If client, get only their requests
-      const clientId = user?.role === 'admin' ? undefined : userId;
-      const requests = await storage.getServiceRequests(clientId);
-      
-      // Sanitize requests for non-admin users
-      const sanitizedRequests = requests.map(request => 
-        sanitizeServiceRequest(request, user?.role || 'client')
-      );
-      
-      res.json(sanitizedRequests);
-    } catch (error) {
-      console.error("Error fetching service requests:", error);
-      res.status(500).json({ message: "Failed to fetch service requests" });
+  app.get("/api/service-requests", 
+    isAuthenticated, 
+    loadUserData,
+    requirePermission('viewOwnRequests'),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = req.dbUser;
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        let requests;
+        
+        // Get requests based on user role and permissions
+        if (user.role === 'admin' || user.role === 'manager') {
+          // Admins and managers can view all requests
+          requests = await storage.getServiceRequests();
+        } else if (user.role === 'client') {
+          // Clients can only view their own requests
+          requests = await storage.getServiceRequests(userId);
+        } else if (user.role === 'employee') {
+          // Employees can only view requests for projects they're assigned to
+          // For now, return empty array until we implement project assignment filtering
+          requests = [];
+        } else {
+          // Default to client-like behavior for unknown roles
+          requests = await storage.getServiceRequests(userId);
+        }
+        
+        // Sanitize requests for non-admin users
+        const sanitizedRequests = requests.map(request => 
+          sanitizeServiceRequest(request, user.role || 'client')
+        );
+        
+        res.json(sanitizedRequests);
+      } catch (error) {
+        console.error("Error fetching service requests:", error);
+        res.status(500).json({ message: "Failed to fetch service requests" });
+      }
     }
-  });
+  );
 
-  app.get("/api/service-requests/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      const request = await storage.getServiceRequest(id);
-      if (!request) {
-        return res.status(404).json({ message: "Service request not found" });
+  app.get("/api/service-requests/:id", 
+    isAuthenticated, 
+    loadUserData,
+    requirePermission('viewOwnRequests'),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        const userId = req.user.claims.sub;
+        const user = req.dbUser;
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        const request = await storage.getServiceRequest(id);
+        if (!request) {
+          return res.status(404).json({ message: "Service request not found" });
+        }
+        
+        // Enforce proper ownership and role-based access
+        let hasAccess = false;
+        
+        if (user.role === 'admin' || user.role === 'manager') {
+          // Admins and managers can view all requests
+          hasAccess = true;
+        } else if (user.role === 'client' && request.clientId === userId) {
+          // Clients can only view their own requests
+          hasAccess = true;
+        } else if (user.role === 'employee') {
+          // Employees can view requests for projects they're assigned to
+          // For now, deny access until project assignment is implemented
+          hasAccess = false;
+        }
+        
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        // Sanitize request for non-admin users
+        const sanitizedRequest = sanitizeServiceRequest(request, user.role || 'client');
+        
+        res.json(sanitizedRequest);
+      } catch (error) {
+        console.error("Error fetching service request:", error);
+        res.status(500).json({ message: "Failed to fetch service request" });
       }
-      
-      // Check permissions: admins can see all, clients can only see their own
-      if (user?.role !== 'admin' && request.clientId !== userId) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      // Sanitize request for non-admin users
-      const sanitizedRequest = sanitizeServiceRequest(request, user?.role || 'client');
-      
-      res.json(sanitizedRequest);
-    } catch (error) {
-      console.error("Error fetching service request:", error);
-      res.status(500).json({ message: "Failed to fetch service request" });
     }
-  });
+  );
 
-  // Admin-only route to update service requests
-  app.put("/api/service-requests/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (user?.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      
-      const { id } = req.params;
-      
-      // Validate and whitelist allowed fields
-      const validatedUpdates = updateServiceRequestSchema.parse(req.body);
-      
-      const updatedRequest = await storage.updateServiceRequest(id, validatedUpdates);
-      
-      if (!updatedRequest) {
-        return res.status(404).json({ message: "Service request not found" });
-      }
-      
-      res.json(updatedRequest);
-    } catch (error) {
-      console.error("Error updating service request:", error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid update data", errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Failed to update service request" });
+  // Manager/Admin route to update service requests
+  app.put("/api/service-requests/:id", 
+    isAuthenticated, 
+    loadUserData,
+    requirePermission('editAllRequests'),
+    async (req: any, res) => {
+      try {
+        const { id } = req.params;
+        
+        // Validate and whitelist allowed fields
+        const validatedUpdates = updateServiceRequestSchema.parse(req.body);
+        
+        const updatedRequest = await storage.updateServiceRequest(id, validatedUpdates);
+        
+        if (!updatedRequest) {
+          return res.status(404).json({ message: "Service request not found" });
+        }
+        
+        res.json(updatedRequest);
+      } catch (error) {
+        console.error("Error updating service request:", error);
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        } else {
+          res.status(500).json({ message: "Failed to update service request" });
+        }
       }
     }
-  });
+  );
 
   // Dashboard routes
   app.get("/api/dashboard/client", isAuthenticated, async (req: any, res) => {

@@ -10,16 +10,17 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, usePermissions } from "@/hooks/useAuth";
 import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
-import { Menu, X, Shield, Phone, FileText, Calendar } from "lucide-react";
+import { Menu, X, Shield, Phone, FileText, Calendar, Users, Settings, BarChart3 } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function TopNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const { hasPermission, role } = usePermissions();
   const [location] = useLocation();
   const typedUser = user as User | undefined;
 
@@ -85,30 +86,77 @@ export default function TopNavigation() {
                   <NavigationMenuItem>
                     <Link 
                       href="/dashboard" 
-                      className={`navigation-menu-link ${isActive('/dashboard') || isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                      className={`navigation-menu-link ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                       data-testid="link-dashboard"
                     >
                       Dashboard
                     </Link>
                   </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <Link 
-                      href="/requests" 
-                      className={`navigation-menu-link ${isActive('/requests') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                      data-testid="link-requests"
-                    >
-                      Service Requests
-                    </Link>
-                  </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <Link 
-                      href="/projects" 
-                      className={`navigation-menu-link ${isActive('/projects') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                      data-testid="link-projects"
-                    >
-                      Projects
-                    </Link>
-                  </NavigationMenuItem>
+                  
+                  {/* Service Requests - available to all authenticated users */}
+                  {hasPermission('viewOwnRequests') && (
+                    <NavigationMenuItem>
+                      <Link 
+                        href="/requests" 
+                        className={`navigation-menu-link ${isActive('/requests') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                        data-testid="link-requests"
+                      >
+                        {role === 'client' ? 'My Requests' : 'Service Requests'}
+                      </Link>
+                    </NavigationMenuItem>
+                  )}
+                  
+                  {/* Projects - available to employees, managers, and admins */}
+                  {hasPermission('viewOwnProjects') && (
+                    <NavigationMenuItem>
+                      <Link 
+                        href="/projects" 
+                        className={`navigation-menu-link ${isActive('/projects') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                        data-testid="link-projects"
+                      >
+                        {role === 'employee' ? 'My Projects' : 'Projects'}
+                      </Link>
+                    </NavigationMenuItem>
+                  )}
+                  
+                  {/* Users/Employees - available to managers and admins */}
+                  {hasPermission('viewUsers') && (
+                    <NavigationMenuItem>
+                      <Link 
+                        href="/users" 
+                        className={`navigation-menu-link ${isActive('/users') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                        data-testid="link-users"
+                      >
+                        Employees
+                      </Link>
+                    </NavigationMenuItem>
+                  )}
+                  
+                  {/* Reports - available to managers and admins */}
+                  {hasPermission('viewReports') && (
+                    <NavigationMenuItem>
+                      <Link 
+                        href="/reports" 
+                        className={`navigation-menu-link ${isActive('/reports') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                        data-testid="link-reports"
+                      >
+                        Reports
+                      </Link>
+                    </NavigationMenuItem>
+                  )}
+                  
+                  {/* Admin Settings - only for admins */}
+                  {hasPermission('manageSystem') && (
+                    <NavigationMenuItem>
+                      <Link 
+                        href="/admin" 
+                        className={`navigation-menu-link ${isActive('/admin') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                        data-testid="link-admin"
+                      >
+                        Admin
+                      </Link>
+                    </NavigationMenuItem>
+                  )}
                 </>
               )}
             </NavigationMenuList>
@@ -183,12 +231,36 @@ export default function TopNavigation() {
                   <Link href="/dashboard" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
                     Dashboard
                   </Link>
-                  <Link href="/requests" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                    Service Requests
-                  </Link>
-                  <Link href="/projects" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                    Projects
-                  </Link>
+                  
+                  {hasPermission('viewOwnRequests') && (
+                    <Link href="/requests" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      {role === 'client' ? 'My Requests' : 'Service Requests'}
+                    </Link>
+                  )}
+                  
+                  {hasPermission('viewOwnProjects') && (
+                    <Link href="/projects" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      {role === 'employee' ? 'My Projects' : 'Projects'}
+                    </Link>
+                  )}
+                  
+                  {hasPermission('viewUsers') && (
+                    <Link href="/users" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      Employees
+                    </Link>
+                  )}
+                  
+                  {hasPermission('viewReports') && (
+                    <Link href="/reports" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      Reports
+                    </Link>
+                  )}
+                  
+                  {hasPermission('manageSystem') && (
+                    <Link href="/admin" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      Admin
+                    </Link>
+                  )}
                 </>
               )}
 
