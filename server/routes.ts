@@ -16,6 +16,13 @@ import {
   changePasswordSchema,
   insertInventoryItemSchema,
   insertInventoryTransactionSchema,
+  insertTaskSchema,
+  updateTaskSchema,
+  insertReportSchema,
+  updateReportSchema,
+  approveReportSchema,
+  insertSalesRecordSchema,
+  updateSalesRecordSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -932,6 +939,501 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
         }
         res.status(500).json({ message: "Failed to create inventory transaction" });
+      }
+    }
+  );
+
+  // Task routes (managers create, employees view assigned)
+  app.post("/api/tasks",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Manager access required" });
+        }
+        
+        const validatedData = insertTaskSchema.parse(req.body);
+        const taskData = {
+          ...validatedData,
+          createdById: userId,
+        };
+        
+        const newTask = await storage.createTask(taskData);
+        res.status(201).json(newTask);
+      } catch (error) {
+        console.error("Error creating task:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid task data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to create task" });
+      }
+    }
+  );
+
+  app.get("/api/tasks",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.assignedToId) filters.assignedToId = req.query.assignedToId;
+        if (req.query.createdById) filters.createdById = req.query.createdById;
+        if (req.query.status) filters.status = req.query.status;
+        
+        // Employees can only see their own assigned tasks
+        if (user.role === 'employee') {
+          filters.assignedToId = userId;
+        }
+        
+        const tasks = await storage.getTasks(filters);
+        res.json(tasks);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        res.status(500).json({ message: "Failed to fetch tasks" });
+      }
+    }
+  );
+
+  app.get("/api/tasks/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access required" });
+        }
+        
+        const task = await storage.getTask(req.params.id);
+        if (!task) {
+          return res.status(404).json({ message: "Task not found" });
+        }
+        
+        // Employees can only see their own assigned tasks
+        if (user.role === 'employee' && task.assignedToId !== userId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        res.json(task);
+      } catch (error) {
+        console.error("Error fetching task:", error);
+        res.status(500).json({ message: "Failed to fetch task" });
+      }
+    }
+  );
+
+  app.put("/api/tasks/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Manager access required" });
+        }
+        
+        const validatedData = updateTaskSchema.parse(req.body);
+        const updatedTask = await storage.updateTask(req.params.id, validatedData);
+        
+        if (!updatedTask) {
+          return res.status(404).json({ message: "Task not found" });
+        }
+        
+        res.json(updatedTask);
+      } catch (error) {
+        console.error("Error updating task:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid task data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to update task" });
+      }
+    }
+  );
+
+  app.delete("/api/tasks/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Manager access required" });
+        }
+        
+        await storage.deleteTask(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting task:", error);
+        res.status(500).json({ message: "Failed to delete task" });
+      }
+    }
+  );
+
+  // Report routes
+  app.post("/api/reports",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access required" });
+        }
+        
+        const validatedData = insertReportSchema.parse(req.body);
+        const reportData = {
+          ...validatedData,
+          submittedById: userId,
+        };
+        
+        const newReport = await storage.createReport(reportData);
+        res.status(201).json(newReport);
+      } catch (error) {
+        console.error("Error creating report:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid report data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to create report" });
+      }
+    }
+  );
+
+  app.get("/api/reports",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.submittedById) filters.submittedById = req.query.submittedById;
+        if (req.query.taskId) filters.taskId = req.query.taskId;
+        if (req.query.status) filters.status = req.query.status;
+        
+        // Employees can only see their own reports
+        if (user.role === 'employee') {
+          filters.submittedById = userId;
+        }
+        
+        const reports = await storage.getReports(filters);
+        res.json(reports);
+      } catch (error) {
+        console.error("Error fetching reports:", error);
+        res.status(500).json({ message: "Failed to fetch reports" });
+      }
+    }
+  );
+
+  app.get("/api/reports/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access required" });
+        }
+        
+        const report = await storage.getReport(req.params.id);
+        if (!report) {
+          return res.status(404).json({ message: "Report not found" });
+        }
+        
+        // Employees can only see their own reports
+        if (user.role === 'employee' && report.submittedById !== userId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        res.json(report);
+      } catch (error) {
+        console.error("Error fetching report:", error);
+        res.status(500).json({ message: "Failed to fetch report" });
+      }
+    }
+  );
+
+  app.put("/api/reports/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access required" });
+        }
+        
+        const report = await storage.getReport(req.params.id);
+        if (!report) {
+          return res.status(404).json({ message: "Report not found" });
+        }
+        
+        // Employees can only edit their own reports
+        if (user.role === 'employee' && report.submittedById !== userId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        const validatedData = updateReportSchema.parse(req.body);
+        const updatedReport = await storage.updateReport(req.params.id, validatedData);
+        res.json(updatedReport);
+      } catch (error) {
+        console.error("Error updating report:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid report data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to update report" });
+      }
+    }
+  );
+
+  app.delete("/api/reports/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access required" });
+        }
+        
+        const report = await storage.getReport(req.params.id);
+        if (!report) {
+          return res.status(404).json({ message: "Report not found" });
+        }
+        
+        // Employees can only delete their own reports
+        if (user.role === 'employee' && report.submittedById !== userId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        await storage.deleteReport(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting report:", error);
+        res.status(500).json({ message: "Failed to delete report" });
+      }
+    }
+  );
+
+  app.post("/api/reports/:id/approve",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Manager access required" });
+        }
+        
+        const { approved, rejectionReason } = approveReportSchema.parse({ ...req.body, reportId: req.params.id });
+        const updatedReport = await storage.approveReport(req.params.id, userId, approved, rejectionReason);
+        
+        if (!updatedReport) {
+          return res.status(404).json({ message: "Report not found" });
+        }
+        
+        res.json(updatedReport);
+      } catch (error) {
+        console.error("Error approving report:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid approval data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to approve report" });
+      }
+    }
+  );
+
+  // Sales routes
+  app.post("/api/sales",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales access required" });
+        }
+        
+        const validatedData = insertSalesRecordSchema.parse(req.body);
+        const newRecord = await storage.createSalesRecord(validatedData);
+        res.status(201).json(newRecord);
+      } catch (error) {
+        console.error("Error creating sales record:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid sales data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to create sales record" });
+      }
+    }
+  );
+
+  app.get("/api/sales",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.salesRepId) filters.salesRepId = req.query.salesRepId;
+        if (req.query.clientId) filters.clientId = req.query.clientId;
+        if (req.query.status) filters.status = req.query.status;
+        
+        // Sales role can only see their own records
+        if (user.role === 'sales') {
+          filters.salesRepId = userId;
+        }
+        
+        const records = await storage.getSalesRecords(filters);
+        res.json(records);
+      } catch (error) {
+        console.error("Error fetching sales records:", error);
+        res.status(500).json({ message: "Failed to fetch sales records" });
+      }
+    }
+  );
+
+  app.get("/api/sales/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales access required" });
+        }
+        
+        const record = await storage.getSalesRecord(req.params.id);
+        if (!record) {
+          return res.status(404).json({ message: "Sales record not found" });
+        }
+        
+        // Sales role can only see their own records
+        if (user.role === 'sales' && record.salesRepId !== userId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        res.json(record);
+      } catch (error) {
+        console.error("Error fetching sales record:", error);
+        res.status(500).json({ message: "Failed to fetch sales record" });
+      }
+    }
+  );
+
+  app.put("/api/sales/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales access required" });
+        }
+        
+        const record = await storage.getSalesRecord(req.params.id);
+        if (!record) {
+          return res.status(404).json({ message: "Sales record not found" });
+        }
+        
+        // Sales role can only edit their own records
+        if (user.role === 'sales' && record.salesRepId !== userId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        const validatedData = updateSalesRecordSchema.parse(req.body);
+        const updatedRecord = await storage.updateSalesRecord(req.params.id, validatedData);
+        res.json(updatedRecord);
+      } catch (error) {
+        console.error("Error updating sales record:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid sales data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to update sales record" });
+      }
+    }
+  );
+
+  app.delete("/api/sales/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales access required" });
+        }
+        
+        const record = await storage.getSalesRecord(req.params.id);
+        if (!record) {
+          return res.status(404).json({ message: "Sales record not found" });
+        }
+        
+        // Sales role can only delete their own records
+        if (user.role === 'sales' && record.salesRepId !== userId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        
+        await storage.deleteSalesRecord(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting sales record:", error);
+        res.status(500).json({ message: "Failed to delete sales record" });
+      }
+    }
+  );
+
+  // Financial logs routes (admin read-only)
+  app.get("/api/financial-logs",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.entityType) filters.entityType = req.query.entityType;
+        if (req.query.userId) filters.userId = req.query.userId;
+        if (req.query.logType) filters.logType = req.query.logType;
+        if (req.query.limit) filters.limit = parseInt(req.query.limit as string);
+        
+        const logs = await storage.getFinancialLogs(filters);
+        res.json(logs);
+      } catch (error) {
+        console.error("Error fetching financial logs:", error);
+        res.status(500).json({ message: "Failed to fetch financial logs" });
       }
     }
   );
