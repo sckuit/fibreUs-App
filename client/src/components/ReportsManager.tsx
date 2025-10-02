@@ -12,10 +12,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertReportSchema, updateReportSchema, type Report, type User, type Task } from "@shared/schema";
 import type { z } from "zod";
-import { Plus, FileText, CheckCircle, XCircle, Clock, Edit, Trash2 } from "lucide-react";
+import { Plus, FileText, CheckCircle, XCircle, Clock, Edit, Trash2, Download } from "lucide-react";
 import { format } from "date-fns";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCSV } from "@/lib/exportUtils";
 
 type ReportsManagerProps = {
   role: 'employee' | 'manager' | 'admin';
@@ -192,14 +193,23 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
             {role === 'employee' ? 'Submit and manage your work reports' : 'Review and approve team work reports'}
           </p>
         </div>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-create-report">
-              <Plus className="w-4 h-4 mr-2" />
-              New Report
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => exportToCSV(reports, 'reports')} 
+            data-testid="button-export-reports"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-create-report">
+                <Plus className="w-4 h-4 mr-2" />
+                New Report
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Work Report</DialogTitle>
               <DialogDescription>
@@ -281,6 +291,7 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {reports.length === 0 ? (

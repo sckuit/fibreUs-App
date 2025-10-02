@@ -418,10 +418,20 @@ export default function AdminPortal() {
                     Manage equipment and parts inventory
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddInventoryItem} data-testid="button-add-inventory">
-                  <Package className="w-4 h-4 mr-2" />
-                  Add Item
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => exportToCSV(inventoryItems, 'inventory')} 
+                    data-testid="button-export-inventory"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button onClick={handleAddInventoryItem} data-testid="button-add-inventory">
+                    <Package className="w-4 h-4 mr-2" />
+                    Add Item
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {inventoryLoading ? (
@@ -620,11 +630,21 @@ export default function AdminPortal() {
 
           <TabsContent value="financial" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Financial Audit Logs</CardTitle>
-                <CardDescription>
-                  Read-only financial transaction audit trail for compliance
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <div>
+                  <CardTitle>Financial Audit Logs</CardTitle>
+                  <CardDescription>
+                    Read-only financial transaction audit trail for compliance
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => exportToCSV(financialLogs, 'financial-logs')} 
+                  data-testid="button-export-financial-logs"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
               </CardHeader>
               <CardContent>
                 {financialLogsLoading ? (
