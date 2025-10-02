@@ -14,6 +14,8 @@ import {
   resetPasswordRequestSchema,
   resetPasswordSchema,
   changePasswordSchema,
+  insertInventoryItemSchema,
+  insertInventoryTransactionSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -732,6 +734,204 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting user:", error);
         res.status(500).json({ message: "Failed to delete user" });
+      }
+    }
+  );
+
+  // Inventory Management Routes
+  app.get("/api/inventory/items",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access or higher required" });
+        }
+        
+        const includeInactive = req.query.includeInactive === 'true';
+        const items = await storage.getInventoryItems(includeInactive);
+        res.json(items);
+      } catch (error) {
+        console.error("Error fetching inventory items:", error);
+        res.status(500).json({ message: "Failed to fetch inventory items" });
+      }
+    }
+  );
+
+  app.get("/api/inventory/items/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access or higher required" });
+        }
+        
+        const item = await storage.getInventoryItem(req.params.id);
+        if (!item) {
+          return res.status(404).json({ message: "Inventory item not found" });
+        }
+        
+        res.json(item);
+      } catch (error) {
+        console.error("Error fetching inventory item:", error);
+        res.status(500).json({ message: "Failed to fetch inventory item" });
+      }
+    }
+  );
+
+  app.post("/api/inventory/items",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Manager access or higher required" });
+        }
+        
+        // Validate request body
+        const validatedData = insertInventoryItemSchema.parse(req.body);
+        
+        const newItem = await storage.createInventoryItem(validatedData);
+        res.status(201).json(newItem);
+      } catch (error) {
+        console.error("Error creating inventory item:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid inventory item data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to create inventory item" });
+      }
+    }
+  );
+
+  app.put("/api/inventory/items/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Manager access or higher required" });
+        }
+        
+        // Validate partial update data - pick only allowed fields
+        const allowedUpdates = insertInventoryItemSchema.partial().parse(req.body);
+        
+        const updatedItem = await storage.updateInventoryItem(req.params.id, allowedUpdates);
+        if (!updatedItem) {
+          return res.status(404).json({ message: "Inventory item not found" });
+        }
+        
+        res.json(updatedItem);
+      } catch (error) {
+        console.error("Error updating inventory item:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid inventory item data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to update inventory item" });
+      }
+    }
+  );
+
+  app.delete("/api/inventory/items/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        await storage.deleteInventoryItem(req.params.id);
+        res.json({ message: "Inventory item deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting inventory item:", error);
+        res.status(500).json({ message: "Failed to delete inventory item" });
+      }
+    }
+  );
+
+  app.get("/api/inventory/low-stock",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access or higher required" });
+        }
+        
+        const items = await storage.getLowStockItems();
+        res.json(items);
+      } catch (error) {
+        console.error("Error fetching low stock items:", error);
+        res.status(500).json({ message: "Failed to fetch low stock items" });
+      }
+    }
+  );
+
+  app.get("/api/inventory/transactions",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access or higher required" });
+        }
+        
+        const itemId = req.query.itemId as string | undefined;
+        const projectId = req.query.projectId as string | undefined;
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+        
+        const transactions = await storage.getInventoryTransactions(itemId, projectId, limit);
+        res.json(transactions);
+      } catch (error) {
+        console.error("Error fetching inventory transactions:", error);
+        res.status(500).json({ message: "Failed to fetch inventory transactions" });
+      }
+    }
+  );
+
+  app.post("/api/inventory/transactions",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Employee access or higher required" });
+        }
+        
+        // Validate request body but exclude performedById from user input
+        const validatedData = insertInventoryTransactionSchema.omit({ performedById: true }).parse(req.body);
+        
+        // Always use session user ID for performedById (prevent spoofing)
+        const transactionData = {
+          ...validatedData,
+          performedById: userId,
+        };
+        
+        const newTransaction = await storage.createInventoryTransaction(transactionData);
+        res.status(201).json(newTransaction);
+      } catch (error) {
+        console.error("Error creating inventory transaction:", error);
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid transaction data", errors: error.errors });
+        }
+        res.status(500).json({ message: "Failed to create inventory transaction" });
       }
     }
   );

@@ -24,6 +24,17 @@ export const requestStatusEnum = pgEnum('request_status', [
   'pending', 'reviewed', 'quoted', 'approved', 'scheduled', 'in_progress', 'completed', 'cancelled'
 ]);
 export const priorityEnum = pgEnum('priority', ['low', 'medium', 'high', 'urgent']);
+export const inventoryCategoryEnum = pgEnum('inventory_category', [
+  'cameras', 'dvr_nvr', 'monitors', 'cables', 'connectors', 
+  'alarms', 'sensors', 'keypads', 'access_control', 'intercoms',
+  'fiber_optic', 'network_equipment', 'tools', 'mounting', 'power_supplies', 'other'
+]);
+export const unitOfMeasureEnum = pgEnum('unit_of_measure', [
+  'piece', 'box', 'roll', 'meter', 'foot', 'pair', 'set', 'kit'
+]);
+export const transactionTypeEnum = pgEnum('transaction_type', [
+  'purchase', 'sale', 'adjustment', 'project_usage', 'return', 'damage'
+]);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -121,6 +132,40 @@ export const visitors = pgTable("visitors", {
   visitedAt: timestamp("visited_at").defaultNow(),
 });
 
+// Inventory items for equipment and parts tracking
+export const inventoryItems = pgTable("inventory_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sku: varchar("sku").notNull().unique(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  category: inventoryCategoryEnum("category").notNull(),
+  unitOfMeasure: unitOfMeasureEnum("unit_of_measure").default('piece'),
+  quantityInStock: integer("quantity_in_stock").default(0),
+  minimumStockLevel: integer("minimum_stock_level").default(0),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }),
+  supplier: varchar("supplier"),
+  location: varchar("location"), // warehouse location
+  imageUrl: varchar("image_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Inventory transactions for tracking stock movements
+export const inventoryTransactions = pgTable("inventory_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  itemId: varchar("item_id").notNull().references(() => inventoryItems.id),
+  transactionType: transactionTypeEnum("transaction_type").notNull(),
+  quantity: integer("quantity").notNull(), // positive for additions, can be negative for removals
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }),
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }),
+  projectId: varchar("project_id").references(() => projects.id), // if used in a project
+  performedById: varchar("performed_by_id").notNull().references(() => users.id),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   serviceRequests: many(serviceRequests),
@@ -164,6 +209,25 @@ export const communicationsRelations = relations(communications, ({ one }) => ({
   }),
 }));
 
+export const inventoryItemsRelations = relations(inventoryItems, ({ many }) => ({
+  transactions: many(inventoryTransactions),
+}));
+
+export const inventoryTransactionsRelations = relations(inventoryTransactions, ({ one }) => ({
+  item: one(inventoryItems, {
+    fields: [inventoryTransactions.itemId],
+    references: [inventoryItems.id],
+  }),
+  project: one(projects, {
+    fields: [inventoryTransactions.projectId],
+    references: [projects.id],
+  }),
+  performedBy: one(users, {
+    fields: [inventoryTransactions.performedById],
+    references: [users.id],
+  }),
+}));
+
 // Type exports for the new entities
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -179,6 +243,12 @@ export type Communication = typeof communications.$inferSelect;
 
 export type InsertVisitor = typeof visitors.$inferInsert;
 export type Visitor = typeof visitors.$inferSelect;
+
+export type InsertInventoryItem = typeof inventoryItems.$inferInsert;
+export type InventoryItem = typeof inventoryItems.$inferSelect;
+
+export type InsertInventoryTransaction = typeof inventoryTransactions.$inferInsert;
+export type InventoryTransaction = typeof inventoryTransactions.$inferSelect;
 
 // Zod schemas for validation
 export const insertServiceRequestSchema = createInsertSchema(serviceRequests).omit({
@@ -218,6 +288,17 @@ export const insertCommunicationSchema = createInsertSchema(communications).omit
 export const insertVisitorSchema = createInsertSchema(visitors).omit({
   id: true,
   visitedAt: true,
+});
+
+export const insertInventoryItemSchema = createInsertSchema(inventoryItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertInventoryTransactionSchema = createInsertSchema(inventoryTransactions).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Authentication schemas for email/password system
@@ -261,6 +342,8 @@ export type UpdateServiceRequestType = z.infer<typeof updateServiceRequestSchema
 export type InsertProjectType = z.infer<typeof insertProjectSchema>;
 export type InsertCommunicationType = z.infer<typeof insertCommunicationSchema>;
 export type InsertVisitorType = z.infer<typeof insertVisitorSchema>;
+export type InsertInventoryItemType = z.infer<typeof insertInventoryItemSchema>;
+export type InsertInventoryTransactionType = z.infer<typeof insertInventoryTransactionSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;

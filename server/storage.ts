@@ -5,6 +5,8 @@ import {
   projects,
   communications,
   visitors,
+  inventoryItems,
+  inventoryTransactions,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -15,6 +17,10 @@ import {
   type InsertCommunicationType,
   type Visitor,
   type InsertVisitorType,
+  type InventoryItem,
+  type InsertInventoryItemType,
+  type InventoryTransaction,
+  type InsertInventoryTransactionType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -68,6 +74,18 @@ export interface IStorage {
     topBrowsers: { browser: string; count: number }[];
     visitorsByDate: { date: string; count: number }[];
   }>;
+  
+  // Inventory operations
+  createInventoryItem(item: InsertInventoryItemType): Promise<InventoryItem>;
+  getInventoryItems(includeInactive?: boolean): Promise<InventoryItem[]>;
+  getInventoryItem(id: string): Promise<InventoryItem | undefined>;
+  updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | undefined>;
+  deleteInventoryItem(id: string): Promise<void>;
+  getLowStockItems(): Promise<InventoryItem[]>;
+  
+  // Inventory transaction operations
+  createInventoryTransaction(transaction: InsertInventoryTransactionType): Promise<InventoryTransaction>;
+  getInventoryTransactions(itemId?: string, projectId?: string, limit?: number): Promise<InventoryTransaction[]>;
   
   // Business queries
   getClientDashboard(clientId: string): Promise<{
@@ -451,6 +469,96 @@ export class DatabaseStorage implements IStorage {
       activeProjects,
       recentCommunications,
     };
+  }
+
+  // Inventory operations
+  async createInventoryItem(item: InsertInventoryItemType): Promise<InventoryItem> {
+    const [newItem] = await db
+      .insert(inventoryItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async getInventoryItems(includeInactive: boolean = false): Promise<InventoryItem[]> {
+    if (includeInactive) {
+      return db.select().from(inventoryItems)
+        .orderBy(inventoryItems.name);
+    }
+    return db.select().from(inventoryItems)
+      .where(eq(inventoryItems.isActive, true))
+      .orderBy(inventoryItems.name);
+  }
+
+  async getInventoryItem(id: string): Promise<InventoryItem | undefined> {
+    const [item] = await db.select().from(inventoryItems)
+      .where(eq(inventoryItems.id, id));
+    return item;
+  }
+
+  async updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | undefined> {
+    const [item] = await db
+      .update(inventoryItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(inventoryItems.id, id))
+      .returning();
+    return item;
+  }
+
+  async deleteInventoryItem(id: string): Promise<void> {
+    // Soft delete by marking as inactive
+    await db
+      .update(inventoryItems)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(inventoryItems.id, id));
+  }
+
+  async getLowStockItems(): Promise<InventoryItem[]> {
+    return db.select().from(inventoryItems)
+      .where(and(
+        eq(inventoryItems.isActive, true),
+        sql`${inventoryItems.quantityInStock} <= ${inventoryItems.minimumStockLevel}`
+      ))
+      .orderBy(inventoryItems.name);
+  }
+
+  // Inventory transaction operations
+  async createInventoryTransaction(transaction: InsertInventoryTransactionType): Promise<InventoryTransaction> {
+    // Create the transaction
+    const [newTransaction] = await db
+      .insert(inventoryTransactions)
+      .values(transaction)
+      .returning();
+
+    // Update the inventory item quantity
+    const item = await this.getInventoryItem(transaction.itemId);
+    if (item) {
+      const newQuantity = (item.quantityInStock || 0) + transaction.quantity;
+      await this.updateInventoryItem(transaction.itemId, {
+        quantityInStock: newQuantity
+      });
+    }
+
+    return newTransaction;
+  }
+
+  async getInventoryTransactions(itemId?: string, projectId?: string, limit: number = 100): Promise<InventoryTransaction[]> {
+    let query = db.select().from(inventoryTransactions);
+    
+    if (itemId && projectId) {
+      query = query.where(and(
+        eq(inventoryTransactions.itemId, itemId),
+        eq(inventoryTransactions.projectId, projectId)
+      ));
+    } else if (itemId) {
+      query = query.where(eq(inventoryTransactions.itemId, itemId));
+    } else if (projectId) {
+      query = query.where(eq(inventoryTransactions.projectId, projectId));
+    }
+    
+    return query
+      .orderBy(desc(inventoryTransactions.createdAt))
+      .limit(limit);
   }
 }
 
