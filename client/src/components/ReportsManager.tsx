@@ -340,16 +340,43 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {reports.map((report) => (
+          {reports.map((report) => {
+            const linkedTask = tasks.find(t => t.id === report.taskId);
+            const linkedProject = projects.find(p => p.id === report.projectId);
+            
+            return (
             <Card key={report.id} data-testid={`card-report-${report.id}`}>
               <CardHeader>
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1 flex-1">
-                    <CardTitle className="text-lg">{report.title}</CardTitle>
+                    <div className="flex items-center gap-2 mb-1">
+                      <CardTitle className="text-lg">{report.title}</CardTitle>
+                      <Badge variant="outline" className="font-mono text-xs" data-testid={`badge-ticket-${report.ticketNumber}`}>
+                        {report.ticketNumber}
+                      </Badge>
+                    </div>
                     <CardDescription>
                       {role !== 'employee' && `Submitted by ${getUserName(report.submittedById)} • `}
                       {report.createdAt && format(new Date(report.createdAt), 'MMM d, yyyy')}
                     </CardDescription>
+                    {(linkedTask || linkedProject) && (
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2">
+                        {linkedTask && (
+                          <div className="flex items-center gap-1">
+                            <span>Task:</span>
+                            <Badge variant="outline" className="font-mono text-xs">{linkedTask.ticketNumber}</Badge>
+                            <span className="text-xs">{linkedTask.title}</span>
+                          </div>
+                        )}
+                        {linkedProject && (
+                          <div className="flex items-center gap-1">
+                            <span>Project:</span>
+                            <Badge variant="outline" className="font-mono text-xs">{linkedProject.ticketNumber}</Badge>
+                            <span className="text-xs">{linkedProject.projectName}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {getStatusBadge(report.status)}
@@ -398,7 +425,8 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                 )}
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
       )}
 
