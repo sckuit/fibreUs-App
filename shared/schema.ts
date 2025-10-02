@@ -506,14 +506,32 @@ export const insertReportSchema = createInsertSchema(reports).omit({
   approvedById: true,
   approvedAt: true,
   submittedAt: true,
-});
+}).refine(
+  (data) => data.taskId || data.projectId,
+  {
+    message: "Report must be linked to either a task or a project",
+    path: ["taskId"],
+  }
+);
 
 export const updateReportSchema = createInsertSchema(reports).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
   submittedById: true,
-}).partial();
+}).partial().refine(
+  (data) => {
+    // If either taskId or projectId is being updated, ensure at least one is provided
+    if (data.taskId !== undefined || data.projectId !== undefined) {
+      return data.taskId || data.projectId;
+    }
+    return true;
+  },
+  {
+    message: "Report must be linked to either a task or a project",
+    path: ["taskId"],
+  }
+);
 
 export const approveReportSchema = z.object({
   reportId: z.string(),

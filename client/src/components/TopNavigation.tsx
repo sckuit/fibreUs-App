@@ -162,7 +162,7 @@ export default function TopNavigation() {
                         className={`navigation-menu-link ${isActive('/requests') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                         data-testid="link-requests"
                       >
-                        {role === 'client' ? 'My Requests' : 'Service Requests'}
+                        {role === 'client' ? 'Requests' : 'Requests'}
                       </Link>
                     </NavigationMenuItem>
                   )}
@@ -175,47 +175,57 @@ export default function TopNavigation() {
                         className={`navigation-menu-link ${isActive('/projects') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                         data-testid="link-projects"
                       >
-                        {role === 'employee' ? 'My Projects' : 'Projects'}
+                        Projects
                       </Link>
                     </NavigationMenuItem>
                   )}
                   
-                  {/* Users/Employees - available to managers and admins */}
-                  {hasPermission('viewUsers') && (
+                  {/* Management dropdown for Employees, Reports, Admin */}
+                  {(hasPermission('viewUsers') || hasPermission('viewReports') || hasPermission('manageSystem')) && (
                     <NavigationMenuItem>
-                      <Link 
-                        href="/users" 
-                        className={`navigation-menu-link ${isActive('/users') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                        data-testid="link-users"
-                      >
-                        Employees
-                      </Link>
-                    </NavigationMenuItem>
-                  )}
-                  
-                  {/* Reports - available to managers and admins */}
-                  {hasPermission('viewReports') && (
-                    <NavigationMenuItem>
-                      <Link 
-                        href="/reports" 
-                        className={`navigation-menu-link ${isActive('/reports') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                        data-testid="link-reports"
-                      >
-                        Reports
-                      </Link>
-                    </NavigationMenuItem>
-                  )}
-                  
-                  {/* Admin Settings - only for admins */}
-                  {hasPermission('manageSystem') && (
-                    <NavigationMenuItem>
-                      <Link 
-                        href="/admin" 
-                        className={`navigation-menu-link ${isActive('/admin') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                        data-testid="link-admin"
-                      >
-                        Admin
-                      </Link>
+                      <NavigationMenuTrigger className="text-muted-foreground hover:text-primary" data-testid="trigger-management">
+                        Management
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <div className="grid gap-2 p-4 w-[200px]">
+                          {hasPermission('viewUsers') && (
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/users"
+                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                data-testid="link-users"
+                              >
+                                <div className="text-sm font-medium">Team</div>
+                                <p className="text-xs text-muted-foreground">Manage employees</p>
+                              </Link>
+                            </NavigationMenuLink>
+                          )}
+                          {hasPermission('viewReports') && (
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/reports"
+                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                data-testid="link-reports"
+                              >
+                                <div className="text-sm font-medium">Reports</div>
+                                <p className="text-xs text-muted-foreground">View work reports</p>
+                              </Link>
+                            </NavigationMenuLink>
+                          )}
+                          {hasPermission('manageSystem') && (
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/admin"
+                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                data-testid="link-admin"
+                              >
+                                <div className="text-sm font-medium">Admin</div>
+                                <p className="text-xs text-muted-foreground">System settings</p>
+                              </Link>
+                            </NavigationMenuLink>
+                          )}
+                        </div>
+                      </NavigationMenuContent>
                     </NavigationMenuItem>
                   )}
                 </>

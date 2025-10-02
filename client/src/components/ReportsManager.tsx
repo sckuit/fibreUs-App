@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertReportSchema, updateReportSchema, type Report, type User, type Task } from "@shared/schema";
+import { insertReportSchema, updateReportSchema, type Report, type User, type Task, type Project } from "@shared/schema";
 import type { z } from "zod";
 import { Plus, FileText, CheckCircle, XCircle, Clock, Edit, Trash2, Download } from "lucide-react";
 import { format } from "date-fns";
@@ -34,10 +34,16 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
     queryKey: role === 'employee' ? ['/api/reports', userId] : ['/api/reports'],
   });
 
-  // Fetch tasks for linking reports to tasks
+  // Fetch tasks for linking reports to tasks (all roles can see tasks)
   const { data: tasks = [] } = useQuery<Task[]>({
     queryKey: ['/api/tasks'],
-    enabled: role !== 'employee', // Only managers/admins can see all tasks
+    enabled: true,
+  });
+
+  // Fetch projects for linking reports to projects (all roles can see projects)
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+    enabled: true,
   });
 
   // Fetch users for display names
@@ -252,33 +258,62 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                     </FormItem>
                   )}
                 />
-                {role !== 'employee' && tasks.length > 0 && (
-                  <FormField
-                    control={createForm.control}
-                    name="taskId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Associated Task (Optional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-task">
-                              <SelectValue placeholder="Select a task" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="">No task</SelectItem>
-                            {tasks.map((task) => (
-                              <SelectItem key={task.id} value={task.id}>
-                                {task.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                <FormField
+                  control={createForm.control}
+                  name="taskId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Associated Task</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-task">
+                            <SelectValue placeholder="Select a task" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {tasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id}>
+                              {task.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Link this report to a specific task
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={createForm.control}
+                  name="projectId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Associated Project</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-project">
+                            <SelectValue placeholder="Select a project" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {projects.map((project) => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.projectName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Link this report to a specific project (required if no task selected)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
                     Cancel

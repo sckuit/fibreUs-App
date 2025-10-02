@@ -12,10 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit, Package, AlertTriangle, Download } from "lucide-react";
+import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit, Package, AlertTriangle, Download, Upload, FileDown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { exportToCSV } from "@/lib/exportUtils";
+import { exportToCSV, downloadInventoryTemplate, parseCSV } from "@/lib/exportUtils";
 import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import ReportsManager from "@/components/ReportsManager";
@@ -200,6 +200,72 @@ export default function AdminPortal() {
     }
   };
 
+  const handleImportInventory = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsedData = parseCSV(text);
+        
+        if (parsedData.length === 0) {
+          toast({
+            title: "Error",
+            description: "No data found in CSV file",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Import each inventory item
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const item of parsedData) {
+          try {
+            await apiRequest("/api/inventory/items", "POST", {
+              sku: item.sku,
+              name: item.name,
+              description: item.description || null,
+              category: item.category,
+              quantityInStock: parseInt(item.quantityInStock) || 0,
+              minimumStockLevel: parseInt(item.minimumStockLevel) || 0,
+              unitOfMeasure: item.unitOfMeasure || 'piece',
+              unitCost: item.unitCost ? parseFloat(item.unitCost) : null,
+              supplier: item.supplier || null,
+              location: item.location || null,
+              notes: item.notes || null,
+            });
+            successCount++;
+          } catch (error) {
+            console.error('Error importing item:', item, error);
+            errorCount++;
+          }
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+
+        toast({
+          title: "Import complete",
+          description: `Successfully imported ${successCount} items${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to import inventory",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset the input so the same file can be selected again
+    event.target.value = '';
+  };
+
   const handleAddInventoryItem = () => {
     setEditingInventoryItem(undefined);
     setIsInventoryDialogOpen(true);
@@ -283,32 +349,36 @@ export default function AdminPortal() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="users" data-testid="tab-users">
-              User Management
-            </TabsTrigger>
-            <TabsTrigger value="inventory" data-testid="tab-inventory">
-              Inventory
-            </TabsTrigger>
-            <TabsTrigger value="reports" data-testid="tab-reports">
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="tasks" data-testid="tab-tasks">
-              Tasks
-            </TabsTrigger>
-            <TabsTrigger value="visitors" data-testid="tab-visitors">
-              Visitor Analytics
-            </TabsTrigger>
-            <TabsTrigger value="system" data-testid="tab-system">
-              System Settings
-            </TabsTrigger>
-            <TabsTrigger value="logs" data-testid="tab-logs">
-              Activity Logs
-            </TabsTrigger>
-            <TabsTrigger value="financial" data-testid="tab-financial">
-              Financial Logs
-            </TabsTrigger>
-          </TabsList>
+          <div className="space-y-2">
+            <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+              <TabsTrigger value="users" data-testid="tab-users">
+                User Management
+              </TabsTrigger>
+              <TabsTrigger value="inventory" data-testid="tab-inventory">
+                Inventory
+              </TabsTrigger>
+              <TabsTrigger value="reports" data-testid="tab-reports">
+                Reports
+              </TabsTrigger>
+              <TabsTrigger value="tasks" data-testid="tab-tasks">
+                Tasks
+              </TabsTrigger>
+            </TabsList>
+            <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+              <TabsTrigger value="visitors" data-testid="tab-visitors">
+                Visitor Analytics
+              </TabsTrigger>
+              <TabsTrigger value="system" data-testid="tab-system">
+                System Settings
+              </TabsTrigger>
+              <TabsTrigger value="logs" data-testid="tab-logs">
+                Activity Logs
+              </TabsTrigger>
+              <TabsTrigger value="financial" data-testid="tab-financial">
+                Financial Logs
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="users" className="space-y-4">
             <Card>
@@ -418,7 +488,7 @@ export default function AdminPortal() {
                     Manage equipment and parts inventory
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button 
                     variant="outline" 
                     onClick={() => exportToCSV(inventoryItems, 'inventory')} 
@@ -427,6 +497,29 @@ export default function AdminPortal() {
                     <Download className="w-4 h-4 mr-2" />
                     Export
                   </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={downloadInventoryTemplate} 
+                    data-testid="button-template-inventory"
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Template
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => document.getElementById('inventory-import')?.click()} 
+                    data-testid="button-import-inventory"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import
+                  </Button>
+                  <input
+                    id="inventory-import"
+                    type="file"
+                    accept=".csv"
+                    style={{ display: 'none' }}
+                    onChange={handleImportInventory}
+                  />
                   <Button onClick={handleAddInventoryItem} data-testid="button-add-inventory">
                     <Package className="w-4 h-4 mr-2" />
                     Add Item
