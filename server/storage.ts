@@ -143,6 +143,24 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Helper function to generate ticket numbers
+  private async generateTicketNumber(prefix: string, table: any): Promise<string> {
+    const result = await db
+      .select({ ticketNumber: table.ticketNumber })
+      .from(table)
+      .orderBy(desc(table.createdAt))
+      .limit(1);
+    
+    if (result.length === 0) {
+      return `${prefix}-00001`;
+    }
+    
+    const lastTicket = result[0].ticketNumber;
+    const lastNumber = parseInt(lastTicket.split('-')[1]);
+    const nextNumber = lastNumber + 1;
+    return `${prefix}-${nextNumber.toString().padStart(5, '0')}`;
+  }
+
   // User operations (mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -259,9 +277,10 @@ export class DatabaseStorage implements IStorage {
 
   // Project operations
   async createProject(project: InsertProjectType): Promise<Project> {
+    const ticketNumber = await this.generateTicketNumber('PRJ', projects);
     const [newProject] = await db
       .insert(projects)
-      .values(project)
+      .values({ ...project, ticketNumber })
       .returning();
     return newProject;
   }
@@ -604,9 +623,10 @@ export class DatabaseStorage implements IStorage {
 
   // Task operations
   async createTask(task: InsertTaskType): Promise<Task> {
+    const ticketNumber = await this.generateTicketNumber('TSK', tasks);
     const [newTask] = await db
       .insert(tasks)
-      .values(task)
+      .values({ ...task, ticketNumber })
       .returning();
     return newTask;
   }
@@ -652,9 +672,10 @@ export class DatabaseStorage implements IStorage {
 
   // Report operations
   async createReport(report: InsertReportType): Promise<Report> {
+    const ticketNumber = await this.generateTicketNumber('RPT', reports);
     const [newReport] = await db
       .insert(reports)
-      .values(report)
+      .values({ ...report, ticketNumber })
       .returning();
     return newReport;
   }

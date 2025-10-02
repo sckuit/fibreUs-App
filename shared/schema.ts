@@ -96,6 +96,7 @@ export const serviceRequests = pgTable("service_requests", {
 // Projects (approved service requests become projects)
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketNumber: varchar("ticket_number").notNull().unique(),
   serviceRequestId: varchar("service_request_id").notNull().references(() => serviceRequests.id),
   assignedTechnicianId: varchar("assigned_technician_id").references(() => users.id),
   projectName: varchar("project_name").notNull(),
@@ -178,6 +179,7 @@ export const inventoryTransactions = pgTable("inventory_transactions", {
 // Tasks created by managers
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketNumber: varchar("ticket_number").notNull().unique(),
   title: varchar("title").notNull(),
   description: text("description"),
   status: taskStatusEnum("status").default('pending'),
@@ -194,6 +196,7 @@ export const tasks = pgTable("tasks", {
 // Reports submitted by employees
 export const reports = pgTable("reports", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketNumber: varchar("ticket_number").notNull().unique(),
   title: varchar("title").notNull(),
   content: text("content").notNull(),
   status: reportStatusEnum("status").default('draft'),
@@ -404,6 +407,7 @@ export const updateServiceRequestSchema = z.object({
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
+  ticketNumber: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -487,6 +491,7 @@ export type FinancialLog = typeof financialLogs.$inferSelect;
 
 export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
+  ticketNumber: true,
   createdAt: true,
   updatedAt: true,
   completedAt: true,
@@ -501,6 +506,7 @@ export const updateTaskSchema = createInsertSchema(tasks).omit({
 
 export const insertReportSchema = createInsertSchema(reports).omit({
   id: true,
+  ticketNumber: true,
   createdAt: true,
   updatedAt: true,
   approvedById: true,
