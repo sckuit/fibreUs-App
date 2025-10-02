@@ -1,5 +1,5 @@
 // Role-based access control definitions
-export type UserRole = 'client' | 'employee' | 'manager' | 'admin' | 'sales';
+export type UserRole = 'client' | 'employee' | 'manager' | 'admin' | 'sales' | 'project_manager';
 
 export interface Permission {
   // Service requests
@@ -200,6 +200,39 @@ export const rolePermissions: Record<UserRole, Permission> = {
     viewReports: true,
     manageSettings: false,
   },
+  
+  project_manager: {
+    // Service requests - project managers can view and manage all requests
+    viewOwnRequests: true,
+    viewAllRequests: true,
+    createRequests: true,
+    editOwnRequests: true,
+    editAllRequests: true,
+    deleteRequests: false,
+    
+    // Projects - project managers have full control over projects
+    viewOwnProjects: true,
+    viewAllProjects: true,
+    manageOwnProjects: true,
+    manageAllProjects: true,
+    assignProjects: true,
+    
+    // Users - project managers can view and manage employees
+    viewUsers: true,
+    manageEmployees: true,
+    viewUserDetails: true,
+    
+    // Communications - project managers can view all communications
+    viewOwnCommunications: true,
+    viewAllCommunications: true,
+    createCommunications: true,
+    viewInternalNotes: true,
+    
+    // Admin - project managers can view reports and manage settings
+    manageSystem: false,
+    viewReports: true,
+    manageSettings: true,
+  },
 };
 
 // Utility functions for permission checking
@@ -215,7 +248,7 @@ export function canAccessRoute(role: UserRole, route: string): boolean {
       return true; // Public routes
       
     case '/dashboard':
-      return ['client', 'employee', 'manager', 'admin'].includes(role);
+      return ['client', 'employee', 'manager', 'admin', 'project_manager'].includes(role);
       
     case '/portal/sales':
       return role === 'sales';
@@ -252,6 +285,8 @@ export function getDefaultRoute(role: UserRole): string {
       return '/projects';
     case 'sales':
       return '/portal/sales';
+    case 'project_manager':
+      return '/dashboard';
     case 'manager':
       return '/dashboard';
     case 'admin':
@@ -266,6 +301,7 @@ export const roleHierarchy: Record<UserRole, number> = {
   client: 1,
   employee: 2,
   sales: 2,
+  project_manager: 3,
   manager: 3,
   admin: 4,
 };

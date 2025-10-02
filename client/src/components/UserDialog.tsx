@@ -162,6 +162,8 @@ export function UserDialog({ user, open, onOpenChange, onSubmit, isPending }: Us
                   <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="project_manager">Project Manager</SelectItem>
                 </SelectContent>
               </Select>
             </div>
