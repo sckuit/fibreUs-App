@@ -96,12 +96,9 @@ export default function Footer() {
             <ul className="space-y-2">
               {services.map((service) => (
                 <li key={service}>
-                  <Link 
-                    href="/services" 
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
+                  <span className="text-sm text-muted-foreground">
                     {service}
-                  </Link>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -113,12 +110,9 @@ export default function Footer() {
             <ul className="space-y-2">
               {company.map((item) => (
                 <li key={item}>
-                  <Link 
-                    href="/about" 
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
+                  <span className="text-sm text-muted-foreground">
                     {item}
-                  </Link>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -130,12 +124,9 @@ export default function Footer() {
             <ul className="space-y-2">
               {support.map((item) => (
                 <li key={item}>
-                  <Link 
-                    href="/support" 
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
+                  <span className="text-sm text-muted-foreground">
                     {item}
-                  </Link>
+                  </span>
                 </li>
               ))}
             </ul>
@@ -156,9 +147,9 @@ export default function Footer() {
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             {legal.map((item, index) => (
               <span key={item} className="flex items-center gap-1">
-                <Link href="/legal" className="hover:text-primary transition-colors">
+                <span>
                   {item}
-                </Link>
+                </span>
                 {index < legal.length - 1 && <span className="text-border">|</span>}
               </span>
             ))}

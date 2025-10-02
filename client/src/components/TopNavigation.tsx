@@ -54,13 +54,6 @@ export default function TopNavigation() {
     },
   });
 
-  const services = [
-    { title: "CCTV Systems", description: "Professional surveillance solutions", href: "/services/cctv" },
-    { title: "Alarm Systems", description: "Advanced security monitoring", href: "/services/alarm" },
-    { title: "Access Control", description: "Secure entry management", href: "/services/access" },
-    { title: "Fiber Installation", description: "High-speed connectivity", href: "/services/fiber" },
-  ];
-
   const isActive = (path: string) => location === path;
 
   return (
@@ -110,35 +103,6 @@ export default function TopNavigation() {
                       Home
                     </Link>
                   </NavigationMenuItem>
-
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger className="text-muted-foreground hover:text-primary">
-                      Services
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <div className="grid gap-3 p-6 w-[400px]">
-                        <div className="row-span-3">
-                          <p className="text-sm font-medium leading-none mb-2">Security Solutions</p>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Professional electronic security and fiber optic services
-                          </p>
-                        </div>
-                        {services.map((service) => (
-                          <NavigationMenuLink key={service.href} asChild>
-                            <Link
-                              href={service.href}
-                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                            >
-                              <div className="text-sm font-medium leading-none">{service.title}</div>
-                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                {service.description}
-                              </p>
-                            </Link>
-                          </NavigationMenuLink>
-                        ))}
-                      </div>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
                 </>
               )}
 
@@ -177,55 +141,6 @@ export default function TopNavigation() {
                       >
                         Projects
                       </Link>
-                    </NavigationMenuItem>
-                  )}
-                  
-                  {/* Management dropdown for Employees, Reports, Admin */}
-                  {(hasPermission('viewUsers') || hasPermission('viewReports') || hasPermission('manageSystem')) && (
-                    <NavigationMenuItem>
-                      <NavigationMenuTrigger className="text-muted-foreground hover:text-primary" data-testid="trigger-management">
-                        Management
-                      </NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <div className="grid gap-2 p-4 w-[200px]">
-                          {hasPermission('viewUsers') && (
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/users"
-                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                data-testid="link-users"
-                              >
-                                <div className="text-sm font-medium">Team</div>
-                                <p className="text-xs text-muted-foreground">Manage employees</p>
-                              </Link>
-                            </NavigationMenuLink>
-                          )}
-                          {hasPermission('viewReports') && (
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/reports"
-                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                data-testid="link-reports"
-                              >
-                                <div className="text-sm font-medium">Reports</div>
-                                <p className="text-xs text-muted-foreground">View work reports</p>
-                              </Link>
-                            </NavigationMenuLink>
-                          )}
-                          {hasPermission('manageSystem') && (
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/admin"
-                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                data-testid="link-admin"
-                              >
-                                <div className="text-sm font-medium">Admin</div>
-                                <p className="text-xs text-muted-foreground">System settings</p>
-                              </Link>
-                            </NavigationMenuLink>
-                          )}
-                        </div>
-                      </NavigationMenuContent>
                     </NavigationMenuItem>
                   )}
                 </>
@@ -315,24 +230,6 @@ export default function TopNavigation() {
                   {hasPermission('viewOwnProjects') && (
                     <Link href="/projects" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
                       {role === 'employee' ? 'My Projects' : 'Projects'}
-                    </Link>
-                  )}
-                  
-                  {hasPermission('viewUsers') && (
-                    <Link href="/users" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                      Employees
-                    </Link>
-                  )}
-                  
-                  {hasPermission('viewReports') && (
-                    <Link href="/reports" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                      Reports
-                    </Link>
-                  )}
-                  
-                  {hasPermission('manageSystem') && (
-                    <Link href="/admin" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                      Admin
                     </Link>
                   )}
                 </>
