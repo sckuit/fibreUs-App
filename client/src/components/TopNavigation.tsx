@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,6 +12,8 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { useAuth, usePermissions } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
@@ -21,8 +24,33 @@ export default function TopNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const { hasPermission, role } = usePermissions();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const typedUser = user as User | undefined;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/auth/logout');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      toast({
+        title: "Signed out",
+        description: "You've been successfully signed out.",
+      });
+      setLocation('/');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Logout failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const services = [
     { title: "CCTV Systems", description: "Professional surveillance solutions", href: "/services/cctv" },
@@ -224,10 +252,11 @@ export default function TopNavigation() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => window.location.href = '/api/logout'}
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
                   data-testid="button-logout"
                 >
-                  Sign Out
+                  {logoutMutation.isPending ? 'Signing Out...' : 'Sign Out'}
                 </Button>
               </div>
             )}
@@ -322,10 +351,11 @@ export default function TopNavigation() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => window.location.href = '/api/logout'}
+                      onClick={() => logoutMutation.mutate()}
+                      disabled={logoutMutation.isPending}
                       className="justify-start"
                     >
-                      Sign Out
+                      {logoutMutation.isPending ? 'Signing Out...' : 'Sign Out'}
                     </Button>
                   </div>
                 )}

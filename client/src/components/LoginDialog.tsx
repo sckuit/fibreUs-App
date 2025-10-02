@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ export default function LoginDialog({ children }: LoginDialogProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Login form
   const loginForm = useForm<LoginType>({
@@ -52,8 +54,11 @@ export default function LoginDialog({ children }: LoginDialogProps) {
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: (data: LoginType) => apiRequest('POST', '/api/auth/login', data),
-    onSuccess: () => {
+    mutationFn: async (data: LoginType) => {
+      const response = await apiRequest('POST', '/api/auth/login', data);
+      return await response.json();
+    },
+    onSuccess: (userData) => {
       toast({
         title: "Welcome back!",
         description: "You've been successfully signed in.",
@@ -61,6 +66,10 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
       setOpen(false);
+      
+      // Redirect to appropriate dashboard based on role
+      const role = userData.user?.role || 'client';
+      setLocation(`/portal/${role}`);
     },
     onError: (error: any) => {
       toast({
@@ -73,8 +82,11 @@ export default function LoginDialog({ children }: LoginDialogProps) {
 
   // Register mutation
   const registerMutation = useMutation({
-    mutationFn: (data: RegisterType) => apiRequest('POST', '/api/auth/register', data),
-    onSuccess: () => {
+    mutationFn: async (data: RegisterType) => {
+      const response = await apiRequest('POST', '/api/auth/register', data);
+      return response.json();
+    },
+    onSuccess: (userData) => {
       toast({
         title: "Account created!",
         description: "Welcome to FibreUS. You've been automatically signed in.",
@@ -82,6 +94,10 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
       setOpen(false);
+      
+      // Redirect to appropriate dashboard based on role
+      const role = userData.user?.role || 'client';
+      setLocation(`/portal/${role}`);
     },
     onError: (error: any) => {
       toast({
