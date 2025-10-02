@@ -599,8 +599,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ message: "User not found" });
         }
         
-        // Check permission
-        if (!hasPermission(user.role, 'viewReports')) {
+        // Check permission - managers and above can view visitors
+        if (!['manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
@@ -610,6 +610,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error fetching recent visitors:", error);
         res.status(500).json({ message: "Failed to fetch recent visitors" });
+      }
+    }
+  );
+
+  // User management routes (admin only)
+  app.get("/api/users", 
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const users = await storage.getAllUsers();
+        res.json(users);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ message: "Failed to fetch users" });
+      }
+    }
+  );
+
+  app.post("/api/users", 
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const { email, password, firstName, lastName, phone, company, role } = req.body;
+        
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res.status(400).json({ message: "User already exists with this email" });
+        }
+        
+        // Hash the password
+        const passwordHash = await hashPassword(password);
+        
+        // Create user
+        const newUser = await storage.createUserWithPassword({
+          email,
+          passwordHash,
+          firstName,
+          lastName,
+          phone,
+          company,
+          role,
+        });
+        
+        res.status(201).json(newUser);
+      } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(500).json({ message: "Failed to create user" });
+      }
+    }
+  );
+
+  app.put("/api/users/:id", 
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const targetUserId = req.params.id;
+        const updates = req.body;
+        
+        // If password is being updated, hash it
+        if (updates.password) {
+          updates.passwordHash = await hashPassword(updates.password);
+          delete updates.password;
+        }
+        
+        const updatedUser = await storage.updateUser(targetUserId, updates);
+        if (!updatedUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        res.json(updatedUser);
+      } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Failed to update user" });
+      }
+    }
+  );
+
+  app.delete("/api/users/:id", 
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const targetUserId = req.params.id;
+        
+        // Prevent admin from deleting themselves
+        if (targetUserId === userId) {
+          return res.status(400).json({ message: "Cannot delete your own account" });
+        }
+        
+        await storage.deleteUser(targetUserId);
+        res.json({ message: "User deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Failed to delete user" });
       }
     }
   );

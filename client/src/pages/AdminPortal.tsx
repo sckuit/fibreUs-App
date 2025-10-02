@@ -1,14 +1,51 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Users, Database, Activity, Settings } from "lucide-react";
-import type { User } from "@shared/schema";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { User, Visitor } from "@shared/schema";
 
 export default function AdminPortal() {
+  const { toast } = useToast();
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
+  });
+
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
+  const { data: visitors = [], isLoading: visitorsLoading } = useQuery<Visitor[]>({
+    queryKey: ["/api/analytics/recent-visitors"],
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => apiRequest(`/api/users/${userId}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "User deleted",
+        description: "User has been successfully removed",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    },
   });
 
   return (
@@ -105,18 +142,59 @@ export default function AdminPortal() {
                 <div>
                   <CardTitle>User Management</CardTitle>
                   <CardDescription>
-                    Create, edit, and manage user accounts
+                    Manage all system users and their roles
                   </CardDescription>
                 </div>
                 <Button data-testid="button-add-user">
-                  <Users className="w-4 h-4 mr-2" />
+                  <UserPlus className="w-4 h-4 mr-2" />
                   Add User
                 </Button>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  User management features coming soon
-                </p>
+                {usersLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading users...</p>
+                ) : users.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No users found</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((u) => (
+                        <TableRow key={u.id} data-testid={`row-user-${u.id}`}>
+                          <TableCell className="font-medium">
+                            {u.firstName} {u.lastName}
+                          </TableCell>
+                          <TableCell data-testid={`text-email-${u.id}`}>{u.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" data-testid={`badge-role-${u.id}`}>
+                              {u.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{u.company || "-"}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={u.id === user?.id}
+                              onClick={() => deleteUserMutation.mutate(u.id)}
+                              data-testid={`button-delete-${u.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -126,13 +204,56 @@ export default function AdminPortal() {
               <CardHeader>
                 <CardTitle>Visitor Analytics</CardTitle>
                 <CardDescription>
-                  Track website visitors and marketing insights
+                  Recent website visitors for marketing follow-up
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Analytics dashboard coming soon
-                </p>
+                {visitorsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading visitors...</p>
+                ) : visitors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No visitors tracked yet</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>IP Address</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Browser</TableHead>
+                        <TableHead>Device</TableHead>
+                        <TableHead>Landing Page</TableHead>
+                        <TableHead>Referrer</TableHead>
+                        <TableHead>Visit Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visitors.slice(0, 20).map((visitor, idx) => (
+                        <TableRow key={visitor.id || idx} data-testid={`row-visitor-${idx}`}>
+                          <TableCell className="font-mono text-xs">
+                            {visitor.ipAddress}
+                          </TableCell>
+                          <TableCell>
+                            {visitor.city && visitor.country
+                              ? `${visitor.city}, ${visitor.country}`
+                              : visitor.country || "-"}
+                          </TableCell>
+                          <TableCell>{visitor.browserName || "-"}</TableCell>
+                          <TableCell>{visitor.deviceType || "-"}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {visitor.landingPage || "-"}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {visitor.referrer || "Direct"}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {visitor.visitedAt
+                              ? new Date(visitor.visitedAt).toLocaleString()
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

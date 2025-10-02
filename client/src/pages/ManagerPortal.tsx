@@ -3,12 +3,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, Briefcase, TrendingUp, DollarSign } from "lucide-react";
-import type { User } from "@shared/schema";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Users, Briefcase, TrendingUp, DollarSign, Eye } from "lucide-react";
+import type { User, Visitor } from "@shared/schema";
 
 export default function ManagerPortal() {
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
+  });
+
+  const { data: visitors = [], isLoading: visitorsLoading } = useQuery<Visitor[]>({
+    queryKey: ["/api/analytics/recent-visitors"],
   });
 
   return (
@@ -91,8 +103,11 @@ export default function ManagerPortal() {
             <TabsTrigger value="requests" data-testid="tab-requests">
               Service Requests
             </TabsTrigger>
+            <TabsTrigger value="visitors" data-testid="tab-visitors">
+              Visitor Analytics
+            </TabsTrigger>
             <TabsTrigger value="analytics" data-testid="tab-analytics">
-              Analytics
+              Performance
             </TabsTrigger>
           </TabsList>
 
@@ -140,6 +155,61 @@ export default function ManagerPortal() {
                 <p className="text-sm text-muted-foreground">
                   No pending requests
                 </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="visitors" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Visitor Analytics</CardTitle>
+                <CardDescription>
+                  Website visitors for marketing follow-up
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {visitorsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading visitors...</p>
+                ) : visitors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No visitors tracked yet</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>IP Address</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Browser</TableHead>
+                        <TableHead>Device</TableHead>
+                        <TableHead>Landing Page</TableHead>
+                        <TableHead>Visit Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visitors.slice(0, 15).map((visitor, idx) => (
+                        <TableRow key={visitor.id || idx} data-testid={`row-visitor-${idx}`}>
+                          <TableCell className="font-mono text-xs">
+                            {visitor.ipAddress}
+                          </TableCell>
+                          <TableCell>
+                            {visitor.city && visitor.country
+                              ? `${visitor.city}, ${visitor.country}`
+                              : visitor.country || "-"}
+                          </TableCell>
+                          <TableCell>{visitor.browserName || "-"}</TableCell>
+                          <TableCell>{visitor.deviceType || "-"}</TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {visitor.landingPage || "-"}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {visitor.visitedAt
+                              ? new Date(visitor.visitedAt).toLocaleString()
+                              : "-"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
