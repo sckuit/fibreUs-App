@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { trackVisitor } from "./visitorMiddleware";
 import { hashPassword, verifyPassword, generateResetToken } from "./passwordUtils";
 import { hasPermission } from "@shared/permissions";
+import { getSession } from "./replitAuth";
 import { 
   clientInsertServiceRequestSchema, 
   updateServiceRequestSchema, 
@@ -46,6 +47,9 @@ function sanitizeCommunications(communications: Communication[], userRole: strin
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Session middleware must be configured before any routes that use sessions
+  app.use(getSession());
+
   // Visitor tracking middleware (should be early in the chain)
   app.use(trackVisitor);
 
