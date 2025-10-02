@@ -52,11 +52,7 @@ export default function LoginDialog({ children }: LoginDialogProps) {
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: (data: LoginType) => apiRequest('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' },
-    }),
+    mutationFn: (data: LoginType) => apiRequest('POST', '/api/auth/login', data),
     onSuccess: () => {
       toast({
         title: "Welcome back!",
@@ -77,11 +73,7 @@ export default function LoginDialog({ children }: LoginDialogProps) {
 
   // Register mutation
   const registerMutation = useMutation({
-    mutationFn: (data: RegisterType) => apiRequest('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-      headers: { 'Content-Type': 'application/json' },
-    }),
+    mutationFn: (data: RegisterType) => apiRequest('POST', '/api/auth/register', data),
     onSuccess: () => {
       toast({
         title: "Account created!",
