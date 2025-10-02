@@ -143,6 +143,67 @@ export default function TopNavigation() {
                       </Link>
                     </NavigationMenuItem>
                   )}
+                  
+                  {/* Management dropdown for viewing Users, Reports, Admin, Tasks */}
+                  {(hasPermission('viewUsers') || hasPermission('viewReports') || hasPermission('manageSystem')) && (
+                    <NavigationMenuItem>
+                      <NavigationMenuTrigger className="text-muted-foreground hover:text-primary" data-testid="trigger-management">
+                        Management
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <div className="grid gap-2 p-4 w-[200px]">
+                          {hasPermission('viewUsers') && (
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/users"
+                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                data-testid="link-users"
+                              >
+                                <div className="text-sm font-medium">Users</div>
+                                <p className="text-xs text-muted-foreground">Manage team members</p>
+                              </Link>
+                            </NavigationMenuLink>
+                          )}
+                          {hasPermission('viewReports') && (
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/reports"
+                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                data-testid="link-reports"
+                              >
+                                <div className="text-sm font-medium">Reports</div>
+                                <p className="text-xs text-muted-foreground">View work reports</p>
+                              </Link>
+                            </NavigationMenuLink>
+                          )}
+                          {hasPermission('manageSystem') && (
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/tasks"
+                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                data-testid="link-tasks"
+                              >
+                                <div className="text-sm font-medium">Tasks</div>
+                                <p className="text-xs text-muted-foreground">Manage tasks</p>
+                              </Link>
+                            </NavigationMenuLink>
+                          )}
+                          {hasPermission('manageSystem') && (
+                            <NavigationMenuLink asChild>
+                              <Link
+                                href="/admin"
+                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                data-testid="link-admin"
+                              >
+                                <div className="text-sm font-medium">Admin</div>
+                                <p className="text-xs text-muted-foreground">System settings</p>
+                              </Link>
+                            </NavigationMenuLink>
+                          )}
+                        </div>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  )}
                 </>
               )}
             </NavigationMenuList>
@@ -230,6 +291,30 @@ export default function TopNavigation() {
                   {hasPermission('viewOwnProjects') && (
                     <Link href="/projects" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
                       {role === 'employee' ? 'My Projects' : 'Projects'}
+                    </Link>
+                  )}
+                  
+                  {hasPermission('viewUsers') && (
+                    <Link href="/users" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      Users
+                    </Link>
+                  )}
+                  
+                  {hasPermission('viewReports') && (
+                    <Link href="/reports" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      Reports
+                    </Link>
+                  )}
+                  
+                  {hasPermission('manageSystem') && (
+                    <Link href="/tasks" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      Tasks
+                    </Link>
+                  )}
+                  
+                  {hasPermission('manageSystem') && (
+                    <Link href="/admin" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                      Admin
                     </Link>
                   )}
                 </>
