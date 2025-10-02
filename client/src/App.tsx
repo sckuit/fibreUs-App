@@ -17,6 +17,7 @@ import ClientPortal from "@/pages/ClientPortal";
 import EmployeePortal from "@/pages/EmployeePortal";
 import ManagerPortal from "@/pages/ManagerPortal";
 import AdminPortal from "@/pages/AdminPortal";
+import SalesPortal from "@/pages/SalesPortal";
 
 // Main application layout with navigation
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ function AuthenticatedRouter() {
     employee: "/portal/employee",
     manager: "/portal/manager",
     admin: "/portal/admin",
+    sales: "/portal/sales",
   };
 
   const defaultRoute = (user?.role && roleRoutes[user.role]) || "/portal/client";
@@ -70,6 +72,7 @@ function AuthenticatedRouter() {
         <Route path="/portal/employee" component={EmployeePortal} />
         <Route path="/portal/manager" component={ManagerPortal} />
         <Route path="/portal/admin" component={AdminPortal} />
+        <Route path="/portal/sales" component={SalesPortal} />
 
         {/* Legacy routes for backwards compatibility */}
         <Route path="/dashboard" component={Dashboard} />
