@@ -1,18 +1,10 @@
-// From javascript_log_in_with_replit integration + business logic
+// Session-based authentication routes
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { 
-  loadUserData, 
-  requirePermission, 
-  requireRole, 
-  requireOwnership,
-  getAccessibleRequests,
-  getAccessibleProjects 
-} from "./rbacMiddleware";
 import { trackVisitor } from "./visitorMiddleware";
 import { hashPassword, verifyPassword, generateResetToken } from "./passwordUtils";
+import { hasPermission } from "@shared/permissions";
 import { 
   clientInsertServiceRequestSchema, 
   updateServiceRequestSchema, 
@@ -67,13 +59,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Auth routes
-  app.get('/api/auth/user', isDualAuthenticated, loadUserData, async (req: any, res) => {
+  app.get('/api/auth/user', isSessionAuthenticated, async (req: any, res) => {
     try {
-      // Get user ID from session (new) or legacy auth
-      const userId = req.session?.userId || req.user?.claims?.sub;
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
+      const userId = req.session.userId;
       
       const user = await storage.getUser(userId);
       if (!user) {
@@ -207,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/logout', isDualAuthenticated, (req: any, res) => {
+  app.post('/api/auth/logout', isSessionAuthenticated, (req: any, res) => {
     req.session.destroy((err: any) => {
       if (err) {
         console.error("Logout error:", err);
@@ -226,13 +214,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.post('/api/auth/change-password', isDualAuthenticated, async (req: any, res) => {
+  app.post('/api/auth/change-password', isSessionAuthenticated, async (req: any, res) => {
     try {
-      // Get user ID from session or legacy auth
-      const userId = req.session?.userId || req.user?.claims?.sub;
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
+      const userId = req.session.userId;
       
       // Validate change password data
       const validatedData = changePasswordSchema.parse(req.body);
@@ -266,12 +250,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Service request routes
   app.post("/api/service-requests", 
-    isDualAuthenticated, 
-    loadUserData,
-    requirePermission('createRequests'),
+    isSessionAuthenticated,
     async (req: any, res) => {
       try {
-        const userId = req.session?.userId || req.user?.claims?.sub;
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Check permission
+        if (!hasPermission(user.role, 'createRequests')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
         
         // Validate with client-only schema to prevent privilege escalation
         const validatedData = clientInsertServiceRequestSchema.parse(req.body);
@@ -298,13 +290,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   app.get("/api/service-requests", 
-    isAuthenticated, 
-    loadUserData,
-    requirePermission('viewOwnRequests'),
+    isSessionAuthenticated,
     async (req: any, res) => {
       try {
-        const userId = req.user.claims.sub;
-        const user = req.dbUser;
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
         
         if (!user) {
           return res.status(401).json({ message: "User not found" });
@@ -342,17 +332,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   app.get("/api/service-requests/:id", 
-    isAuthenticated, 
-    loadUserData,
-    requirePermission('viewOwnRequests'),
+    isSessionAuthenticated,
     async (req: any, res) => {
       try {
         const { id } = req.params;
-        const userId = req.user.claims.sub;
-        const user = req.dbUser;
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
         
         if (!user) {
           return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Check permission
+        if (!hasPermission(user.role, 'viewOwnRequests')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const request = await storage.getServiceRequest(id);
@@ -392,12 +385,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Manager/Admin route to update service requests
   app.put("/api/service-requests/:id", 
-    isAuthenticated, 
-    loadUserData,
-    requirePermission('editAllRequests'),
+    isSessionAuthenticated,
     async (req: any, res) => {
       try {
         const { id } = req.params;
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Check permission
+        if (!hasPermission(user.role, 'editAllRequests')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
         
         // Validate and whitelist allowed fields
         const validatedUpdates = updateServiceRequestSchema.parse(req.body);
@@ -421,21 +423,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Dashboard routes
-  app.get("/api/dashboard/client", isAuthenticated, async (req: any, res) => {
+  app.get("/api/dashboard/client", isSessionAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
       const dashboard = await storage.getClientDashboard(userId);
       
       // Sanitize all nested objects to prevent information disclosure
       const sanitizedDashboard = {
         activeRequests: dashboard.activeRequests?.map(request => 
-          sanitizeServiceRequest(request, user?.role || 'client')
+          sanitizeServiceRequest(request, user.role || 'client')
         ) || [],
         activeProjects: dashboard.activeProjects || [],
         recentCommunications: sanitizeCommunications(
           dashboard.recentCommunications || [], 
-          user?.role || 'client'
+          user.role || 'client'
         ),
       };
       
@@ -446,12 +453,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/dashboard/admin", isAuthenticated, async (req: any, res) => {
+  app.get("/api/dashboard/admin", isSessionAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'admin') {
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      if (user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       
@@ -477,13 +488,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Projects routes
-  app.get("/api/projects", isAuthenticated, async (req: any, res) => {
+  app.get("/api/projects", isSessionAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
       // If admin, get all projects. If client, get only their projects
-      const clientId = user?.role === 'admin' ? undefined : userId;
+      const clientId = user.role === 'admin' ? undefined : userId;
       const projects = await storage.getProjects(clientId);
       
       res.json(projects);
@@ -493,12 +508,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/projects/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/projects/:id", isSessionAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'admin') {
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      if (user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       
@@ -518,12 +537,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/technicians", isAuthenticated, async (req: any, res) => {
+  app.get("/api/technicians", isSessionAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (user?.role !== 'admin') {
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      if (user.role !== 'admin') {
         return res.status(403).json({ message: "Admin access required" });
       }
       
@@ -537,11 +560,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Visitor analytics routes (admin and manager only)
   app.get("/api/analytics/visitors", 
-    isAuthenticated, 
-    loadUserData,
-    requirePermission('viewReports'),
+    isSessionAuthenticated,
     async (req: any, res) => {
       try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Check permission
+        if (!hasPermission(user.role, 'viewReports')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
         const analytics = await storage.getVisitorAnalytics();
         res.json(analytics);
       } catch (error) {
@@ -552,11 +585,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   app.get("/api/analytics/recent-visitors", 
-    isAuthenticated, 
-    loadUserData,
-    requirePermission('viewReports'),
+    isSessionAuthenticated,
     async (req: any, res) => {
       try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Check permission
+        if (!hasPermission(user.role, 'viewReports')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
         const limit = parseInt(req.query.limit as string) || 50;
         const visitors = await storage.getVisitors(limit);
         res.json(visitors);

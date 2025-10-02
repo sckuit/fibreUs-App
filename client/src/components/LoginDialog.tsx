@@ -11,14 +11,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { loginSchema, registerSchema, type LoginType, type RegisterType } from "@shared/schema";
-import { Shield, ArrowRight, Mail, Lock, User, Building2 } from "lucide-react";
+import { Shield, Mail, Lock, User, Building2 } from "lucide-react";
 
 interface LoginDialogProps {
   children: React.ReactNode;
@@ -108,10 +106,6 @@ export default function LoginDialog({ children }: LoginDialogProps) {
 
   const onRegisterSubmit = (data: RegisterType) => {
     registerMutation.mutate(data);
-  };
-
-  const handleReplitLogin = () => {
-    window.location.href = '/api/login';
   };
 
   return (
@@ -311,29 +305,6 @@ export default function LoginDialog({ children }: LoginDialogProps) {
             </form>
           )}
 
-          {/* Separator */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <Separator className="w-full" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          {/* Legacy Replit Auth */}
-          <Button 
-            onClick={handleReplitLogin}
-            variant="outline"
-            className="w-full"
-            data-testid="button-signin-replit"
-          >
-            <Shield className="w-4 h-4 mr-2" />
-            Sign In with Replit
-          </Button>
-          
           <p className="text-xs text-center text-muted-foreground">
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </p>
