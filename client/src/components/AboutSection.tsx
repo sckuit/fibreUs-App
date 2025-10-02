@@ -1,16 +1,22 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Users, 
   Award, 
   Clock, 
   Shield,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Building2,
+  Target,
+  Heart
 } from "lucide-react";
 
 export default function AboutSection() {
+  const [showAboutDialog, setShowAboutDialog] = useState(false);
   const achievements = [
     {
       icon: Award,
@@ -170,12 +176,142 @@ export default function AboutSection() {
             ))}
           </div>
           
-          <Button size="lg" data-testid="button-learn-more-about">
+          <Button 
+            size="lg" 
+            data-testid="button-learn-more-about"
+            onClick={() => setShowAboutDialog(true)}
+          >
             Learn More About Us
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
       </div>
+
+      {/* About Us Detail Dialog */}
+      <Dialog open={showAboutDialog} onOpenChange={setShowAboutDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">About FibreUS Tech Services</DialogTitle>
+            <DialogDescription>
+              Your trusted partner in electronic security and fiber optic solutions
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 mt-4">
+            {/* Mission */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Our Mission</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                To protect what matters most by delivering reliable, cutting-edge security and fiber optic solutions 
+                with exceptional service and technical expertise. We believe that every home and business deserves 
+                enterprise-grade security that's accessible, affordable, and backed by a team that genuinely cares.
+              </p>
+            </div>
+
+            {/* Values */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Heart className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Our Values</h3>
+              </div>
+              <ul className="space-y-2">
+                {[
+                  { title: "Integrity First", desc: "We do what's right, even when no one is watching" },
+                  { title: "Technical Excellence", desc: "Continuous learning and industry-leading certifications" },
+                  { title: "Customer Focus", desc: "Your security needs drive every decision we make" },
+                  { title: "Rapid Response", desc: "24/7 availability for emergencies and urgent service needs" },
+                  { title: "Innovation", desc: "Staying ahead with the latest security technology and best practices" }
+                ].map((value, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-medium">{value.title}:</span>{" "}
+                      <span className="text-muted-foreground">{value.desc}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Certifications & Compliance */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Award className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Certifications & Compliance</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  "UL Listed Security Installations",
+                  "FCC Certified Equipment",
+                  "NFPA 72 Fire Alarm Compliance",
+                  "BICSI Fiber Optic Certified",
+                  "OSHA Safety Certified",
+                  "Licensed & Insured (All States)",
+                  "BBB A+ Rating",
+                  "State Contractor License #123456"
+                ].map((cert, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    <span className="text-muted-foreground">{cert}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Team Expertise */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Our Team</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed mb-4">
+                Our technicians bring decades of combined experience in electronic security, fire alarm systems, 
+                access control, and fiber optic networks. Every team member undergoes rigorous background checks, 
+                ongoing training, and maintains multiple industry certifications.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                {[
+                  { stat: "15+", label: "Years Experience" },
+                  { stat: "50+", label: "Certified Technicians" },
+                  { stat: "5,000+", label: "Projects Completed" },
+                  { stat: "98%", label: "Customer Satisfaction" }
+                ].map((item, idx) => (
+                  <div key={idx} className="p-3 bg-muted rounded-md">
+                    <div className="text-2xl font-bold text-primary">{item.stat}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{item.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Service Area */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Building2 className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Service Area</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                We proudly serve residential and commercial clients across the greater metropolitan area 
+                and surrounding regions. Our rapid response teams can typically arrive on-site within 2-4 hours 
+                for emergency service calls. Contact us to confirm service availability in your specific location.
+              </p>
+            </div>
+
+            {/* CTA */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+              <Button className="flex-1" data-testid="button-contact-us-modal">
+                Contact Us
+              </Button>
+              <Button variant="outline" className="flex-1" data-testid="button-careers-modal">
+                Careers
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
