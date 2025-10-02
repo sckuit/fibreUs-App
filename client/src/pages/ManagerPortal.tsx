@@ -195,8 +195,8 @@ export default function ManagerPortal() {
                               ? `${visitor.city}, ${visitor.country}`
                               : visitor.country || "-"}
                           </TableCell>
-                          <TableCell>{visitor.browserName || "-"}</TableCell>
-                          <TableCell>{visitor.deviceType || "-"}</TableCell>
+                          <TableCell>{visitor.browser || "-"}</TableCell>
+                          <TableCell>{visitor.device || "-"}</TableCell>
                           <TableCell className="max-w-xs truncate">
                             {visitor.landingPage || "-"}
                           </TableCell>

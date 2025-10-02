@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,13 +12,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus } from "lucide-react";
+import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { UserDialog } from "@/components/UserDialog";
 import type { User, Visitor } from "@shared/schema";
 
 export default function AdminPortal() {
   const { toast } = useToast();
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | undefined>();
+
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
   });
@@ -28,6 +33,47 @@ export default function AdminPortal() {
 
   const { data: visitors = [], isLoading: visitorsLoading } = useQuery<Visitor[]>({
     queryKey: ["/api/analytics/recent-visitors"],
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: (userData: any) => apiRequest("/api/users", "POST", userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsUserDialogOpen(false);
+      setEditingUser(undefined);
+      toast({
+        title: "User created",
+        description: "New user has been successfully added",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiRequest(`/api/users/${id}`, "PUT", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsUserDialogOpen(false);
+      setEditingUser(undefined);
+      toast({
+        title: "User updated",
+        description: "User has been successfully updated",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteUserMutation = useMutation({
@@ -47,6 +93,24 @@ export default function AdminPortal() {
       });
     },
   });
+
+  const handleUserSubmit = (userData: any) => {
+    if (editingUser) {
+      updateUserMutation.mutate({ id: editingUser.id, data: userData });
+    } else {
+      createUserMutation.mutate(userData);
+    }
+  };
+
+  const handleAddUser = () => {
+    setEditingUser(undefined);
+    setIsUserDialogOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setIsUserDialogOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,7 +209,7 @@ export default function AdminPortal() {
                     Manage all system users and their roles
                   </CardDescription>
                 </div>
-                <Button data-testid="button-add-user">
+                <Button onClick={handleAddUser} data-testid="button-add-user">
                   <UserPlus className="w-4 h-4 mr-2" />
                   Add User
                 </Button>
@@ -180,15 +244,25 @@ export default function AdminPortal() {
                           </TableCell>
                           <TableCell>{u.company || "-"}</TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={u.id === user?.id}
-                              onClick={() => deleteUserMutation.mutate(u.id)}
-                              data-testid={`button-delete-${u.id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditUser(u)}
+                                data-testid={`button-edit-${u.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={u.id === user?.id}
+                                onClick={() => deleteUserMutation.mutate(u.id)}
+                                data-testid={`button-delete-${u.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -236,8 +310,8 @@ export default function AdminPortal() {
                               ? `${visitor.city}, ${visitor.country}`
                               : visitor.country || "-"}
                           </TableCell>
-                          <TableCell>{visitor.browserName || "-"}</TableCell>
-                          <TableCell>{visitor.deviceType || "-"}</TableCell>
+                          <TableCell>{visitor.browser || "-"}</TableCell>
+                          <TableCell>{visitor.device || "-"}</TableCell>
                           <TableCell className="max-w-xs truncate">
                             {visitor.landingPage || "-"}
                           </TableCell>
@@ -301,6 +375,14 @@ export default function AdminPortal() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <UserDialog
+        user={editingUser}
+        open={isUserDialogOpen}
+        onOpenChange={setIsUserDialogOpen}
+        onSubmit={handleUserSubmit}
+        isPending={createUserMutation.isPending || updateUserMutation.isPending}
+      />
     </div>
   );
 }
