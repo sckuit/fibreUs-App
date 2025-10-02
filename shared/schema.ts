@@ -16,7 +16,7 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 // Enums for business logic
-export const userRoleEnum = pgEnum('user_role', ['client', 'employee', 'manager', 'admin']);
+export const userRoleEnum = pgEnum('user_role', ['client', 'employee', 'manager', 'admin', 'sales']);
 export const serviceTypeEnum = pgEnum('service_type', [
   'cctv', 'alarm', 'access_control', 'intercom', 'cloud_storage', 'monitoring', 'fiber_installation', 'maintenance'
 ]);
@@ -34,6 +34,15 @@ export const unitOfMeasureEnum = pgEnum('unit_of_measure', [
 ]);
 export const transactionTypeEnum = pgEnum('transaction_type', [
   'purchase', 'sale', 'adjustment', 'project_usage', 'return', 'damage'
+]);
+export const reportStatusEnum = pgEnum('report_status', [
+  'draft', 'submitted', 'approved', 'rejected'
+]);
+export const taskStatusEnum = pgEnum('task_status', [
+  'pending', 'in_progress', 'completed', 'cancelled'
+]);
+export const financialLogTypeEnum = pgEnum('financial_log_type', [
+  'project_cost_update', 'quote_created', 'quote_updated', 'inventory_purchase', 'inventory_sale', 'sales_record_created', 'sales_record_updated'
 ]);
 
 // Session storage table (mandatory for Replit Auth)
@@ -166,6 +175,68 @@ export const inventoryTransactions = pgTable("inventory_transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Tasks created by managers
+export const tasks = pgTable("tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  status: taskStatusEnum("status").default('pending'),
+  priority: priorityEnum("priority").default('medium'),
+  assignedToId: varchar("assigned_to_id").references(() => users.id), // employee assigned
+  createdById: varchar("created_by_id").notNull().references(() => users.id), // manager
+  projectId: varchar("project_id").references(() => projects.id),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Reports submitted by employees
+export const reports = pgTable("reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  content: text("content").notNull(),
+  status: reportStatusEnum("status").default('draft'),
+  submittedById: varchar("submitted_by_id").notNull().references(() => users.id),
+  taskId: varchar("task_id").references(() => tasks.id), // optional link to task
+  projectId: varchar("project_id").references(() => projects.id), // optional link to project
+  approvedById: varchar("approved_by_id").references(() => users.id), // manager who approved
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
+  submittedAt: timestamp("submitted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Sales records for sales role
+export const salesRecords = pgTable("sales_records", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  projectId: varchar("project_id").references(() => projects.id),
+  salesRepId: varchar("sales_rep_id").notNull().references(() => users.id),
+  dealValue: decimal("deal_value", { precision: 10, scale: 2 }).notNull(),
+  commission: decimal("commission", { precision: 10, scale: 2 }),
+  notes: text("notes"),
+  status: varchar("status").default('prospecting'), // prospecting, negotiation, closed_won, closed_lost
+  closedAt: timestamp("closed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Financial logs for audit trail (read-only for admin)
+export const financialLogs = pgTable("financial_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  logType: financialLogTypeEnum("log_type").notNull(),
+  entityType: varchar("entity_type").notNull(), // 'project', 'sales_record', 'inventory_transaction', etc.
+  entityId: varchar("entity_id").notNull(), // ID of the entity affected
+  userId: varchar("user_id").notNull().references(() => users.id), // who made the change
+  previousValue: decimal("previous_value", { precision: 10, scale: 2 }),
+  newValue: decimal("new_value", { precision: 10, scale: 2 }),
+  description: text("description").notNull(),
+  metadata: jsonb("metadata"), // additional context
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   serviceRequests: many(serviceRequests),
@@ -224,6 +295,63 @@ export const inventoryTransactionsRelations = relations(inventoryTransactions, (
   }),
   performedBy: one(users, {
     fields: [inventoryTransactions.performedById],
+    references: [users.id],
+  }),
+}));
+
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
+  assignedTo: one(users, {
+    fields: [tasks.assignedToId],
+    references: [users.id],
+  }),
+  createdBy: one(users, {
+    fields: [tasks.createdById],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [tasks.projectId],
+    references: [projects.id],
+  }),
+  reports: many(reports),
+}));
+
+export const reportsRelations = relations(reports, ({ one }) => ({
+  submittedBy: one(users, {
+    fields: [reports.submittedById],
+    references: [users.id],
+  }),
+  task: one(tasks, {
+    fields: [reports.taskId],
+    references: [tasks.id],
+  }),
+  project: one(projects, {
+    fields: [reports.projectId],
+    references: [projects.id],
+  }),
+  approvedBy: one(users, {
+    fields: [reports.approvedById],
+    references: [users.id],
+  }),
+}));
+
+export const salesRecordsRelations = relations(salesRecords, ({ one }) => ({
+  client: one(users, {
+    fields: [salesRecords.clientId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [salesRecords.projectId],
+    references: [projects.id],
+  }),
+  salesRep: one(users, {
+    fields: [salesRecords.salesRepId],
+    references: [users.id],
+  }),
+}));
+
+export const financialLogsRelations = relations(financialLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [financialLogs.userId],
     references: [users.id],
   }),
 }));
@@ -344,6 +472,81 @@ export type InsertCommunicationType = z.infer<typeof insertCommunicationSchema>;
 export type InsertVisitorType = z.infer<typeof insertVisitorSchema>;
 export type InsertInventoryItemType = z.infer<typeof insertInventoryItemSchema>;
 export type InsertInventoryTransactionType = z.infer<typeof insertInventoryTransactionSchema>;
+
+export type InsertTask = typeof tasks.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+
+export type InsertReport = typeof reports.$inferInsert;
+export type Report = typeof reports.$inferSelect;
+
+export type InsertSalesRecord = typeof salesRecords.$inferInsert;
+export type SalesRecord = typeof salesRecords.$inferSelect;
+
+export type InsertFinancialLog = typeof financialLogs.$inferInsert;
+export type FinancialLog = typeof financialLogs.$inferSelect;
+
+export const insertTaskSchema = createInsertSchema(tasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+});
+
+export const updateTaskSchema = createInsertSchema(tasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  createdById: true,
+}).partial();
+
+export const insertReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  approvedById: true,
+  approvedAt: true,
+  submittedAt: true,
+});
+
+export const updateReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  submittedById: true,
+}).partial();
+
+export const approveReportSchema = z.object({
+  reportId: z.string(),
+  approved: z.boolean(),
+  rejectionReason: z.string().optional(),
+});
+
+export const insertSalesRecordSchema = createInsertSchema(salesRecords).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  closedAt: true,
+});
+
+export const updateSalesRecordSchema = createInsertSchema(salesRecords).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export const insertFinancialLogSchema = createInsertSchema(financialLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTaskType = z.infer<typeof insertTaskSchema>;
+export type UpdateTaskType = z.infer<typeof updateTaskSchema>;
+export type InsertReportType = z.infer<typeof insertReportSchema>;
+export type UpdateReportType = z.infer<typeof updateReportSchema>;
+export type ApproveReportType = z.infer<typeof approveReportSchema>;
+export type InsertSalesRecordType = z.infer<typeof insertSalesRecordSchema>;
+export type UpdateSalesRecordType = z.infer<typeof updateSalesRecordSchema>;
+export type InsertFinancialLogType = z.infer<typeof insertFinancialLogSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;

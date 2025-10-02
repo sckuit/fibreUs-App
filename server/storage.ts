@@ -7,6 +7,10 @@ import {
   visitors,
   inventoryItems,
   inventoryTransactions,
+  tasks,
+  reports,
+  salesRecords,
+  financialLogs,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -21,6 +25,17 @@ import {
   type InsertInventoryItemType,
   type InventoryTransaction,
   type InsertInventoryTransactionType,
+  type Task,
+  type InsertTaskType,
+  type UpdateTaskType,
+  type Report,
+  type InsertReportType,
+  type UpdateReportType,
+  type SalesRecord,
+  type InsertSalesRecordType,
+  type UpdateSalesRecordType,
+  type FinancialLog,
+  type InsertFinancialLogType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -99,6 +114,32 @@ export interface IStorage {
     activeProjects: Project[];
     recentCommunications: Communication[];
   }>;
+
+  // Task operations (managers create, employees view assigned)
+  createTask(task: InsertTaskType): Promise<Task>;
+  getTasks(filters?: { assignedToId?: string; createdById?: string; status?: string }): Promise<Task[]>;
+  getTask(id: string): Promise<Task | undefined>;
+  updateTask(id: string, updates: UpdateTaskType): Promise<Task | undefined>;
+  deleteTask(id: string): Promise<void>;
+
+  // Report operations (employees CRUD own, managers approve/create)
+  createReport(report: InsertReportType): Promise<Report>;
+  getReports(filters?: { submittedById?: string; taskId?: string; status?: string }): Promise<Report[]>;
+  getReport(id: string): Promise<Report | undefined>;
+  updateReport(id: string, updates: UpdateReportType): Promise<Report | undefined>;
+  deleteReport(id: string): Promise<void>;
+  approveReport(reportId: string, approverId: string, approved: boolean, rejectionReason?: string): Promise<Report | undefined>;
+
+  // Sales operations (sales role CRUD, admin full access)
+  createSalesRecord(record: InsertSalesRecordType): Promise<SalesRecord>;
+  getSalesRecords(filters?: { salesRepId?: string; clientId?: string; status?: string }): Promise<SalesRecord[]>;
+  getSalesRecord(id: string): Promise<SalesRecord | undefined>;
+  updateSalesRecord(id: string, updates: UpdateSalesRecordType): Promise<SalesRecord | undefined>;
+  deleteSalesRecord(id: string): Promise<void>;
+
+  // Financial log operations (read-only for admin, written by system)
+  createFinancialLog(log: InsertFinancialLogType): Promise<FinancialLog>;
+  getFinancialLogs(filters?: { entityType?: string; userId?: string; logType?: string; limit?: number }): Promise<FinancialLog[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -559,6 +600,232 @@ export class DatabaseStorage implements IStorage {
     return query
       .orderBy(desc(inventoryTransactions.createdAt))
       .limit(limit);
+  }
+
+  // Task operations
+  async createTask(task: InsertTaskType): Promise<Task> {
+    const [newTask] = await db
+      .insert(tasks)
+      .values(task)
+      .returning();
+    return newTask;
+  }
+
+  async getTasks(filters?: { assignedToId?: string; createdById?: string; status?: string }): Promise<Task[]> {
+    let query = db.select().from(tasks);
+    
+    const conditions = [];
+    if (filters?.assignedToId) {
+      conditions.push(eq(tasks.assignedToId, filters.assignedToId));
+    }
+    if (filters?.createdById) {
+      conditions.push(eq(tasks.createdById, filters.createdById));
+    }
+    if (filters?.status) {
+      conditions.push(eq(tasks.status, filters.status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(tasks.createdAt));
+  }
+
+  async getTask(id: string): Promise<Task | undefined> {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task;
+  }
+
+  async updateTask(id: string, updates: UpdateTaskType): Promise<Task | undefined> {
+    const [task] = await db
+      .update(tasks)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return task;
+  }
+
+  async deleteTask(id: string): Promise<void> {
+    await db.delete(tasks).where(eq(tasks.id, id));
+  }
+
+  // Report operations
+  async createReport(report: InsertReportType): Promise<Report> {
+    const [newReport] = await db
+      .insert(reports)
+      .values(report)
+      .returning();
+    return newReport;
+  }
+
+  async getReports(filters?: { submittedById?: string; taskId?: string; status?: string }): Promise<Report[]> {
+    let query = db.select().from(reports);
+    
+    const conditions = [];
+    if (filters?.submittedById) {
+      conditions.push(eq(reports.submittedById, filters.submittedById));
+    }
+    if (filters?.taskId) {
+      conditions.push(eq(reports.taskId, filters.taskId));
+    }
+    if (filters?.status) {
+      conditions.push(eq(reports.status, filters.status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(reports.createdAt));
+  }
+
+  async getReport(id: string): Promise<Report | undefined> {
+    const [report] = await db.select().from(reports).where(eq(reports.id, id));
+    return report;
+  }
+
+  async updateReport(id: string, updates: UpdateReportType): Promise<Report | undefined> {
+    const [report] = await db
+      .update(reports)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(reports.id, id))
+      .returning();
+    return report;
+  }
+
+  async deleteReport(id: string): Promise<void> {
+    await db.delete(reports).where(eq(reports.id, id));
+  }
+
+  async approveReport(reportId: string, approverId: string, approved: boolean, rejectionReason?: string): Promise<Report | undefined> {
+    const updates: any = {
+      approvedById: approverId,
+      approvedAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    if (approved) {
+      updates.status = 'approved';
+    } else {
+      updates.status = 'rejected';
+      updates.rejectionReason = rejectionReason;
+    }
+    
+    const [report] = await db
+      .update(reports)
+      .set(updates)
+      .where(eq(reports.id, reportId))
+      .returning();
+    return report;
+  }
+
+  // Sales operations
+  async createSalesRecord(record: InsertSalesRecordType): Promise<SalesRecord> {
+    const [newRecord] = await db
+      .insert(salesRecords)
+      .values(record)
+      .returning();
+
+    // Create financial log
+    await this.createFinancialLog({
+      logType: 'sales_record_created',
+      entityType: 'sales_record',
+      entityId: newRecord.id,
+      userId: record.salesRepId,
+      newValue: record.dealValue,
+      description: `Sales record created for deal value ${record.dealValue}`,
+      metadata: { status: newRecord.status },
+    });
+
+    return newRecord;
+  }
+
+  async getSalesRecords(filters?: { salesRepId?: string; clientId?: string; status?: string }): Promise<SalesRecord[]> {
+    let query = db.select().from(salesRecords);
+    
+    const conditions = [];
+    if (filters?.salesRepId) {
+      conditions.push(eq(salesRecords.salesRepId, filters.salesRepId));
+    }
+    if (filters?.clientId) {
+      conditions.push(eq(salesRecords.clientId, filters.clientId));
+    }
+    if (filters?.status) {
+      conditions.push(eq(salesRecords.status, filters.status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(salesRecords.createdAt));
+  }
+
+  async getSalesRecord(id: string): Promise<SalesRecord | undefined> {
+    const [record] = await db.select().from(salesRecords).where(eq(salesRecords.id, id));
+    return record;
+  }
+
+  async updateSalesRecord(id: string, updates: UpdateSalesRecordType): Promise<SalesRecord | undefined> {
+    const existingRecord = await this.getSalesRecord(id);
+    
+    const [record] = await db
+      .update(salesRecords)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(salesRecords.id, id))
+      .returning();
+
+    // Create financial log if deal value changed
+    if (updates.dealValue && existingRecord && updates.dealValue !== existingRecord.dealValue) {
+      await this.createFinancialLog({
+        logType: 'sales_record_updated',
+        entityType: 'sales_record',
+        entityId: id,
+        userId: record.salesRepId,
+        previousValue: existingRecord.dealValue,
+        newValue: updates.dealValue,
+        description: `Sales record deal value updated from ${existingRecord.dealValue} to ${updates.dealValue}`,
+      });
+    }
+
+    return record;
+  }
+
+  async deleteSalesRecord(id: string): Promise<void> {
+    await db.delete(salesRecords).where(eq(salesRecords.id, id));
+  }
+
+  // Financial log operations
+  async createFinancialLog(log: InsertFinancialLogType): Promise<FinancialLog> {
+    const [newLog] = await db
+      .insert(financialLogs)
+      .values(log)
+      .returning();
+    return newLog;
+  }
+
+  async getFinancialLogs(filters?: { entityType?: string; userId?: string; logType?: string; limit?: number }): Promise<FinancialLog[]> {
+    let query = db.select().from(financialLogs);
+    
+    const conditions = [];
+    if (filters?.entityType) {
+      conditions.push(eq(financialLogs.entityType, filters.entityType));
+    }
+    if (filters?.userId) {
+      conditions.push(eq(financialLogs.userId, filters.userId));
+    }
+    if (filters?.logType) {
+      conditions.push(eq(financialLogs.logType, filters.logType));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query
+      .orderBy(desc(financialLogs.createdAt))
+      .limit(filters?.limit || 100);
   }
 }
 
