@@ -122,7 +122,7 @@ export default function Projects() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold" data-testid="text-total-value">
-                ${(projects || []).reduce((sum, p) => sum + (p.estimatedValue || 0), 0).toLocaleString()}
+                ${(projects || []).reduce((sum, p) => sum + (parseFloat(p.totalCost || '0')), 0).toLocaleString()}
               </div>
             </CardContent>
           </Card>
@@ -143,26 +143,25 @@ export default function Projects() {
                   <div key={project.id} className="p-6 rounded-lg border hover-elevate">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-2">{project.name}</h3>
-                        <p className="text-muted-foreground mb-3">{project.description}</p>
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{project.projectName}</h3>
+                          <Badge variant="outline" className="text-xs font-mono" data-testid={`badge-ticket-${project.ticketNumber}`}>
+                            {project.ticketNumber}
+                          </Badge>
+                        </div>
+                        <p className="text-muted-foreground mb-3">{project.workNotes || 'No description'}</p>
                         
                         <div className="flex items-center space-x-6 text-sm text-muted-foreground">
-                          {project.address && (
-                            <div className="flex items-center">
-                              <MapPin className="w-4 h-4 mr-1" />
-                              {project.address}
-                            </div>
-                          )}
                           {project.startDate && (
                             <div className="flex items-center">
                               <Calendar className="w-4 h-4 mr-1" />
                               Started {new Date(project.startDate).toLocaleDateString()}
                             </div>
                           )}
-                          {project.estimatedValue && (
+                          {project.totalCost && (
                             <div className="flex items-center">
                               <DollarSign className="w-4 h-4 mr-1" />
-                              ${project.estimatedValue.toLocaleString()}
+                              ${parseFloat(project.totalCost).toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -171,7 +170,7 @@ export default function Projects() {
                       <div className="flex items-center space-x-3">
                         <Badge 
                           variant="secondary"
-                          className={`${projectStatusColors[project.status] || 'bg-gray-100 text-gray-800'}`}
+                          className={`${projectStatusColors[project.status || 'pending'] || 'bg-gray-100 text-gray-800'}`}
                         >
                           {project.status?.replace('_', ' ')}
                         </Badge>
@@ -198,10 +197,10 @@ export default function Projects() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">{getProjectProgress(project.status)}%</span>
+                        <span className="font-medium">{getProjectProgress(project.status || 'pending')}%</span>
                       </div>
                       <Progress 
-                        value={getProjectProgress(project.status)} 
+                        value={getProjectProgress(project.status || 'pending')} 
                         className="h-2"
                       />
                     </div>
@@ -227,19 +226,24 @@ export default function Projects() {
                   <div key={project.id} className="p-4 rounded-lg border bg-muted/30">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h4 className="font-medium">{project.name}</h4>
-                        <p className="text-sm text-muted-foreground">{project.description}</p>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{project.projectName}</h4>
+                          <Badge variant="outline" className="text-xs font-mono">
+                            {project.ticketNumber}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{project.workNotes || 'No description'}</p>
                         <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
-                          {project.endDate && (
+                          {project.actualCompletionDate && (
                             <div className="flex items-center">
                               <Calendar className="w-4 h-4 mr-1" />
-                              Completed {new Date(project.endDate).toLocaleDateString()}
+                              Completed {new Date(project.actualCompletionDate).toLocaleDateString()}
                             </div>
                           )}
-                          {project.estimatedValue && (
+                          {project.totalCost && (
                             <div className="flex items-center text-green-600 font-medium">
                               <DollarSign className="w-4 h-4 mr-1" />
-                              ${project.estimatedValue.toLocaleString()}
+                              ${parseFloat(project.totalCost).toLocaleString()}
                             </div>
                           )}
                         </div>

@@ -247,6 +247,7 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Ticket #</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead>Assigned To</TableHead>
                 <TableHead>Project</TableHead>
@@ -263,6 +264,11 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
                 
                 return (
                   <TableRow key={task.id} data-testid={`row-task-${task.id}`}>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-xs" data-testid={`badge-ticket-${task.ticketNumber}`}>
+                        {task.ticketNumber}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="font-medium">{task.title}</TableCell>
                     <TableCell>
                       {assignedUser ? (
