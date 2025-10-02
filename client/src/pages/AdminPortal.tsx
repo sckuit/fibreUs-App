@@ -12,16 +12,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit } from "lucide-react";
+import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit, Package, AlertTriangle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UserDialog } from "@/components/UserDialog";
-import type { User, Visitor } from "@shared/schema";
+import { InventoryDialog } from "@/components/InventoryDialog";
+import type { User, Visitor, InventoryItem } from "@shared/schema";
 
 export default function AdminPortal() {
   const { toast } = useToast();
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>();
+  const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
+  const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | undefined>();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
@@ -33,6 +36,14 @@ export default function AdminPortal() {
 
   const { data: visitors = [], isLoading: visitorsLoading } = useQuery<Visitor[]>({
     queryKey: ["/api/analytics/recent-visitors"],
+  });
+
+  const { data: inventoryItems = [], isLoading: inventoryLoading } = useQuery<InventoryItem[]>({
+    queryKey: ["/api/inventory/items"],
+  });
+
+  const { data: lowStockItems = [] } = useQuery<InventoryItem[]>({
+    queryKey: ["/api/inventory/low-stock"],
   });
 
   const createUserMutation = useMutation({
@@ -112,6 +123,86 @@ export default function AdminPortal() {
     setIsUserDialogOpen(true);
   };
 
+  const createInventoryMutation = useMutation({
+    mutationFn: (itemData: any) => apiRequest("/api/inventory/items", "POST", itemData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+      setIsInventoryDialogOpen(false);
+      setEditingInventoryItem(undefined);
+      toast({
+        title: "Item created",
+        description: "Inventory item has been successfully added",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create inventory item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateInventoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiRequest(`/api/inventory/items/${id}`, "PUT", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+      setIsInventoryDialogOpen(false);
+      setEditingInventoryItem(undefined);
+      toast({
+        title: "Item updated",
+        description: "Inventory item has been successfully updated",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update inventory item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteInventoryMutation = useMutation({
+    mutationFn: (itemId: string) => apiRequest(`/api/inventory/items/${itemId}`, "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+      toast({
+        title: "Item deleted",
+        description: "Inventory item has been successfully deleted",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete inventory item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleInventorySubmit = (itemData: any) => {
+    if (editingInventoryItem) {
+      updateInventoryMutation.mutate({ id: editingInventoryItem.id, data: itemData });
+    } else {
+      createInventoryMutation.mutate(itemData);
+    }
+  };
+
+  const handleAddInventoryItem = () => {
+    setEditingInventoryItem(undefined);
+    setIsInventoryDialogOpen(true);
+  };
+
+  const handleEditInventoryItem = (item: InventoryItem) => {
+    setEditingInventoryItem(item);
+    setIsInventoryDialogOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 space-y-6">
@@ -189,6 +280,9 @@ export default function AdminPortal() {
             <TabsTrigger value="users" data-testid="tab-users">
               User Management
             </TabsTrigger>
+            <TabsTrigger value="inventory" data-testid="tab-inventory">
+              Inventory
+            </TabsTrigger>
             <TabsTrigger value="visitors" data-testid="tab-visitors">
               Visitor Analytics
             </TabsTrigger>
@@ -259,6 +353,112 @@ export default function AdminPortal() {
                                 disabled={u.id === user?.id}
                                 onClick={() => deleteUserMutation.mutate(u.id)}
                                 data-testid={`button-delete-${u.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="inventory" className="space-y-4">
+            {lowStockItems.length > 0 && (
+              <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <div>
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      Low Stock Alert
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      {lowStockItems.length} items at or below minimum stock level
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap space-y-0 pb-4">
+                <div>
+                  <CardTitle>Inventory Management</CardTitle>
+                  <CardDescription>
+                    Manage equipment and parts inventory
+                  </CardDescription>
+                </div>
+                <Button onClick={handleAddInventoryItem} data-testid="button-add-inventory">
+                  <Package className="w-4 h-4 mr-2" />
+                  Add Item
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {inventoryLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading inventory...</p>
+                ) : inventoryItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No inventory items yet</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Min Stock</TableHead>
+                        <TableHead>Unit Cost</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {inventoryItems.map((item) => (
+                        <TableRow
+                          key={item.id}
+                          data-testid={`row-inventory-${item.id}`}
+                          className={
+                            (item.quantityInStock ?? 0) <= (item.minimumStockLevel ?? 0)
+                              ? "bg-yellow-50 dark:bg-yellow-950"
+                              : ""
+                          }
+                        >
+                          <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {item.category.replace(/_/g, ' ').toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.quantityInStock} {item.unitOfMeasure}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {item.minimumStockLevel}
+                          </TableCell>
+                          <TableCell>
+                            {item.unitCost ? `$${parseFloat(item.unitCost).toFixed(2)}` : "-"}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{item.supplier || "-"}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1 justify-end">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditInventoryItem(item)}
+                                data-testid={`button-edit-inventory-${item.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteInventoryMutation.mutate(item.id)}
+                                data-testid={`button-delete-inventory-${item.id}`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
@@ -382,6 +582,14 @@ export default function AdminPortal() {
         onOpenChange={setIsUserDialogOpen}
         onSubmit={handleUserSubmit}
         isPending={createUserMutation.isPending || updateUserMutation.isPending}
+      />
+      
+      <InventoryDialog
+        item={editingInventoryItem}
+        open={isInventoryDialogOpen}
+        onOpenChange={setIsInventoryDialogOpen}
+        onSubmit={handleInventorySubmit}
+        isPending={createInventoryMutation.isPending || updateInventoryMutation.isPending}
       />
     </div>
   );
