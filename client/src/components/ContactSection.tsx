@@ -229,7 +229,15 @@ export default function ContactSection() {
                             {detail}
                           </p>
                         ))}
-                        <Button variant="ghost" size="sm" className="mt-2 p-0 h-auto text-primary">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="mt-2 p-0 h-auto text-primary"
+                          onClick={() => {
+                            if (info.title === "Call Us") window.location.href = 'tel:5551234567';
+                            else if (info.title === "Email Us") window.location.href = 'mailto:info@fibreus.co';
+                          }}
+                        >
                           {info.action}
                         </Button>
                       </div>
@@ -246,7 +254,13 @@ export default function ContactSection() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Security system down? Need immediate assistance?
                 </p>
-                <Button variant="destructive" size="sm" className="w-full" data-testid="button-emergency">
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  className="w-full" 
+                  data-testid="button-emergency"
+                  onClick={() => window.location.href = 'tel:5559114357'}
+                >
                   Call Emergency Line
                 </Button>
               </CardContent>

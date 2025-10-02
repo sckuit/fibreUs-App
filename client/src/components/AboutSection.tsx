@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import GetQuoteDialog from "@/components/GetQuoteDialog";
 import { 
   Users, 
   Award, 
@@ -302,10 +303,17 @@ export default function AboutSection() {
 
             {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-              <Button className="flex-1" data-testid="button-contact-us-modal">
-                Contact Us
-              </Button>
-              <Button variant="outline" className="flex-1" data-testid="button-careers-modal">
+              <GetQuoteDialog>
+                <Button className="flex-1" data-testid="button-contact-us-modal">
+                  Contact Us
+                </Button>
+              </GetQuoteDialog>
+              <Button 
+                variant="outline" 
+                className="flex-1" 
+                data-testid="button-careers-modal"
+                onClick={() => setShowAboutDialog(false)}
+              >
                 Careers
               </Button>
             </div>

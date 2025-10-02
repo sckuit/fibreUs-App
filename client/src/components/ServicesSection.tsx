@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import GetQuoteDialog from "@/components/GetQuoteDialog";
+import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
 import { 
   Camera, 
   Shield, 
@@ -274,12 +276,16 @@ export default function ServicesSection() {
               Get a free consultation and quote today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" data-testid="button-custom-quote">
-                Get Custom Quote
-              </Button>
-              <Button variant="outline" size="lg" data-testid="button-schedule-consultation">
-                Schedule Consultation
-              </Button>
+              <GetQuoteDialog>
+                <Button size="lg" data-testid="button-custom-quote">
+                  Get Custom Quote
+                </Button>
+              </GetQuoteDialog>
+              <ScheduleAppointmentDialog>
+                <Button variant="outline" size="lg" data-testid="button-schedule-consultation">
+                  Schedule Consultation
+                </Button>
+              </ScheduleAppointmentDialog>
             </div>
           </div>
         </div>
@@ -352,12 +358,16 @@ export default function ServicesSection() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-                <Button className="flex-1" data-testid="button-get-quote-modal">
-                  Get Free Quote
-                </Button>
-                <Button variant="outline" className="flex-1" data-testid="button-schedule-modal">
-                  Schedule Consultation
-                </Button>
+                <GetQuoteDialog>
+                  <Button className="flex-1" data-testid="button-get-quote-modal">
+                    Get Free Quote
+                  </Button>
+                </GetQuoteDialog>
+                <ScheduleAppointmentDialog>
+                  <Button variant="outline" className="flex-1" data-testid="button-schedule-modal">
+                    Schedule Consultation
+                  </Button>
+                </ScheduleAppointmentDialog>
               </div>
             </div>
           </DialogContent>
