@@ -108,7 +108,7 @@ export default function Dashboard() {
         </div>
 
         {/* Active Requests Overview for Clients */}
-        {typedUser?.role !== 'admin' && dashboardData?.activeRequests?.length > 0 && (
+        {typedUser?.role !== 'admin' && dashboardData?.activeRequests && dashboardData.activeRequests.length > 0 && (
           <Card className="mb-8" data-testid="card-active-requests-overview">
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -118,7 +118,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4" data-testid="list-active-requests">
-                {dashboardData.activeRequests.slice(0, 3).map((request) => (
+                {dashboardData?.activeRequests?.slice(0, 3).map((request) => (
                   <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border hover-elevate">
                     <div className="flex-1">
                       <h4 className="font-medium">{request.title}</h4>
@@ -152,11 +152,11 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              {dashboardData.activeRequests.length > 3 && (
+              {dashboardData?.activeRequests && dashboardData.activeRequests.length > 3 && (
                 <div className="mt-4 text-center">
                   <Link href="/requests">
                     <Button variant="outline" data-testid="button-view-all-requests">
-                      View All Requests ({dashboardData.activeRequests.length})
+                      View All Requests ({dashboardData?.activeRequests?.length || 0})
                     </Button>
                   </Link>
                 </div>
