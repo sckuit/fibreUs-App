@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,6 +13,10 @@ import ServiceRequests from "@/pages/ServiceRequests";
 import Projects from "@/pages/Projects";
 import Analytics from "@/pages/Analytics";
 import LogoShowcase from "@/components/LogoShowcase";
+import ClientPortal from "@/pages/ClientPortal";
+import EmployeePortal from "@/pages/EmployeePortal";
+import ManagerPortal from "@/pages/ManagerPortal";
+import AdminPortal from "@/pages/AdminPortal";
 
 // Main application layout with navigation
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,16 +39,44 @@ function LandingPage() {
   );
 }
 
-// Protected router for authenticated users
+// Protected router for authenticated users - redirects to role-specific portals
 function AuthenticatedRouter() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Redirect to="/" />;
+  }
+
+  // Role-based routing
+  const roleRoutes: Record<string, string> = {
+    client: "/portal/client",
+    employee: "/portal/employee",
+    manager: "/portal/manager",
+    admin: "/portal/admin",
+  };
+
+  const defaultRoute = (user?.role && roleRoutes[user.role]) || "/portal/client";
+
   return (
     <AppLayout>
       <Switch>
-        <Route path="/" component={Dashboard} />
+        {/* Root redirects to role-specific portal */}
+        <Route path="/">
+          {() => <Redirect to={defaultRoute} />}
+        </Route>
+
+        {/* Role-specific portals */}
+        <Route path="/portal/client" component={ClientPortal} />
+        <Route path="/portal/employee" component={EmployeePortal} />
+        <Route path="/portal/manager" component={ManagerPortal} />
+        <Route path="/portal/admin" component={AdminPortal} />
+
+        {/* Legacy routes for backwards compatibility */}
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/requests" component={ServiceRequests} />
         <Route path="/projects" component={Projects} />
         <Route path="/analytics" component={Analytics} />
+        
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
