@@ -12,9 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit, Package, AlertTriangle } from "lucide-react";
+import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit, Package, AlertTriangle, Download } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCSV } from "@/lib/exportUtils";
 import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import ReportsManager from "@/components/ReportsManager";
@@ -318,10 +319,20 @@ export default function AdminPortal() {
                     Manage all system users and their roles
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddUser} data-testid="button-add-user">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add User
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => exportToCSV(users, 'users')} 
+                    data-testid="button-export-users"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button onClick={handleAddUser} data-testid="button-add-user">
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add User
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {usersLoading ? (
@@ -498,11 +509,21 @@ export default function AdminPortal() {
 
           <TabsContent value="visitors" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Visitor Analytics</CardTitle>
-                <CardDescription>
-                  Recent website visitors for marketing follow-up
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <div>
+                  <CardTitle>Visitor Analytics</CardTitle>
+                  <CardDescription>
+                    Recent website visitors for marketing follow-up
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => exportToCSV(visitors, 'visitors')} 
+                  data-testid="button-export-visitors"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
               </CardHeader>
               <CardContent>
                 {visitorsLoading ? (

@@ -37,9 +37,10 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { DollarSign, TrendingUp, Users, Briefcase, Eye, Plus, Edit, Trash2 } from "lucide-react";
+import { DollarSign, TrendingUp, Users, Briefcase, Eye, Plus, Edit, Trash2, Download } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCSV } from "@/lib/exportUtils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSalesRecordSchema, salesRecords, users, projects, type InsertSalesRecord } from "@shared/schema";
@@ -312,10 +313,20 @@ export default function SalesPortal() {
                     Manage your sales pipeline and deals
                   </CardDescription>
                 </div>
-                <Button onClick={handleCreateDeal} data-testid="button-create-deal">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Deal
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => exportToCSV(salesRecordsData, 'sales-records')} 
+                    data-testid="button-export-sales"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button onClick={handleCreateDeal} data-testid="button-create-deal">
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Deal
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {salesLoading ? (
