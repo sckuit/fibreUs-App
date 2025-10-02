@@ -37,17 +37,13 @@ export default function TopNavigation() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      
       toast({
         title: "Signed out",
         description: "You've been successfully signed out.",
       });
       
-      // Use setTimeout to ensure queries invalidate before redirect
-      setTimeout(() => {
-        setLocation('/');
-      }, 100);
+      // Use full page reload to ensure auth state is cleared
+      window.location.href = '/';
     },
     onError: (error: any) => {
       toast({

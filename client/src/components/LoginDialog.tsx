@@ -60,12 +60,7 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       return result;
     },
     onSuccess: (data: any) => {
-      console.log('Login success data:', data);
       const role = data?.user?.role || 'client';
-      console.log('Redirecting to portal for role:', role);
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
       
       toast({
         title: "Welcome back!",
@@ -74,11 +69,8 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       
       setOpen(false);
       
-      // Use setTimeout to ensure dialog closes before redirect
-      setTimeout(() => {
-        console.log('Executing redirect to:', `/portal/${role}`);
-        setLocation(`/portal/${role}`);
-      }, 100);
+      // Use full page reload to ensure auth state is fresh
+      window.location.href = `/portal/${role}`;
     },
     onError: (error: any) => {
       toast({
@@ -99,9 +91,6 @@ export default function LoginDialog({ children }: LoginDialogProps) {
     onSuccess: (data: any) => {
       const role = data?.user?.role || 'client';
       
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
-      
       toast({
         title: "Account created!",
         description: "Welcome to FibreUS. You've been automatically signed in.",
@@ -109,10 +98,8 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       
       setOpen(false);
       
-      // Use setTimeout to ensure dialog closes before redirect
-      setTimeout(() => {
-        setLocation(`/portal/${role}`);
-      }, 100);
+      // Use full page reload to ensure auth state is fresh
+      window.location.href = `/portal/${role}`;
     },
     onError: (error: any) => {
       toast({
