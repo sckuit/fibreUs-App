@@ -56,20 +56,26 @@ export default function LoginDialog({ children }: LoginDialogProps) {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginType) => {
       const response = await apiRequest('POST', '/api/auth/login', data);
-      return await response.json();
+      const result = await response.json();
+      return result;
     },
-    onSuccess: (userData) => {
+    onSuccess: (data: any) => {
+      const role = data?.user?.role || 'client';
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      
       toast({
         title: "Welcome back!",
         description: "You've been successfully signed in.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      
       setOpen(false);
       
-      // Redirect to appropriate dashboard based on role
-      const role = userData.user?.role || 'client';
-      setLocation(`/portal/${role}`);
+      // Use setTimeout to ensure dialog closes before redirect
+      setTimeout(() => {
+        setLocation(`/portal/${role}`);
+      }, 100);
     },
     onError: (error: any) => {
       toast({
@@ -84,20 +90,26 @@ export default function LoginDialog({ children }: LoginDialogProps) {
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterType) => {
       const response = await apiRequest('POST', '/api/auth/register', data);
-      return response.json();
+      const result = await response.json();
+      return result;
     },
-    onSuccess: (userData) => {
+    onSuccess: (data: any) => {
+      const role = data?.user?.role || 'client';
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      
       toast({
         title: "Account created!",
         description: "Welcome to FibreUS. You've been automatically signed in.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
+      
       setOpen(false);
       
-      // Redirect to appropriate dashboard based on role
-      const role = userData.user?.role || 'client';
-      setLocation(`/portal/${role}`);
+      // Use setTimeout to ensure dialog closes before redirect
+      setTimeout(() => {
+        setLocation(`/portal/${role}`);
+      }, 100);
     },
     onError: (error: any) => {
       toast({

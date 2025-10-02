@@ -33,15 +33,21 @@ export default function TopNavigation() {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest('POST', '/api/auth/logout');
-      return response.json();
+      const result = await response.json();
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      
       toast({
         title: "Signed out",
         description: "You've been successfully signed out.",
       });
-      setLocation('/');
+      
+      // Use setTimeout to ensure queries invalidate before redirect
+      setTimeout(() => {
+        setLocation('/');
+      }, 100);
     },
     onError: (error: any) => {
       toast({
