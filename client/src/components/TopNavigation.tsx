@@ -14,7 +14,7 @@ import { useAuth, usePermissions } from "@/hooks/useAuth";
 import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
-import { Menu, X, Shield, Phone, FileText, Calendar, Users, Settings, BarChart3 } from "lucide-react";
+import { Menu, X, Shield, Phone, FileText, Calendar, Users, Settings, BarChart3, Clock, Mail } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function TopNavigation() {
@@ -35,6 +35,33 @@ export default function TopNavigation() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Top contact bar - only show for non-authenticated users on landing page */}
+      {!isAuthenticated && location === '/' && (
+        <div className="border-b bg-primary text-primary-foreground py-1">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1" data-testid="contact-phone">
+                  <Phone className="h-3 w-3" />
+                  <span>(555) 123-4567</span>
+                </div>
+                <div className="flex items-center gap-1" data-testid="contact-email">
+                  <Mail className="h-3 w-3" />
+                  <span>info@fibreus.co</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1" data-testid="emergency-service">
+                <Clock className="h-3 w-3" />
+                <span>24/7 Emergency Service</span>
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  CERTIFIED
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
