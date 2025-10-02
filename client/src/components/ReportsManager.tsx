@@ -274,6 +274,7 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                           <SelectItem value="">None</SelectItem>
                           {tasks.map((task) => (
                             <SelectItem key={task.id} value={task.id}>
+                              <span className="font-mono text-xs mr-2">{task.ticketNumber}</span>
                               {task.title}
                             </SelectItem>
                           ))}
@@ -302,6 +303,7 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                           <SelectItem value="">None</SelectItem>
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
+                              <span className="font-mono text-xs mr-2">{project.ticketNumber}</span>
                               {project.projectName}
                             </SelectItem>
                           ))}
