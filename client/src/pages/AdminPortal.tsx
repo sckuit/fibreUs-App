@@ -19,7 +19,7 @@ import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
-import type { User, Visitor, InventoryItem } from "@shared/schema";
+import type { User, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
 
 export default function AdminPortal() {
   const { toast } = useToast();
@@ -46,6 +46,10 @@ export default function AdminPortal() {
 
   const { data: lowStockItems = [] } = useQuery<InventoryItem[]>({
     queryKey: ["/api/inventory/low-stock"],
+  });
+
+  const { data: financialLogs = [], isLoading: financialLogsLoading } = useQuery<FinancialLog[]>({
+    queryKey: ["/api/financial-logs"],
   });
 
   const createUserMutation = useMutation({
@@ -299,6 +303,9 @@ export default function AdminPortal() {
             </TabsTrigger>
             <TabsTrigger value="logs" data-testid="tab-logs">
               Activity Logs
+            </TabsTrigger>
+            <TabsTrigger value="financial" data-testid="tab-financial">
+              Financial Logs
             </TabsTrigger>
           </TabsList>
 
@@ -586,6 +593,67 @@ export default function AdminPortal() {
                 <p className="text-sm text-muted-foreground">
                   Activity logs coming soon
                 </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="financial" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Financial Audit Logs</CardTitle>
+                <CardDescription>
+                  Read-only financial transaction audit trail for compliance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {financialLogsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading financial logs...</p>
+                ) : financialLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No financial transactions recorded yet</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date/Time</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Entity Type</TableHead>
+                        <TableHead>Entity ID</TableHead>
+                        <TableHead>User ID</TableHead>
+                        <TableHead>Previous Value</TableHead>
+                        <TableHead>New Value</TableHead>
+                        <TableHead>Description</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {financialLogs.map((log) => (
+                        <TableRow key={log.id} data-testid={`row-financial-log-${log.id}`}>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" data-testid={`badge-log-type-${log.id}`}>
+                              {log.logType.replace(/_/g, ' ').toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{log.entityType}</TableCell>
+                          <TableCell className="font-mono text-xs">{log.entityId}</TableCell>
+                          <TableCell className="font-mono text-xs">{log.userId}</TableCell>
+                          <TableCell className="text-right">
+                            {log.previousValue ? `$${parseFloat(log.previousValue).toFixed(2)}` : "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {log.newValue ? `$${parseFloat(log.newValue).toFixed(2)}` : "-"}
+                          </TableCell>
+                          <TableCell className="max-w-xs">
+                            <div className="truncate" title={log.description}>
+                              {log.description}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
