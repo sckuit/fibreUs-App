@@ -17,6 +17,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
+import ReportsManager from "@/components/ReportsManager";
 import type { User, Visitor, InventoryItem } from "@shared/schema";
 
 export default function AdminPortal() {
@@ -283,6 +284,9 @@ export default function AdminPortal() {
             <TabsTrigger value="inventory" data-testid="tab-inventory">
               Inventory
             </TabsTrigger>
+            <TabsTrigger value="reports" data-testid="tab-reports">
+              Reports
+            </TabsTrigger>
             <TabsTrigger value="visitors" data-testid="tab-visitors">
               Visitor Analytics
             </TabsTrigger>
@@ -471,6 +475,10 @@ export default function AdminPortal() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-4">
+            {user && <ReportsManager role="admin" userId={user.id} />}
           </TabsContent>
 
           <TabsContent value="visitors" className="space-y-4">

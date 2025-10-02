@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Wrench, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import type { User } from "@shared/schema";
+import ReportsManager from "@/components/ReportsManager";
 
 export default function EmployeePortal() {
   const [activeTab, setActiveTab] = useState("tasks");
@@ -145,19 +146,7 @@ export default function EmployeePortal() {
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Work Reports</CardTitle>
-                <CardDescription>
-                  Submit and view work completion reports
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  No reports submitted
-                </p>
-              </CardContent>
-            </Card>
+            {user && <ReportsManager role="employee" userId={user.id} />}
           </TabsContent>
         </Tabs>
       </div>
