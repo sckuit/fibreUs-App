@@ -60,7 +60,9 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       return result;
     },
     onSuccess: (data: any) => {
+      console.log('Login success data:', data);
       const role = data?.user?.role || 'client';
+      console.log('Redirecting to portal for role:', role);
       
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       queryClient.invalidateQueries({ queryKey: ['/api/service-requests'] });
@@ -74,6 +76,7 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       
       // Use setTimeout to ensure dialog closes before redirect
       setTimeout(() => {
+        console.log('Executing redirect to:', `/portal/${role}`);
         setLocation(`/portal/${role}`);
       }, 100);
     },
