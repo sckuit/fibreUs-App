@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user) {
+        if (!user || !user.role || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
@@ -286,6 +286,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...validatedData,
           clientId: userId,
           status: 'pending' as const, // Always start as pending
+          // Convert number to string for decimal field
+          estimatedValue: validatedData.estimatedValue ? validatedData.estimatedValue.toString() : undefined,
           // adminNotes, quotedAmount, scheduledDate, completedDate not allowed for clients
         };
         
@@ -309,11 +311,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user) {
+        if (!user || !user.role || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
-        let requests;
+        let requests: Awaited<ReturnType<typeof storage.getServiceRequests>>;
         
         // Get requests based on user role and permissions
         if (user.role === 'admin' || user.role === 'manager') {
@@ -333,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Sanitize requests for non-admin users
         const sanitizedRequests = requests.map(request => 
-          sanitizeServiceRequest(request, user.role || 'client')
+          sanitizeServiceRequest(request, user.role)
         );
         
         res.json(sanitizedRequests);
@@ -352,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user) {
+        if (!user || !user.role || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
@@ -386,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Sanitize request for non-admin users
-        const sanitizedRequest = sanitizeServiceRequest(request, user.role || 'client');
+        const sanitizedRequest = sanitizeServiceRequest(request, user.role);
         
         res.json(sanitizedRequest);
       } catch (error) {
@@ -405,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user) {
+        if (!user || !user.role || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
@@ -417,7 +419,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Validate and whitelist allowed fields
         const validatedUpdates = updateServiceRequestSchema.parse(req.body);
         
-        const updatedRequest = await storage.updateServiceRequest(id, validatedUpdates);
+        // Convert number to string for decimal field
+        const updates = {
+          ...validatedUpdates,
+          quotedAmount: validatedUpdates.quotedAmount !== undefined 
+            ? validatedUpdates.quotedAmount.toString() 
+            : undefined,
+        };
+        
+        const updatedRequest = await storage.updateServiceRequest(id, updates);
         
         if (!updatedRequest) {
           return res.status(404).json({ message: "Service request not found" });
@@ -441,7 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (!user) {
+      if (!user || !user.role || !userId) {
         return res.status(401).json({ message: "User not found" });
       }
       
@@ -450,12 +460,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sanitize all nested objects to prevent information disclosure
       const sanitizedDashboard = {
         activeRequests: dashboard.activeRequests?.map(request => 
-          sanitizeServiceRequest(request, user.role || 'client')
+          sanitizeServiceRequest(request, user.role)
         ) || [],
         activeProjects: dashboard.activeProjects || [],
         recentCommunications: sanitizeCommunications(
           dashboard.recentCommunications || [], 
-          user.role || 'client'
+          user.role
         ),
       };
       
@@ -471,7 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (!user) {
+      if (!user || !user.role || !userId) {
         return res.status(401).json({ message: "User not found" });
       }
       
@@ -506,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (!user) {
+      if (!user || !user.role || !userId) {
         return res.status(401).json({ message: "User not found" });
       }
       
@@ -526,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (!user) {
+      if (!user || !user.role || !userId) {
         return res.status(401).json({ message: "User not found" });
       }
       
@@ -555,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (!user) {
+      if (!user || !user.role || !userId) {
         return res.status(401).json({ message: "User not found" });
       }
       
@@ -579,7 +589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user) {
+        if (!user || !user.role || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
@@ -604,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user) {
+        if (!user || !user.role || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
@@ -631,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
+        if (!user || !user.role || user.role !== 'admin') {
           return res.status(403).json({ message: "Admin access required" });
         }
         
@@ -651,7 +661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
+        if (!user || !user.role || user.role !== 'admin') {
           return res.status(403).json({ message: "Admin access required" });
         }
         
@@ -692,7 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
+        if (!user || !user.role || user.role !== 'admin') {
           return res.status(403).json({ message: "Admin access required" });
         }
         
@@ -725,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
+        if (!user || !user.role || user.role !== 'admin') {
           return res.status(403).json({ message: "Admin access required" });
         }
         
@@ -753,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Employee access or higher required" });
         }
         
@@ -774,7 +784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Employee access or higher required" });
         }
         
@@ -798,7 +808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Manager access or higher required" });
         }
         
@@ -824,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Manager access or higher required" });
         }
         
@@ -854,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
+        if (!user || !user.role || user.role !== 'admin') {
           return res.status(403).json({ message: "Admin access required" });
         }
         
@@ -874,7 +884,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Employee access or higher required" });
         }
         
@@ -894,7 +904,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Employee access or higher required" });
         }
         
@@ -918,7 +928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
           return res.status(403).json({ message: "Employee access or higher required" });
         }
         
@@ -928,7 +938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Always use session user ID for performedById (prevent spoofing)
         const transactionData = {
           ...validatedData,
-          performedById: userId,
+          performedById: userId!,
         };
         
         const newTransaction = await storage.createInventoryTransaction(transactionData);
@@ -958,7 +968,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validatedData = insertTaskSchema.parse(req.body);
         const taskData = {
           ...validatedData,
-          createdById: userId,
+          createdById: userId!,
         };
         
         const newTask = await storage.createTask(taskData);
@@ -985,13 +995,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const filters: any = {};
-        if (req.query.assignedToId) filters.assignedToId = req.query.assignedToId;
-        if (req.query.createdById) filters.createdById = req.query.createdById;
+        if (req.query.assignedToId) filters.assignedToId = req.query.assignedToId as string;
+        if (req.query.createdById) filters.createdById = req.query.createdById as string;
         if (req.query.status) filters.status = req.query.status;
         
         // Employees can only see their own assigned tasks
         if (user.role === 'employee') {
-          filters.assignedToId = userId;
+          filters.assignedToId = userId!;
         }
         
         const tasks = await storage.getTasks(filters);
@@ -1419,7 +1429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
+        if (!user || !user.role || user.role !== 'admin') {
           return res.status(403).json({ message: "Admin access required" });
         }
         

@@ -57,7 +57,7 @@ export function UserDialog({ user, open, onOpenChange, onSubmit, isPending }: Us
     e.preventDefault();
     
     // Don't send empty password when editing
-    const submitData = { ...formData };
+    const submitData: any = { ...formData };
     if (user && !submitData.password) {
       delete submitData.password;
     }
