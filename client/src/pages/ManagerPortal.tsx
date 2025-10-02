@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import { Users, Briefcase, TrendingUp, DollarSign, Eye } from "lucide-react";
 import type { User, Visitor } from "@shared/schema";
 
 export default function ManagerPortal() {
+  const [activeTab, setActiveTab] = useState("team");
+
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
   });
@@ -39,7 +42,11 @@ export default function ManagerPortal() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("team")}
+            data-testid="card-team-members"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Team Members</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
@@ -52,7 +59,11 @@ export default function ManagerPortal() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("projects")}
+            data-testid="card-active-projects"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
               <Briefcase className="h-4 w-4 text-muted-foreground" />
@@ -65,7 +76,11 @@ export default function ManagerPortal() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("analytics")}
+            data-testid="card-monthly-revenue"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -78,7 +93,11 @@ export default function ManagerPortal() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("analytics")}
+            data-testid="card-performance"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Performance</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -92,7 +111,7 @@ export default function ManagerPortal() {
           </Card>
         </div>
 
-        <Tabs defaultValue="team" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="team" data-testid="tab-team">
               Team Management

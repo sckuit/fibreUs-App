@@ -103,40 +103,44 @@ export default function TopNavigation() {
           {/* Desktop Navigation */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-              <NavigationMenuItem>
-                <Link href="/" className={`navigation-menu-link ${isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
-                  Home
-                </Link>
-              </NavigationMenuItem>
+              {!isAuthenticated && (
+                <>
+                  <NavigationMenuItem>
+                    <Link href="/" className={`navigation-menu-link ${isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+                      Home
+                    </Link>
+                  </NavigationMenuItem>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-muted-foreground hover:text-primary">
-                  Services
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="grid gap-3 p-6 w-[400px]">
-                    <div className="row-span-3">
-                      <p className="text-sm font-medium leading-none mb-2">Security Solutions</p>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Professional electronic security and fiber optic services
-                      </p>
-                    </div>
-                    {services.map((service) => (
-                      <NavigationMenuLink key={service.href} asChild>
-                        <Link
-                          href={service.href}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                        >
-                          <div className="text-sm font-medium leading-none">{service.title}</div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            {service.description}
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="text-muted-foreground hover:text-primary">
+                      Services
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="grid gap-3 p-6 w-[400px]">
+                        <div className="row-span-3">
+                          <p className="text-sm font-medium leading-none mb-2">Security Solutions</p>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Professional electronic security and fiber optic services
                           </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    ))}
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
+                        </div>
+                        {services.map((service) => (
+                          <NavigationMenuLink key={service.href} asChild>
+                            <Link
+                              href={service.href}
+                              className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            >
+                              <div className="text-sm font-medium leading-none">{service.title}</div>
+                              <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                {service.description}
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        ))}
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </>
+              )}
 
               {isAuthenticated && (
                 <>
@@ -280,9 +284,11 @@ export default function TopNavigation() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t py-4">
             <div className="flex flex-col space-y-3">
-              <Link href="/" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                Home
-              </Link>
+              {!isAuthenticated && (
+                <Link href="/" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                  Home
+                </Link>
+              )}
               
               {isAuthenticated && (
                 <>

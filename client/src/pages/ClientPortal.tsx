@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, FileText, MessageSquare, Plus } from "lucide-react";
+import GetQuoteDialog from "@/components/GetQuoteDialog";
 import type { User } from "@shared/schema";
 
 export default function ClientPortal() {
+  const [activeTab, setActiveTab] = useState("requests");
+
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
   });
@@ -20,14 +24,20 @@ export default function ClientPortal() {
               Welcome back, {user?.firstName}
             </p>
           </div>
-          <Button data-testid="button-new-request">
-            <Plus className="w-4 h-4 mr-2" />
-            New Service Request
-          </Button>
+          <GetQuoteDialog>
+            <Button data-testid="button-new-request">
+              <Plus className="w-4 h-4 mr-2" />
+              New Service Request
+            </Button>
+          </GetQuoteDialog>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2" 
+            onClick={() => setActiveTab("requests")}
+            data-testid="card-active-requests"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Requests</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -40,7 +50,11 @@ export default function ClientPortal() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2" 
+            onClick={() => setActiveTab("projects")}
+            data-testid="card-active-projects"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
               <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -53,7 +67,11 @@ export default function ClientPortal() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2" 
+            onClick={() => setActiveTab("messages")}
+            data-testid="card-messages"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Messages</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -67,7 +85,7 @@ export default function ClientPortal() {
           </Card>
         </div>
 
-        <Tabs defaultValue="requests" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="requests" data-testid="tab-requests">
               Service Requests

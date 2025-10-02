@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,8 @@ import { Wrench, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function EmployeePortal() {
+  const [activeTab, setActiveTab] = useState("tasks");
+
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
   });
@@ -27,7 +30,11 @@ export default function EmployeePortal() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("tasks")}
+            data-testid="card-assigned-tasks"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Assigned Tasks</CardTitle>
               <Wrench className="h-4 w-4 text-muted-foreground" />
@@ -40,7 +47,11 @@ export default function EmployeePortal() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("tasks")}
+            data-testid="card-in-progress"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">In Progress</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -53,7 +64,11 @@ export default function EmployeePortal() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("reports")}
+            data-testid="card-completed"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completed</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
@@ -66,7 +81,11 @@ export default function EmployeePortal() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover-elevate active-elevate-2"
+            onClick={() => setActiveTab("tasks")}
+            data-testid="card-urgent"
+          >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Urgent</CardTitle>
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -80,7 +99,7 @@ export default function EmployeePortal() {
           </Card>
         </div>
 
-        <Tabs defaultValue="tasks" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList>
             <TabsTrigger value="tasks" data-testid="tab-tasks">
               My Tasks
