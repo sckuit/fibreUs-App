@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import ReportsManager from "@/components/ReportsManager";
+import { TasksManager } from "@/components/TasksManager";
 import type { User, Visitor, InventoryItem } from "@shared/schema";
 
 export default function AdminPortal() {
@@ -287,6 +288,9 @@ export default function AdminPortal() {
             <TabsTrigger value="reports" data-testid="tab-reports">
               Reports
             </TabsTrigger>
+            <TabsTrigger value="tasks" data-testid="tab-tasks">
+              Tasks
+            </TabsTrigger>
             <TabsTrigger value="visitors" data-testid="tab-visitors">
               Visitor Analytics
             </TabsTrigger>
@@ -479,6 +483,10 @@ export default function AdminPortal() {
 
           <TabsContent value="reports" className="space-y-4">
             {user && <ReportsManager role="admin" userId={user.id} />}
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-4">
+            {user && <TasksManager role="admin" userId={user.id} />}
           </TabsContent>
 
           <TabsContent value="visitors" className="space-y-4">
