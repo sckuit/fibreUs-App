@@ -43,13 +43,14 @@ import { useToast } from "@/hooks/use-toast";
 import { exportToCSV } from "@/lib/exportUtils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertSalesRecordSchema, salesRecords, users, projects, type InsertSalesRecord } from "@shared/schema";
+import { insertSalesRecordSchema, salesRecords, users, projects, tasks, type InsertSalesRecord } from "@shared/schema";
 import type { User, Visitor } from "@shared/schema";
 import { format } from "date-fns";
 
 type SelectSalesRecord = typeof salesRecords.$inferSelect;
 type SelectUser = typeof users.$inferSelect;
 type SelectProject = typeof projects.$inferSelect;
+type SelectTask = typeof tasks.$inferSelect;
 
 export default function SalesPortal() {
   const { toast } = useToast();
@@ -73,6 +74,10 @@ export default function SalesPortal() {
     queryKey: ["/api/projects"],
   });
 
+  const { data: tasksData = [] } = useQuery<SelectTask[]>({
+    queryKey: ["/api/tasks"],
+  });
+
   const { data: visitors = [], isLoading: visitorsLoading } = useQuery<Visitor[]>({
     queryKey: ["/api/analytics/recent-visitors"],
   });
@@ -84,6 +89,7 @@ export default function SalesPortal() {
     defaultValues: {
       clientId: "",
       projectId: undefined,
+      taskId: undefined,
       salesRepId: user?.id || "",
       dealValue: "",
       commission: undefined,
@@ -179,6 +185,7 @@ export default function SalesPortal() {
     form.reset({
       clientId: record.clientId,
       projectId: record.projectId || undefined,
+      taskId: record.taskId || undefined,
       salesRepId: record.salesRepId,
       dealValue: record.dealValue,
       commission: record.commission || undefined,
@@ -338,7 +345,7 @@ export default function SalesPortal() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Client</TableHead>
-                        <TableHead>Project</TableHead>
+                        <TableHead>Project / Task</TableHead>
                         <TableHead>Deal Value</TableHead>
                         <TableHead>Commission</TableHead>
                         <TableHead>Status</TableHead>
@@ -349,6 +356,7 @@ export default function SalesPortal() {
                       {salesRecordsData.map((record) => {
                         const client = usersData.find(u => u.id === record.clientId);
                         const project = projectsData.find(p => p.id === record.projectId);
+                        const task = tasksData.find(t => t.id === record.taskId);
                         
                         return (
                           <TableRow key={record.id} data-testid={`row-deal-${record.id}`}>
@@ -356,7 +364,19 @@ export default function SalesPortal() {
                               {client ? `${client.firstName} ${client.lastName}` : "Unknown"}
                             </TableCell>
                             <TableCell>
-                              {project ? project.projectName : <span className="text-muted-foreground text-xs">No project</span>}
+                              {project ? (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="font-mono text-xs">{project.ticketNumber}</Badge>
+                                  <span className="text-sm">{project.projectName}</span>
+                                </div>
+                              ) : task ? (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="font-mono text-xs">{task.ticketNumber}</Badge>
+                                  <span className="text-sm">{task.title}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">No link</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               ${parseFloat(record.dealValue || "0").toFixed(2)}
@@ -591,8 +611,8 @@ export default function SalesPortal() {
                   <FormItem>
                     <FormLabel>Link to Project (Optional)</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value === "" ? undefined : value)}
-                      value={field.value || undefined}
+                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)}
+                      value={field.value || "none"}
                     >
                       <FormControl>
                         <SelectTrigger data-testid="select-project">
@@ -600,9 +620,10 @@ export default function SalesPortal() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {projectsData.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
+                            <span className="font-mono text-xs mr-2">{project.ticketNumber}</span>
                             {project.projectName}
                           </SelectItem>
                         ))}
@@ -610,6 +631,39 @@ export default function SalesPortal() {
                     </Select>
                     <FormDescription>
                       Associate this deal with a project
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="taskId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link to Task (Optional)</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === "none" ? undefined : value)}
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-task">
+                          <SelectValue placeholder="Select a task" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {tasksData.map((task) => (
+                          <SelectItem key={task.id} value={task.id}>
+                            <span className="font-mono text-xs mr-2">{task.ticketNumber}</span>
+                            {task.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Associate this deal with a task
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

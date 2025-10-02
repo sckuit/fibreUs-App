@@ -216,6 +216,7 @@ export const salesRecords = pgTable("sales_records", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   clientId: varchar("client_id").notNull().references(() => users.id),
   projectId: varchar("project_id").references(() => projects.id),
+  taskId: varchar("task_id").references(() => tasks.id),
   salesRepId: varchar("sales_rep_id").notNull().references(() => users.id),
   dealValue: decimal("deal_value", { precision: 10, scale: 2 }).notNull(),
   commission: decimal("commission", { precision: 10, scale: 2 }),
