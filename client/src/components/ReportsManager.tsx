@@ -31,7 +31,7 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
 
   // Fetch reports based on role
   const { data: reports = [], isLoading: reportsLoading } = useQuery<Report[]>({
-    queryKey: role === 'employee' ? ['/api/reports', userId] : ['/api/reports'],
+    queryKey: ['/api/reports'],
   });
 
   // Fetch tasks for linking reports to tasks (all roles can see tasks)

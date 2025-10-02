@@ -54,7 +54,7 @@ export default function AdminPortal() {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: (userData: any) => apiRequest("/api/users", "POST", userData),
+    mutationFn: (userData: any) => apiRequest("POST", "/api/users", userData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsUserDialogOpen(false);
@@ -75,7 +75,7 @@ export default function AdminPortal() {
 
   const updateUserMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest(`/api/users/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/users/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsUserDialogOpen(false);
@@ -95,7 +95,7 @@ export default function AdminPortal() {
   });
 
   const deleteUserMutation = useMutation({
-    mutationFn: (userId: string) => apiRequest(`/api/users/${userId}`, "DELETE"),
+    mutationFn: (userId: string) => apiRequest("DELETE", `/api/users/${userId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
@@ -131,7 +131,7 @@ export default function AdminPortal() {
   };
 
   const createInventoryMutation = useMutation({
-    mutationFn: (itemData: any) => apiRequest("/api/inventory/items", "POST", itemData),
+    mutationFn: (itemData: any) => apiRequest("POST", "/api/inventory/items", itemData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
@@ -153,7 +153,7 @@ export default function AdminPortal() {
 
   const updateInventoryMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
-      apiRequest(`/api/inventory/items/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/inventory/items/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
@@ -174,7 +174,7 @@ export default function AdminPortal() {
   });
 
   const deleteInventoryMutation = useMutation({
-    mutationFn: (itemId: string) => apiRequest(`/api/inventory/items/${itemId}`, "DELETE"),
+    mutationFn: (itemId: string) => apiRequest("DELETE", `/api/inventory/items/${itemId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
@@ -225,7 +225,7 @@ export default function AdminPortal() {
 
         for (const item of parsedData) {
           try {
-            await apiRequest("/api/inventory/items", "POST", {
+            await apiRequest("POST", "/api/inventory/items", {
               sku: item.sku,
               name: item.name,
               description: item.description || null,
