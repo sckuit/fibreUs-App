@@ -263,15 +263,14 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                   name="taskId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Associated Task</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormLabel>Associated Task (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-task">
-                            <SelectValue placeholder="Select a task" />
+                            <SelectValue placeholder="Select a task (optional)" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
                           {tasks.map((task) => (
                             <SelectItem key={task.id} value={task.id}>
                               <span className="font-mono text-xs mr-2">{task.ticketNumber}</span>
@@ -292,15 +291,14 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                   name="projectId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Associated Project</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormLabel>Associated Project (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-project">
-                            <SelectValue placeholder="Select a project" />
+                            <SelectValue placeholder="Select a project (optional)" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
                               <span className="font-mono text-xs mr-2">{project.ticketNumber}</span>
