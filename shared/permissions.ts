@@ -1,5 +1,5 @@
 // Role-based access control definitions
-export type UserRole = 'client' | 'employee' | 'manager' | 'admin';
+export type UserRole = 'client' | 'employee' | 'manager' | 'admin' | 'sales';
 
 export interface Permission {
   // Service requests
@@ -167,6 +167,39 @@ export const rolePermissions: Record<UserRole, Permission> = {
     viewReports: true,
     manageSettings: true,
   },
+  
+  sales: {
+    // Service requests - sales can view requests to identify leads
+    viewOwnRequests: true,
+    viewAllRequests: true,
+    createRequests: false,
+    editOwnRequests: false,
+    editAllRequests: false,
+    deleteRequests: false,
+    
+    // Projects - sales can view all projects for deal tracking
+    viewOwnProjects: true,
+    viewAllProjects: true,
+    manageOwnProjects: false,
+    manageAllProjects: false,
+    assignProjects: false,
+    
+    // Users - sales can view clients and users
+    viewUsers: true,
+    manageEmployees: false,
+    viewUserDetails: true,
+    
+    // Communications - sales can view communications for customer relations
+    viewOwnCommunications: true,
+    viewAllCommunications: false,
+    createCommunications: true,
+    viewInternalNotes: false,
+    
+    // Admin - limited access, can view reports for metrics
+    manageSystem: false,
+    viewReports: true,
+    manageSettings: false,
+  },
 };
 
 // Utility functions for permission checking
@@ -183,6 +216,9 @@ export function canAccessRoute(role: UserRole, route: string): boolean {
       
     case '/dashboard':
       return ['client', 'employee', 'manager', 'admin'].includes(role);
+      
+    case '/portal/sales':
+      return role === 'sales';
       
     case '/requests':
     case '/service-requests':
@@ -214,6 +250,8 @@ export function getDefaultRoute(role: UserRole): string {
       return '/dashboard';
     case 'employee':
       return '/projects';
+    case 'sales':
+      return '/portal/sales';
     case 'manager':
       return '/dashboard';
     case 'admin':
@@ -227,6 +265,7 @@ export function getDefaultRoute(role: UserRole): string {
 export const roleHierarchy: Record<UserRole, number> = {
   client: 1,
   employee: 2,
+  sales: 2,
   manager: 3,
   admin: 4,
 };
