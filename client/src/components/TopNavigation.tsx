@@ -3,21 +3,14 @@ import { Link, useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth, usePermissions } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
-import { Menu, X, Shield, Phone, FileText, Calendar, Users, Settings, BarChart3, Clock, Mail } from "lucide-react";
+import { Menu, X, Shield, Phone, FileText, Calendar, Users, Settings, BarChart3, Clock, Mail, LayoutDashboard, FolderKanban, ClipboardList, CheckSquare } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function TopNavigation() {
@@ -93,121 +86,59 @@ export default function TopNavigation() {
             <span className="text-2xl font-bold text-primary">FibreUS</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <NavigationMenu className="hidden md:flex">
-            <NavigationMenuList>
-              {!isAuthenticated && (
-                <>
-                  <NavigationMenuItem>
-                    <Link href="/" className={`navigation-menu-link ${isActive('/') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
-                      Home
-                    </Link>
-                  </NavigationMenuItem>
-                </>
-              )}
-
-              {isAuthenticated && (
-                <>
-                  <NavigationMenuItem>
-                    <Link 
-                      href="/dashboard" 
-                      className={`navigation-menu-link ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                      data-testid="link-dashboard"
-                    >
-                      Dashboard
-                    </Link>
-                  </NavigationMenuItem>
-                  
-                  {/* Service Requests - available to all authenticated users */}
-                  {hasPermission('viewOwnRequests') && (
-                    <NavigationMenuItem>
-                      <Link 
-                        href="/requests" 
-                        className={`navigation-menu-link ${isActive('/requests') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                        data-testid="link-requests"
-                      >
-                        {role === 'client' ? 'Requests' : 'Requests'}
-                      </Link>
-                    </NavigationMenuItem>
-                  )}
-                  
-                  {/* Projects - available to employees, managers, and admins */}
-                  {hasPermission('viewOwnProjects') && (
-                    <NavigationMenuItem>
-                      <Link 
-                        href="/projects" 
-                        className={`navigation-menu-link ${isActive('/projects') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
-                        data-testid="link-projects"
-                      >
-                        Projects
-                      </Link>
-                    </NavigationMenuItem>
-                  )}
-                  
-                  {/* Management dropdown for viewing Users, Reports, Admin, Tasks */}
-                  {(hasPermission('viewUsers') || hasPermission('viewReports') || hasPermission('manageSystem')) && (
-                    <NavigationMenuItem>
-                      <NavigationMenuTrigger className="text-muted-foreground hover:text-primary" data-testid="trigger-management">
-                        Management
-                      </NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <div className="grid gap-2 p-4 w-[200px]">
-                          {hasPermission('viewUsers') && (
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/users"
-                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                data-testid="link-users"
-                              >
-                                <div className="text-sm font-medium">Users</div>
-                                <p className="text-xs text-muted-foreground">Manage team members</p>
-                              </Link>
-                            </NavigationMenuLink>
-                          )}
-                          {hasPermission('viewReports') && (
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/reports"
-                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                data-testid="link-reports"
-                              >
-                                <div className="text-sm font-medium">Reports</div>
-                                <p className="text-xs text-muted-foreground">View work reports</p>
-                              </Link>
-                            </NavigationMenuLink>
-                          )}
-                          {hasPermission('manageSystem') && (
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/tasks"
-                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                data-testid="link-tasks"
-                              >
-                                <div className="text-sm font-medium">Tasks</div>
-                                <p className="text-xs text-muted-foreground">Manage tasks</p>
-                              </Link>
-                            </NavigationMenuLink>
-                          )}
-                          {hasPermission('manageSystem') && (
-                            <NavigationMenuLink asChild>
-                              <Link
-                                href="/admin"
-                                className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                data-testid="link-admin"
-                              >
-                                <div className="text-sm font-medium">Admin</div>
-                                <p className="text-xs text-muted-foreground">System settings</p>
-                              </Link>
-                            </NavigationMenuLink>
-                          )}
-                        </div>
-                      </NavigationMenuContent>
-                    </NavigationMenuItem>
-                  )}
-                </>
-              )}
-            </NavigationMenuList>
-          </NavigationMenu>
+          {/* Desktop Navigation Tabs */}
+          {isAuthenticated && (
+            <Tabs value={location} className="hidden md:block flex-1 mx-8">
+              <TabsList className="h-10">
+                <TabsTrigger value="/dashboard" onClick={() => setLocation('/dashboard')} data-testid="tab-dashboard">
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </TabsTrigger>
+                
+                {hasPermission('viewOwnRequests') && (
+                  <TabsTrigger value="/requests" onClick={() => setLocation('/requests')} data-testid="tab-requests">
+                    <ClipboardList className="w-4 h-4 mr-2" />
+                    Requests
+                  </TabsTrigger>
+                )}
+                
+                {hasPermission('viewOwnProjects') && (
+                  <TabsTrigger value="/projects" onClick={() => setLocation('/projects')} data-testid="tab-projects">
+                    <FolderKanban className="w-4 h-4 mr-2" />
+                    Projects
+                  </TabsTrigger>
+                )}
+                
+                {hasPermission('viewUsers') && (
+                  <TabsTrigger value="/users" onClick={() => setLocation('/users')} data-testid="tab-users">
+                    <Users className="w-4 h-4 mr-2" />
+                    Users
+                  </TabsTrigger>
+                )}
+                
+                {hasPermission('viewReports') && (
+                  <TabsTrigger value="/reports" onClick={() => setLocation('/reports')} data-testid="tab-reports">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Reports
+                  </TabsTrigger>
+                )}
+                
+                {hasPermission('manageSystem') && (
+                  <TabsTrigger value="/tasks" onClick={() => setLocation('/tasks')} data-testid="tab-tasks">
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Tasks
+                  </TabsTrigger>
+                )}
+                
+                {hasPermission('manageSystem') && (
+                  <TabsTrigger value="/admin" onClick={() => setLocation('/admin')} data-testid="tab-admin">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Admin
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </Tabs>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
@@ -269,97 +200,124 @@ export default function TopNavigation() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t py-4">
-            <div className="flex flex-col space-y-3">
-              {!isAuthenticated && (
-                <Link href="/" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                  Home
-                </Link>
-              )}
-              
+            <div className="flex flex-col space-y-2">
               {isAuthenticated && (
                 <>
-                  <Link href="/dashboard" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant={location === '/dashboard' ? 'default' : 'ghost'}
+                    className="justify-start"
+                    onClick={() => { setLocation('/dashboard'); setMobileMenuOpen(false); }}
+                  >
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
                     Dashboard
-                  </Link>
+                  </Button>
                   
                   {hasPermission('viewOwnRequests') && (
-                    <Link href="/requests" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                      {role === 'client' ? 'My Requests' : 'Service Requests'}
-                    </Link>
+                    <Button
+                      variant={location === '/requests' ? 'default' : 'ghost'}
+                      className="justify-start"
+                      onClick={() => { setLocation('/requests'); setMobileMenuOpen(false); }}
+                    >
+                      <ClipboardList className="w-4 h-4 mr-2" />
+                      Requests
+                    </Button>
                   )}
                   
                   {hasPermission('viewOwnProjects') && (
-                    <Link href="/projects" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
-                      {role === 'employee' ? 'My Projects' : 'Projects'}
-                    </Link>
+                    <Button
+                      variant={location === '/projects' ? 'default' : 'ghost'}
+                      className="justify-start"
+                      onClick={() => { setLocation('/projects'); setMobileMenuOpen(false); }}
+                    >
+                      <FolderKanban className="w-4 h-4 mr-2" />
+                      Projects
+                    </Button>
                   )}
                   
                   {hasPermission('viewUsers') && (
-                    <Link href="/users" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      variant={location === '/users' ? 'default' : 'ghost'}
+                      className="justify-start"
+                      onClick={() => { setLocation('/users'); setMobileMenuOpen(false); }}
+                    >
+                      <Users className="w-4 h-4 mr-2" />
                       Users
-                    </Link>
+                    </Button>
                   )}
                   
                   {hasPermission('viewReports') && (
-                    <Link href="/reports" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      variant={location === '/reports' ? 'default' : 'ghost'}
+                      className="justify-start"
+                      onClick={() => { setLocation('/reports'); setMobileMenuOpen(false); }}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
                       Reports
-                    </Link>
+                    </Button>
                   )}
                   
                   {hasPermission('manageSystem') && (
-                    <Link href="/tasks" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      variant={location === '/tasks' ? 'default' : 'ghost'}
+                      className="justify-start"
+                      onClick={() => { setLocation('/tasks'); setMobileMenuOpen(false); }}
+                    >
+                      <CheckSquare className="w-4 h-4 mr-2" />
                       Tasks
-                    </Link>
+                    </Button>
                   )}
                   
                   {hasPermission('manageSystem') && (
-                    <Link href="/admin" className="block py-2 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>
+                    <Button
+                      variant={location === '/admin' ? 'default' : 'ghost'}
+                      className="justify-start"
+                      onClick={() => { setLocation('/admin'); setMobileMenuOpen(false); }}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
                       Admin
-                    </Link>
+                    </Button>
                   )}
-                </>
-              )}
 
-              <div className="flex flex-col space-y-2 pt-4 border-t">
-                {!isAuthenticated ? (
-                  <>
-                    <GetQuoteDialog>
-                      <Button variant="outline" size="sm" className="justify-start">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Get Quote
-                      </Button>
-                    </GetQuoteDialog>
-                    
-                    <ScheduleAppointmentDialog>
-                      <Button variant="outline" size="sm" className="justify-start">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Schedule
-                      </Button>
-                    </ScheduleAppointmentDialog>
-
-                    <LoginDialog>
-                      <Button variant="default" size="sm" className="justify-start">
-                        Sign In
-                      </Button>
-                    </LoginDialog>
-                  </>
-                ) : (
-                  <div className="flex flex-col space-y-2">
-                    <div className="text-sm text-muted-foreground">
-                      Welcome, {typedUser?.firstName || typedUser?.email}
+                  <div className="pt-4 mt-4 border-t">
+                    <div className="text-sm text-muted-foreground mb-2 px-3">
+                      {typedUser?.firstName || typedUser?.email}
                     </div>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => logoutMutation.mutate()}
                       disabled={logoutMutation.isPending}
-                      className="justify-start"
+                      className="justify-start w-full"
                     >
                       {logoutMutation.isPending ? 'Signing Out...' : 'Sign Out'}
                     </Button>
                   </div>
-                )}
-              </div>
+                </>
+              )}
+
+              {!isAuthenticated && (
+                <div className="flex flex-col space-y-2">
+                  <GetQuoteDialog>
+                    <Button variant="outline" size="sm" className="justify-start">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Get Quote
+                    </Button>
+                  </GetQuoteDialog>
+                  
+                  <ScheduleAppointmentDialog>
+                    <Button variant="outline" size="sm" className="justify-start">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Schedule
+                    </Button>
+                  </ScheduleAppointmentDialog>
+
+                  <LoginDialog>
+                    <Button variant="default" size="sm" className="justify-start">
+                      Sign In
+                    </Button>
+                  </LoginDialog>
+                </div>
+              )}
             </div>
           </div>
         )}
