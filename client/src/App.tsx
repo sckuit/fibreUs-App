@@ -82,6 +82,7 @@ function AuthenticatedRouter() {
         <Route path="/employees" component={AdminPortal} />
         <Route path="/reports" component={ManagerPortal} />
         <Route path="/tasks" component={ManagerPortal} />
+        <Route path="/projects" component={Projects} />
 
         {/* Legacy routes for backwards compatibility */}
         <Route path="/dashboard" component={Dashboard} />
