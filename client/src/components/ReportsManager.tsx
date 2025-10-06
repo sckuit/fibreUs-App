@@ -263,11 +263,11 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                   name="taskId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Associated Task (Optional)</FormLabel>
+                      <FormLabel>Associated Task</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-task">
-                            <SelectValue placeholder="Select a task (optional)" />
+                            <SelectValue placeholder="Select a task" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -280,7 +280,7 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Link this report to a specific task
+                        Select either a task or a project (at least one is required)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -291,11 +291,11 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                   name="projectId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Associated Project (Optional)</FormLabel>
+                      <FormLabel>Associated Project</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-project">
-                            <SelectValue placeholder="Select a project (optional)" />
+                            <SelectValue placeholder="Select a project" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -308,7 +308,7 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Link this report to a specific project (required if no task selected)
+                        Select either a project or a task (at least one is required)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
