@@ -55,7 +55,7 @@ function AuthenticatedRouter() {
     manager: "/portal/manager",
     admin: "/portal/admin",
     sales: "/portal/sales",
-    project_manager: "/dashboard",
+    project_manager: "/projects",
   };
 
   const defaultRoute = (user?.role && roleRoutes[user.role]) || "/portal/client";
