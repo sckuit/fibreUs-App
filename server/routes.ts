@@ -25,6 +25,10 @@ import {
   updateSalesRecordSchema,
   insertInquirySchema,
   updateInquirySchema,
+  insertLeadSchema,
+  updateLeadSchema,
+  insertClientSchema,
+  updateClientSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -1560,6 +1564,315 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting inquiry:", error);
         res.status(500).json({ message: "Failed to delete inquiry" });
+      }
+    }
+  );
+
+  // ===== Lead Routes (CRM) =====
+  app.post("/api/leads",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const validatedData = insertLeadSchema.parse(req.body);
+        const lead = await storage.createLead({
+          ...validatedData,
+          assignedToId: validatedData.assignedToId || userId,
+        });
+        
+        res.status(201).json(lead);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid lead data", errors: error.errors });
+        }
+        console.error("Error creating lead:", error);
+        res.status(500).json({ message: "Failed to create lead" });
+      }
+    }
+  );
+
+  app.post("/api/leads/convert-from-inquiry/:inquiryId",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const lead = await storage.convertInquiryToLead(req.params.inquiryId, userId);
+        res.status(201).json(lead);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Inquiry not found') {
+          return res.status(404).json({ message: "Inquiry not found" });
+        }
+        if (error instanceof Error && error.message === 'Inquiry already converted to lead') {
+          return res.status(400).json({ message: "Inquiry already converted to lead" });
+        }
+        console.error("Error converting inquiry to lead:", error);
+        res.status(500).json({ message: "Failed to convert inquiry to lead" });
+      }
+    }
+  );
+
+  app.get("/api/leads",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.source) filters.source = req.query.source;
+        if (req.query.status) filters.status = req.query.status;
+        if (req.query.assignedToId) filters.assignedToId = req.query.assignedToId;
+        
+        const leads = await storage.getLeads(filters);
+        res.json(leads);
+      } catch (error) {
+        console.error("Error fetching leads:", error);
+        res.status(500).json({ message: "Failed to fetch leads" });
+      }
+    }
+  );
+
+  app.get("/api/leads/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const lead = await storage.getLead(req.params.id);
+        
+        if (!lead) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        
+        res.json(lead);
+      } catch (error) {
+        console.error("Error fetching lead:", error);
+        res.status(500).json({ message: "Failed to fetch lead" });
+      }
+    }
+  );
+
+  app.patch("/api/leads/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const validatedData = updateLeadSchema.parse(req.body);
+        const lead = await storage.updateLead(req.params.id, validatedData);
+        
+        if (!lead) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        
+        res.json(lead);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating lead:", error);
+        res.status(500).json({ message: "Failed to update lead" });
+      }
+    }
+  );
+
+  app.delete("/api/leads/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        await storage.deleteLead(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting lead:", error);
+        res.status(500).json({ message: "Failed to delete lead" });
+      }
+    }
+  );
+
+  // ===== Client Routes (CRM) =====
+  app.post("/api/clients",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const validatedData = insertClientSchema.parse(req.body);
+        const client = await storage.createClient(validatedData);
+        
+        res.status(201).json(client);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid client data", errors: error.errors });
+        }
+        console.error("Error creating client:", error);
+        res.status(500).json({ message: "Failed to create client" });
+      }
+    }
+  );
+
+  app.post("/api/clients/convert-from-lead/:leadId",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const { accountManagerId, ...additionalData } = req.body;
+        const client = await storage.convertLeadToClient(
+          req.params.leadId, 
+          accountManagerId || userId,
+          additionalData
+        );
+        res.status(201).json(client);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Lead not found') {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        if (error instanceof Error && error.message === 'Lead already converted to client') {
+          return res.status(400).json({ message: "Lead already converted to client" });
+        }
+        console.error("Error converting lead to client:", error);
+        res.status(500).json({ message: "Failed to convert lead to client" });
+      }
+    }
+  );
+
+  app.get("/api/clients",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.status) filters.status = req.query.status;
+        if (req.query.accountManagerId) filters.accountManagerId = req.query.accountManagerId;
+        
+        const clients = await storage.getClients(filters);
+        res.json(clients);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        res.status(500).json({ message: "Failed to fetch clients" });
+      }
+    }
+  );
+
+  app.get("/api/clients/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const client = await storage.getClient(req.params.id);
+        
+        if (!client) {
+          return res.status(404).json({ message: "Client not found" });
+        }
+        
+        res.json(client);
+      } catch (error) {
+        console.error("Error fetching client:", error);
+        res.status(500).json({ message: "Failed to fetch client" });
+      }
+    }
+  );
+
+  app.patch("/api/clients/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const validatedData = updateClientSchema.parse(req.body);
+        const client = await storage.updateClient(req.params.id, validatedData);
+        
+        if (!client) {
+          return res.status(404).json({ message: "Client not found" });
+        }
+        
+        res.json(client);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating client:", error);
+        res.status(500).json({ message: "Failed to update client" });
+      }
+    }
+  );
+
+  app.delete("/api/clients/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        await storage.deleteClient(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting client:", error);
+        res.status(500).json({ message: "Failed to delete client" });
       }
     }
   );
