@@ -307,25 +307,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        {/* Portal Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight" data-testid="text-portal-name">
-                {portalName}
-              </h2>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="default" data-testid="badge-user-role-display">
-                  {roleDisplayName}
-                </Badge>
-                <span className="text-muted-foreground">
-                  Welcome, {typedUser?.firstName || typedUser?.email}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Role-based Tabular Navigation - Two Rows */}
         <Tabs defaultValue="overview" className="w-full">
           <div className="space-y-2 mb-6">
