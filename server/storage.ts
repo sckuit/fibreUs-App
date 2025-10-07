@@ -194,7 +194,7 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ ticketNumber: table.ticketNumber })
       .from(table)
-      .orderBy(desc(table.createdAt))
+      .orderBy(desc(table.ticketNumber))
       .limit(1);
     
     if (result.length === 0) {
