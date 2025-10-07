@@ -29,6 +29,8 @@ import {
   updateLeadSchema,
   insertClientSchema,
   updateClientSchema,
+  insertSupplierSchema,
+  updateSupplierSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -1873,6 +1875,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting client:", error);
         res.status(500).json({ message: "Failed to delete client" });
+      }
+    }
+  );
+
+  // ===== Supplier Routes (Vendors, Suppliers, Partners) =====
+  app.post("/api/suppliers",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const validatedData = insertSupplierSchema.parse(req.body);
+        const supplier = await storage.createSupplier(validatedData);
+        
+        res.status(201).json(supplier);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid supplier data", errors: error.errors });
+        }
+        console.error("Error creating supplier:", error);
+        res.status(500).json({ message: "Failed to create supplier" });
+      }
+    }
+  );
+
+  app.get("/api/suppliers",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.type) filters.type = req.query.type;
+        if (req.query.status) filters.status = req.query.status;
+        
+        const suppliers = await storage.getSuppliers(filters);
+        res.json(suppliers);
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+        res.status(500).json({ message: "Failed to fetch suppliers" });
+      }
+    }
+  );
+
+  app.get("/api/suppliers/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const supplier = await storage.getSupplier(req.params.id);
+        if (!supplier) {
+          return res.status(404).json({ message: "Supplier not found" });
+        }
+        
+        res.json(supplier);
+      } catch (error) {
+        console.error("Error fetching supplier:", error);
+        res.status(500).json({ message: "Failed to fetch supplier" });
+      }
+    }
+  );
+
+  app.patch("/api/suppliers/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const validatedData = updateSupplierSchema.parse(req.body);
+        const supplier = await storage.updateSupplier(req.params.id, validatedData);
+        
+        if (!supplier) {
+          return res.status(404).json({ message: "Supplier not found" });
+        }
+        
+        res.json(supplier);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating supplier:", error);
+        res.status(500).json({ message: "Failed to update supplier" });
+      }
+    }
+  );
+
+  app.delete("/api/suppliers/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        await storage.deleteSupplier(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting supplier:", error);
+        res.status(500).json({ message: "Failed to delete supplier" });
       }
     }
   );
