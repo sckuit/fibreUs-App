@@ -12,7 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit, Package, AlertTriangle, Download, Upload, FileDown } from "lucide-react";
+import { Shield, Users, Database, Activity, Eye, Trash2, UserPlus, Edit, Package, AlertTriangle, Download, Upload, FileDown, ArrowRight, Settings, FolderKanban } from "lucide-react";
+import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, downloadInventoryTemplate, parseCSV } from "@/lib/exportUtils";
@@ -356,42 +357,50 @@ export default function AdminPortal() {
           <div className="space-y-2">
             <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
               <TabsTrigger value="users" data-testid="tab-users">
-                User Management
-              </TabsTrigger>
-              <TabsTrigger value="leads" data-testid="tab-leads">
-                Leads
-              </TabsTrigger>
-              <TabsTrigger value="clients" data-testid="tab-clients">
-                Clients
-              </TabsTrigger>
-              <TabsTrigger value="suppliers" data-testid="tab-suppliers">
-                Suppliers
-              </TabsTrigger>
-              <TabsTrigger value="inventory" data-testid="tab-inventory">
-                Inventory
-              </TabsTrigger>
-              <TabsTrigger value="reports" data-testid="tab-reports">
-                Reports
+                Users
               </TabsTrigger>
               <TabsTrigger value="tasks" data-testid="tab-tasks">
                 Tasks
               </TabsTrigger>
+              <TabsTrigger value="projects" data-testid="tab-projects">
+                Projects
+              </TabsTrigger>
+              <TabsTrigger value="reports" data-testid="tab-reports">
+                Reports
+              </TabsTrigger>
+              <TabsTrigger value="inventory" data-testid="tab-inventory">
+                Inventory
+              </TabsTrigger>
+              <TabsTrigger value="suppliers" data-testid="tab-suppliers">
+                Suppliers
+              </TabsTrigger>
+              <Link href="/" data-testid="link-site">
+                <Button variant="ghost" size="sm" className="h-9 px-3">
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
             </TabsList>
             <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
               <TabsTrigger value="messages" data-testid="tab-messages">
                 Messages
               </TabsTrigger>
+              <TabsTrigger value="clients" data-testid="tab-clients">
+                Clients
+              </TabsTrigger>
+              <TabsTrigger value="leads" data-testid="tab-leads">
+                Leads
+              </TabsTrigger>
               <TabsTrigger value="visitors" data-testid="tab-visitors">
-                Visitor Analytics
-              </TabsTrigger>
-              <TabsTrigger value="system" data-testid="tab-system">
-                System Settings
-              </TabsTrigger>
-              <TabsTrigger value="logs" data-testid="tab-logs">
-                Activity Logs
+                Visitors
               </TabsTrigger>
               <TabsTrigger value="financial" data-testid="tab-financial">
-                Financial Logs
+                Financial
+              </TabsTrigger>
+              <TabsTrigger value="logs" data-testid="tab-logs">
+                Activities
+              </TabsTrigger>
+              <TabsTrigger value="system" data-testid="tab-system">
+                <Settings className="h-4 w-4" />
               </TabsTrigger>
             </TabsList>
           </div>
@@ -636,6 +645,25 @@ export default function AdminPortal() {
 
           <TabsContent value="tasks" className="space-y-4">
             {user && <TasksManager role="admin" userId={user.id} />}
+          </TabsContent>
+
+          <TabsContent value="projects" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FolderKanban className="h-5 w-5" />
+                  Projects Management
+                </CardTitle>
+                <CardDescription>
+                  View and manage all projects in the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Projects management functionality - track client projects, timelines, and deliverables
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="messages" className="space-y-4">
