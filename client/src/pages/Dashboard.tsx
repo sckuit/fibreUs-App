@@ -833,11 +833,56 @@ export default function Dashboard() {
           <TabsContent value="settings" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>System Settings</CardTitle>
-                <CardDescription>Configure system preferences and settings</CardDescription>
+                <CardTitle>User Profile</CardTitle>
+                <CardDescription>View and update your personal information</CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center py-8">Settings configuration coming soon</p>
+              <CardContent className="space-y-6">
+                {typedUser && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Email</label>
+                        <p className="text-lg">{typedUser.email}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Role</label>
+                        <p className="text-lg capitalize">{typedUser.role}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">First Name</label>
+                        <p className="text-lg">{typedUser.firstName || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Last Name</label>
+                        <p className="text-lg">{typedUser.lastName || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                        <p className="text-lg">{typedUser.phone || '-'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Company</label>
+                        <p className="text-lg">{typedUser.company || '-'}</p>
+                      </div>
+                    </div>
+                    <div className="pt-4 border-t">
+                      <Button 
+                        onClick={() => { 
+                          setEditingUser(typedUser); 
+                          setIsUserDialogOpen(true); 
+                        }}
+                        data-testid="button-edit-profile"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Update Profile
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

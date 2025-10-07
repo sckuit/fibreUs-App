@@ -1,26 +1,23 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth, usePermissions } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
-import { Menu, X, Shield, Phone, FileText, Calendar, Users, Settings, BarChart3, Clock, Mail, LayoutDashboard, FolderKanban, ClipboardList, CheckSquare } from "lucide-react";
+import { Menu, X, Shield, Phone, FileText, Calendar, Clock, Mail, LayoutDashboard } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function TopNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
-  const { hasPermission, role } = usePermissions();
   const [location, setLocation] = useLocation();
   const typedUser = user as User | undefined;
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Logout mutation
   const logoutMutation = useMutation({
@@ -46,8 +43,6 @@ export default function TopNavigation() {
       });
     },
   });
-
-  const isActive = (path: string) => location === path;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[9999] w-full border-b bg-background backdrop-blur-sm">
@@ -86,58 +81,17 @@ export default function TopNavigation() {
             <span className="text-2xl font-bold text-primary">FibreUS</span>
           </Link>
 
-          {/* Desktop Navigation Tabs */}
+          {/* Dashboard Link for Authenticated Users */}
           {isAuthenticated && (
-            <Tabs value={location} className="flex-1 mx-8">
-              <TabsList className="h-10">
-                <TabsTrigger value="/dashboard" onClick={() => setLocation('/dashboard')} data-testid="tab-dashboard">
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Dashboard
-                </TabsTrigger>
-                
-                {hasPermission('viewOwnRequests') && (
-                  <TabsTrigger value="/requests" onClick={() => setLocation('/requests')} data-testid="tab-requests">
-                    <ClipboardList className="w-4 h-4 mr-2" />
-                    Requests
-                  </TabsTrigger>
-                )}
-                
-                {hasPermission('viewOwnProjects') && (
-                  <TabsTrigger value="/projects" onClick={() => setLocation('/projects')} data-testid="tab-projects">
-                    <FolderKanban className="w-4 h-4 mr-2" />
-                    Projects
-                  </TabsTrigger>
-                )}
-                
-                {hasPermission('viewUsers') && (
-                  <TabsTrigger value="/users" onClick={() => setLocation('/users')} data-testid="tab-users">
-                    <Users className="w-4 h-4 mr-2" />
-                    Users
-                  </TabsTrigger>
-                )}
-                
-                {hasPermission('viewReports') && (
-                  <TabsTrigger value="/reports" onClick={() => setLocation('/reports')} data-testid="tab-reports">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Reports
-                  </TabsTrigger>
-                )}
-                
-                {hasPermission('manageSystem') && (
-                  <TabsTrigger value="/tasks" onClick={() => setLocation('/tasks')} data-testid="tab-tasks">
-                    <CheckSquare className="w-4 h-4 mr-2" />
-                    Tasks
-                  </TabsTrigger>
-                )}
-                
-                {hasPermission('manageSystem') && (
-                  <TabsTrigger value="/admin" onClick={() => setLocation('/admin')} data-testid="tab-admin">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Admin
-                  </TabsTrigger>
-                )}
-              </TabsList>
-            </Tabs>
+            <Button
+              variant={location === '/dashboard' ? 'default' : 'ghost'}
+              onClick={() => setLocation('/dashboard')}
+              className="mx-4"
+              data-testid="button-dashboard"
+            >
+              <LayoutDashboard className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
           )}
 
           {/* Action Buttons */}
@@ -198,126 +152,17 @@ export default function TopNavigation() {
         </div>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && (
+        {mobileMenuOpen && isAuthenticated && (
           <div className="md:hidden border-t py-4">
             <div className="flex flex-col space-y-2">
-              {isAuthenticated && (
-                <>
-                  <Button
-                    variant={location === '/dashboard' ? 'default' : 'ghost'}
-                    className="justify-start"
-                    onClick={() => { setLocation('/dashboard'); setMobileMenuOpen(false); }}
-                  >
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                  
-                  {hasPermission('viewOwnRequests') && (
-                    <Button
-                      variant={location === '/requests' ? 'default' : 'ghost'}
-                      className="justify-start"
-                      onClick={() => { setLocation('/requests'); setMobileMenuOpen(false); }}
-                    >
-                      <ClipboardList className="w-4 h-4 mr-2" />
-                      Requests
-                    </Button>
-                  )}
-                  
-                  {hasPermission('viewOwnProjects') && (
-                    <Button
-                      variant={location === '/projects' ? 'default' : 'ghost'}
-                      className="justify-start"
-                      onClick={() => { setLocation('/projects'); setMobileMenuOpen(false); }}
-                    >
-                      <FolderKanban className="w-4 h-4 mr-2" />
-                      Projects
-                    </Button>
-                  )}
-                  
-                  {hasPermission('viewUsers') && (
-                    <Button
-                      variant={location === '/users' ? 'default' : 'ghost'}
-                      className="justify-start"
-                      onClick={() => { setLocation('/users'); setMobileMenuOpen(false); }}
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      Users
-                    </Button>
-                  )}
-                  
-                  {hasPermission('viewReports') && (
-                    <Button
-                      variant={location === '/reports' ? 'default' : 'ghost'}
-                      className="justify-start"
-                      onClick={() => { setLocation('/reports'); setMobileMenuOpen(false); }}
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Reports
-                    </Button>
-                  )}
-                  
-                  {hasPermission('manageSystem') && (
-                    <Button
-                      variant={location === '/tasks' ? 'default' : 'ghost'}
-                      className="justify-start"
-                      onClick={() => { setLocation('/tasks'); setMobileMenuOpen(false); }}
-                    >
-                      <CheckSquare className="w-4 h-4 mr-2" />
-                      Tasks
-                    </Button>
-                  )}
-                  
-                  {hasPermission('manageSystem') && (
-                    <Button
-                      variant={location === '/admin' ? 'default' : 'ghost'}
-                      className="justify-start"
-                      onClick={() => { setLocation('/admin'); setMobileMenuOpen(false); }}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Admin
-                    </Button>
-                  )}
-
-                  <div className="pt-4 mt-4 border-t">
-                    <div className="text-sm text-muted-foreground mb-2 px-3">
-                      {typedUser?.firstName || typedUser?.email}
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => logoutMutation.mutate()}
-                      disabled={logoutMutation.isPending}
-                      className="justify-start w-full"
-                    >
-                      {logoutMutation.isPending ? 'Signing Out...' : 'Sign Out'}
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {!isAuthenticated && (
-                <div className="flex flex-col space-y-2">
-                  <GetQuoteDialog>
-                    <Button variant="outline" size="sm" className="justify-start">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Get Quote
-                    </Button>
-                  </GetQuoteDialog>
-                  
-                  <ScheduleAppointmentDialog>
-                    <Button variant="outline" size="sm" className="justify-start">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Schedule
-                    </Button>
-                  </ScheduleAppointmentDialog>
-
-                  <LoginDialog>
-                    <Button variant="default" size="sm" className="justify-start">
-                      Sign In
-                    </Button>
-                  </LoginDialog>
-                </div>
-              )}
+              <Button
+                variant={location === '/dashboard' ? 'default' : 'ghost'}
+                className="justify-start"
+                onClick={() => { setLocation('/dashboard'); setMobileMenuOpen(false); }}
+              >
+                <LayoutDashboard className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
             </div>
           </div>
         )}
