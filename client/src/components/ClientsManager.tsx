@@ -42,6 +42,7 @@ export default function ClientsManager() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | undefined>(undefined);
   const { toast } = useToast();
   const { user } = useAuth();
   const typedUser = user as User | undefined;
@@ -56,6 +57,7 @@ export default function ClientsManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       setIsClientDialogOpen(false);
+      setEditingClient(undefined);
       toast({ title: "Client created", description: "New client has been successfully added" });
     },
     onError: (error: any) => {
@@ -63,22 +65,31 @@ export default function ClientsManager() {
     },
   });
 
-  const updateClient = useMutation({
+  const updateClientMutation = useMutation({
+    mutationFn: async (clientData: any) => {
+      const { id, ...updates } = clientData;
+      return apiRequest("PATCH", `/api/clients/${id}`, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsClientDialogOpen(false);
+      setEditingClient(undefined);
+      toast({ title: "Client updated", description: "Client information has been updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update client", variant: "destructive" });
+    },
+  });
+
+  const updateClientStatus = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Client> }) => {
-      const response = await fetch(`/api/clients/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(updates),
-      });
-      if (!response.ok) throw new Error("Failed to update client");
-      return response.json();
+      return apiRequest("PATCH", `/api/clients/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       toast({
         title: "Client Updated",
-        description: "Client information has been updated successfully.",
+        description: "Client status has been updated successfully.",
       });
     },
   });
@@ -114,6 +125,24 @@ export default function ClientsManager() {
     });
   };
 
+  const handleClientSubmit = (clientData: any) => {
+    if (clientData.id) {
+      updateClientMutation.mutate(clientData);
+    } else {
+      createClientMutation.mutate(clientData);
+    }
+  };
+
+  const handleEditClick = (client: Client) => {
+    setEditingClient(client);
+    setIsClientDialogOpen(true);
+  };
+
+  const handleCreateClick = () => {
+    setEditingClient(undefined);
+    setIsClientDialogOpen(true);
+  };
+
   const filteredClients = clients.filter((client) => {
     if (filterStatus === "all") return true;
     return client.status === filterStatus;
@@ -140,7 +169,7 @@ export default function ClientsManager() {
               </SelectContent>
             </Select>
             {hasPermission(userRole, 'manageClients') && (
-              <Button onClick={() => setIsClientDialogOpen(true)} data-testid="button-create-client">
+              <Button onClick={handleCreateClick} data-testid="button-create-client">
                 <Plus className="w-4 h-4 mr-2" />
                 Create New Client
               </Button>
@@ -206,7 +235,7 @@ export default function ClientsManager() {
                       <Select
                         value={client.status || "potential"}
                         onValueChange={(value) =>
-                          updateClient.mutate({ id: client.id, updates: { status: value as any } })
+                          updateClientStatus.mutate({ id: client.id, updates: { status: value as any } })
                         }
                       >
                         <SelectTrigger className="w-32" data-testid={`select-client-status-${client.id}`}>
@@ -226,18 +255,29 @@ export default function ClientsManager() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
+                      <div className="flex gap-2 flex-wrap">
+                        {hasPermission(userRole, 'manageClients') && (
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setSelectedClient(client)}
-                            data-testid={`button-view-client-${client.id}`}
+                            onClick={() => handleEditClick(client)}
+                            data-testid={`button-edit-client-${client.id}`}
                           >
-                            <FileText className="w-4 h-4 mr-1" />
-                            View Details
+                            Edit
                           </Button>
-                        </DialogTrigger>
+                        )}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedClient(client)}
+                              data-testid={`button-view-client-${client.id}`}
+                            >
+                              <FileText className="w-4 h-4 mr-1" />
+                              View Details
+                            </Button>
+                          </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                           <DialogHeader>
                             <DialogTitle>Client Details</DialogTitle>
@@ -319,6 +359,7 @@ export default function ClientsManager() {
                           )}
                         </DialogContent>
                       </Dialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -331,8 +372,9 @@ export default function ClientsManager() {
       <ClientDialog
         open={isClientDialogOpen}
         onOpenChange={setIsClientDialogOpen}
-        onSubmit={(data) => createClientMutation.mutate(data)}
-        isPending={createClientMutation.isPending}
+        onSubmit={handleClientSubmit}
+        isPending={createClientMutation.isPending || updateClientMutation.isPending}
+        client={editingClient}
       />
     </div>
   );

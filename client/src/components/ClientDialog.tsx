@@ -18,12 +18,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import type { Client } from "@shared/schema";
 
 interface ClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (clientData: any) => void;
   isPending: boolean;
+  client?: Client;
 }
 
 export function ClientDialog({ 
@@ -31,7 +33,10 @@ export function ClientDialog({
   onOpenChange, 
   onSubmit, 
   isPending,
+  client,
 }: ClientDialogProps) {
+  const isEditMode = !!client;
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -45,23 +50,38 @@ export function ClientDialog({
     notes: "",
   });
 
-  // Reset form when dialog opens
+  // Reset form when dialog opens or populate if editing
   useEffect(() => {
     if (open) {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        company: "",
-        industry: "",
-        companySize: undefined,
-        address: "",
-        status: "potential",
-        preferredContactMethod: undefined,
-        notes: "",
-      });
+      if (client) {
+        setFormData({
+          name: client.name || "",
+          email: client.email || "",
+          phone: client.phone || "",
+          company: client.company || "",
+          industry: client.industry || "",
+          companySize: client.companySize || undefined,
+          address: client.address || "",
+          status: client.status || "potential",
+          preferredContactMethod: client.preferredContactMethod || undefined,
+          notes: client.notes || "",
+        });
+      } else {
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          company: "",
+          industry: "",
+          companySize: undefined,
+          address: "",
+          status: "potential",
+          preferredContactMethod: undefined,
+          notes: "",
+        });
+      }
     }
-  }, [open]);
+  }, [open, client]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +104,10 @@ export function ClientDialog({
     if (formData.preferredContactMethod) submitData.preferredContactMethod = formData.preferredContactMethod;
     if (formData.notes) submitData.notes = formData.notes;
     
+    if (isEditMode && client) {
+      submitData.id = client.id;
+    }
+    
     onSubmit(submitData);
   };
 
@@ -96,9 +120,9 @@ export function ClientDialog({
       <DialogContent className="sm:max-w-[600px]" data-testid="dialog-client">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Client</DialogTitle>
+            <DialogTitle>{isEditMode ? "Edit Client" : "Create New Client"}</DialogTitle>
             <DialogDescription>
-              Add a new client to the system
+              {isEditMode ? "Update client information" : "Add a new client to the system"}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
@@ -265,7 +289,10 @@ export function ClientDialog({
               disabled={isPending || !formData.name || !formData.email || !formData.phone} 
               data-testid="button-submit-client"
             >
-              {isPending ? "Creating..." : "Create Client"}
+              {isPending 
+                ? (isEditMode ? "Updating..." : "Creating...") 
+                : (isEditMode ? "Update Client" : "Create Client")
+              }
             </Button>
           </DialogFooter>
         </form>
