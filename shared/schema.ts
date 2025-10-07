@@ -44,6 +44,9 @@ export const taskStatusEnum = pgEnum('task_status', [
 export const financialLogTypeEnum = pgEnum('financial_log_type', [
   'project_cost_update', 'quote_created', 'quote_updated', 'inventory_purchase', 'inventory_sale', 'sales_record_created', 'sales_record_updated'
 ]);
+export const leadSourceEnum = pgEnum('lead_source', ['manual', 'inquiry', 'referral', 'website']);
+export const leadStatusEnum = pgEnum('lead_status', ['new', 'contacted', 'qualified', 'converted', 'lost']);
+export const clientStatusEnum = pgEnum('client_status', ['active', 'inactive', 'archived']);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -259,6 +262,48 @@ export const inquiries = pgTable("inquiries", {
   preferredTime: varchar("preferred_time"), // for appointments only
   status: varchar("status").default('new'), // new, contacted, converted, closed
   assignedToId: varchar("assigned_to_id").references(() => users.id), // sales/admin assigned
+  convertedLeadId: varchar("converted_lead_id"), // references leads.id when converted
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Leads - potential clients that can be converted to clients
+export const leads = pgTable("leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  source: leadSourceEnum("source").notNull().default('manual'),
+  inquiryId: varchar("inquiry_id").references(() => inquiries.id), // nullable for manual leads
+  name: varchar("name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone").notNull(),
+  company: varchar("company"),
+  serviceType: varchar("service_type"),
+  address: text("address"),
+  status: leadStatusEnum("status").notNull().default('new'),
+  assignedToId: varchar("assigned_to_id").references(() => users.id), // sales user
+  notes: text("notes"),
+  estimatedValue: decimal("estimated_value", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Clients - current customers converted from leads
+export const clients = pgTable("clients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  leadId: varchar("lead_id").references(() => leads.id), // nullable for direct clients
+  accountManagerId: varchar("account_manager_id").references(() => users.id),
+  name: varchar("name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone").notNull(),
+  company: varchar("company"),
+  industry: varchar("industry"),
+  companySize: varchar("company_size"), // small, medium, large, enterprise
+  address: text("address"),
+  status: clientStatusEnum("status").notNull().default('active'),
+  contractValue: decimal("contract_value", { precision: 10, scale: 2 }),
+  contractStartDate: timestamp("contract_start_date"),
+  contractEndDate: timestamp("contract_end_date"),
+  preferredContactMethod: varchar("preferred_contact_method"), // email, phone, both
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -592,9 +637,34 @@ export const insertInquirySchema = createInsertSchema(inquiries).omit({
   updatedAt: true,
   status: true,
   assignedToId: true,
+  convertedLeadId: true,
 });
 
 export const updateInquirySchema = createInsertSchema(inquiries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -611,6 +681,12 @@ export type InsertFinancialLogType = z.infer<typeof insertFinancialLogSchema>;
 export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiryType = z.infer<typeof insertInquirySchema>;
 export type UpdateInquiryType = z.infer<typeof updateInquirySchema>;
+export type Lead = typeof leads.$inferSelect;
+export type InsertLeadType = z.infer<typeof insertLeadSchema>;
+export type UpdateLeadType = z.infer<typeof updateLeadSchema>;
+export type Client = typeof clients.$inferSelect;
+export type InsertClientType = z.infer<typeof insertClientSchema>;
+export type UpdateClientType = z.infer<typeof updateClientSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
