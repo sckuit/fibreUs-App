@@ -50,7 +50,7 @@ export default function TopNavigation() {
   const isActive = (path: string) => location === path;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       {/* Top contact bar - only show for non-authenticated users on landing page */}
       {!isAuthenticated && location === '/' && (
         <div className="border-b bg-primary text-primary-foreground py-1">
