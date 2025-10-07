@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Dialog,
   DialogContent,
@@ -94,31 +96,40 @@ export default function ScheduleAppointmentDialog({ children }: ScheduleAppointm
     return dates;
   };
 
-  const onSubmit = async (data: AppointmentFormData) => {
-    try {
-      // For now, we'll just show a success message
-      // In a real implementation, this would send to an API
-      console.log("Appointment request:", data);
-      
+  const submitInquiry = useMutation({
+    mutationFn: async (data: AppointmentFormData) => {
+      return apiRequest("/api/inquiries", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "appointment",
+          ...data,
+        }),
+      });
+    },
+    onSuccess: () => {
       setIsSubmitted(true);
       toast({
         title: "Appointment Scheduled",
         description: "We'll confirm your appointment within 2 hours.",
       });
 
-      // Reset form after a delay
       setTimeout(() => {
         setOpen(false);
         setIsSubmitted(false);
         form.reset();
       }, 2000);
-    } catch (error) {
+    },
+    onError: (error: any) => {
       toast({
         title: "Scheduling Failed",
-        description: "Please try again or call us directly at (555) 123-4567",
+        description: error.message || "Please try again or call us directly at (555) 123-4567",
         variant: "destructive",
       });
-    }
+    },
+  });
+
+  const onSubmit = (data: AppointmentFormData) => {
+    submitInquiry.mutate(data);
   };
 
   return (
@@ -320,10 +331,10 @@ export default function ScheduleAppointmentDialog({ children }: ScheduleAppointm
                 </Button>
                 <Button
                   type="submit"
-                  disabled={form.formState.isSubmitting}
+                  disabled={submitInquiry.isPending}
                   data-testid="button-appointment-submit"
                 >
-                  {form.formState.isSubmitting ? "Scheduling..." : "Schedule Appointment"}
+                  {submitInquiry.isPending ? "Scheduling..." : "Schedule Appointment"}
                 </Button>
               </div>
             </form>
