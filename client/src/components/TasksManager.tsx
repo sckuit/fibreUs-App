@@ -515,7 +515,7 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
                           type="date"
                           data-testid="input-due-date"
                           value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                          onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                          onChange={(e) => field.onChange(e.target.value || undefined)}
                         />
                       </FormControl>
                       <FormMessage />

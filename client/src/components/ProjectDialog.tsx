@@ -109,10 +109,10 @@ export function ProjectDialog({
       submitData.assignedTechnicianId = formData.assignedTechnicianId;
     }
     if (formData.startDate) {
-      submitData.startDate = new Date(formData.startDate);
+      submitData.startDate = formData.startDate;
     }
     if (formData.estimatedCompletionDate) {
-      submitData.estimatedCompletionDate = new Date(formData.estimatedCompletionDate);
+      submitData.estimatedCompletionDate = formData.estimatedCompletionDate;
     }
     if (formData.totalCost) {
       submitData.totalCost = formData.totalCost;
