@@ -597,6 +597,8 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   createdAt: true,
   updatedAt: true,
   completedAt: true,
+}).extend({
+  dueDate: z.coerce.date().optional(),
 });
 
 export const updateTaskSchema = createInsertSchema(tasks).omit({
@@ -604,6 +606,9 @@ export const updateTaskSchema = createInsertSchema(tasks).omit({
   createdAt: true,
   updatedAt: true,
   createdById: true,
+}).extend({
+  dueDate: z.coerce.date().optional(),
+  completedAt: z.coerce.date().optional(),
 }).partial();
 
 export const insertReportSchema = createInsertSchema(reports).omit({
@@ -658,6 +663,8 @@ export const updateSalesRecordSchema = createInsertSchema(salesRecords).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  closedAt: z.coerce.date().optional(),
 }).partial();
 
 export const insertFinancialLogSchema = createInsertSchema(financialLogs).omit({
@@ -696,24 +703,36 @@ export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contractStartDate: z.coerce.date().optional(),
+  contractEndDate: z.coerce.date().optional(),
 });
 
 export const updateClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contractStartDate: z.coerce.date().optional(),
+  contractEndDate: z.coerce.date().optional(),
 }).partial();
 
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contractStartDate: z.coerce.date().optional(),
+  contractEndDate: z.coerce.date().optional(),
 });
 
 export const updateSupplierSchema = createInsertSchema(suppliers).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  contractStartDate: z.coerce.date().optional(),
+  contractEndDate: z.coerce.date().optional(),
 }).partial();
 
 export type InsertTaskType = z.infer<typeof insertTaskSchema>;
