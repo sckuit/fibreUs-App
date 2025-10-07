@@ -333,7 +333,7 @@ export default function Dashboard() {
             <TabsList className="w-full h-auto p-1 grid gap-1" style={{
               gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
             }}>
-              {hasPermission(userRole, 'viewUsers') && (
+              {hasPermission(userRole, 'viewUsers') && userRole !== 'project_manager' && (
                 <TabsTrigger value="users" data-testid="tab-users">
                   <Users className="w-4 h-4 mr-2" />
                   Users
