@@ -14,6 +14,7 @@ import {
   inquiries,
   leads,
   clients,
+  suppliers,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -48,6 +49,9 @@ import {
   type Client,
   type InsertClientType,
   type UpdateClientType,
+  type Supplier,
+  type InsertSupplierType,
+  type UpdateSupplierType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -175,6 +179,13 @@ export interface IStorage {
   updateClient(id: string, updates: UpdateClientType): Promise<Client | undefined>;
   deleteClient(id: string): Promise<void>;
   convertLeadToClient(leadId: string, accountManagerId: string, additionalData: Partial<Client>): Promise<Client>;
+
+  // Supplier operations (vendors, suppliers, partners)
+  createSupplier(supplier: InsertSupplierType): Promise<Supplier>;
+  getSuppliers(filters?: { type?: string; status?: string }): Promise<Supplier[]>;
+  getSupplier(id: string): Promise<Supplier | undefined>;
+  updateSupplier(id: string, updates: UpdateSupplierType): Promise<Supplier | undefined>;
+  deleteSupplier(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1076,6 +1087,48 @@ export class DatabaseStorage implements IStorage {
     });
     
     return client;
+  }
+
+  // Supplier operations
+  async createSupplier(supplier: InsertSupplierType): Promise<Supplier> {
+    const [result] = await db.insert(suppliers).values(supplier).returning();
+    return result;
+  }
+
+  async getSuppliers(filters?: { type?: string; status?: string }): Promise<Supplier[]> {
+    let query = db.select().from(suppliers);
+    
+    const conditions = [];
+    if (filters?.type) {
+      conditions.push(eq(suppliers.type, filters.type));
+    }
+    if (filters?.status) {
+      conditions.push(eq(suppliers.status, filters.status));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(suppliers.createdAt));
+  }
+
+  async getSupplier(id: string): Promise<Supplier | undefined> {
+    const [result] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return result;
+  }
+
+  async updateSupplier(id: string, updates: UpdateSupplierType): Promise<Supplier | undefined> {
+    const [result] = await db
+      .update(suppliers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(suppliers.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteSupplier(id: string): Promise<void> {
+    await db.delete(suppliers).where(eq(suppliers.id, id));
   }
 }
 
