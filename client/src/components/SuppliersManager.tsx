@@ -146,19 +146,16 @@ export default function SuppliersManager() {
   const addForm = useForm<InsertSupplierType>({
     resolver: zodResolver(insertSupplierSchema),
     defaultValues: {
-      name: "",
+      companyName: "",
       type: "supplier",
       status: "active",
       email: "",
       phone: "",
-      address: "",
       contactPerson: "",
+      address: "",
       website: "",
       taxId: "",
       paymentTerms: "",
-      deliveryTerms: "",
-      contractStartDate: undefined,
-      contractEndDate: undefined,
       notes: "",
     },
   });
@@ -229,12 +226,12 @@ export default function SuppliersManager() {
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={addForm.control}
-                        name="name"
+                        name="companyName"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Company Name *</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="ABC Corporation" data-testid="input-name" />
+                              <Input {...field} placeholder="ABC Corporation" data-testid="input-company-name" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -334,7 +331,7 @@ export default function SuppliersManager() {
                         <FormItem>
                           <FormLabel>Address</FormLabel>
                           <FormControl>
-                            <Textarea {...field} placeholder="123 Business St, City, State, ZIP" data-testid="input-address" />
+                            <Textarea {...field} value={field.value || ""} placeholder="123 Business St, City, State, ZIP" data-testid="input-address" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -348,7 +345,7 @@ export default function SuppliersManager() {
                           <FormItem>
                             <FormLabel>Website</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://www.company.com" data-testid="input-website" />
+                              <Input {...field} value={field.value || ""} placeholder="https://www.company.com" data-testid="input-website" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -361,35 +358,7 @@ export default function SuppliersManager() {
                           <FormItem>
                             <FormLabel>Tax ID</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="12-3456789" data-testid="input-tax-id" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={addForm.control}
-                        name="paymentTerms"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Payment Terms</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Net 30" data-testid="input-payment-terms" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={addForm.control}
-                        name="deliveryTerms"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Delivery Terms</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="FOB Destination" data-testid="input-delivery-terms" />
+                              <Input {...field} value={field.value || ""} placeholder="12-3456789" data-testid="input-tax-id" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -398,12 +367,25 @@ export default function SuppliersManager() {
                     </div>
                     <FormField
                       control={addForm.control}
+                      name="paymentTerms"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Payment Terms</FormLabel>
+                          <FormControl>
+                            <Input {...field} value={field.value || ""} placeholder="Net 30" data-testid="input-payment-terms" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={addForm.control}
                       name="notes"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Notes</FormLabel>
                           <FormControl>
-                            <Textarea {...field} placeholder="Additional notes" data-testid="input-notes" />
+                            <Textarea {...field} value={field.value || ""} placeholder="Additional notes" data-testid="input-notes" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -446,7 +428,7 @@ export default function SuppliersManager() {
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <p className="font-medium" data-testid={`text-name-${supplier.id}`}>{supplier.name}</p>
+                          <p className="font-medium" data-testid={`text-name-${supplier.id}`}>{supplier.companyName}</p>
                           {supplier.contactPerson && (
                             <p className="text-xs text-muted-foreground">{supplier.contactPerson}</p>
                           )}
@@ -508,7 +490,7 @@ export default function SuppliersManager() {
               <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-md">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Company Name</p>
-                  <p className="text-base">{selectedSupplier.name}</p>
+                  <p className="text-base">{selectedSupplier.companyName}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Type</p>
@@ -574,20 +556,12 @@ export default function SuppliersManager() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {selectedSupplier.paymentTerms && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Payment Terms</p>
-                    <p className="text-sm">{selectedSupplier.paymentTerms}</p>
-                  </div>
-                )}
-                {selectedSupplier.deliveryTerms && (
-                  <div>
-                    <p className="text-xs text-muted-foreground">Delivery Terms</p>
-                    <p className="text-sm">{selectedSupplier.deliveryTerms}</p>
-                  </div>
-                )}
-              </div>
+              {selectedSupplier.paymentTerms && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Payment Terms</p>
+                  <p className="text-sm">{selectedSupplier.paymentTerms}</p>
+                </div>
+              )}
 
               {selectedSupplier.notes && (
                 <div>
