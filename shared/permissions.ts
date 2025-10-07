@@ -336,10 +336,10 @@ export const rolePermissions: Record<UserRole, Permission> = {
     viewFinancial: false,
     manageFinancial: false,
     
-    // Users - NO access
-    viewUsers: false,
+    // Users - read only access
+    viewUsers: true,
     manageUsers: false,
-    viewUserDetails: false,
+    viewUserDetails: true,
     
     // Admin - no admin access
     manageSystem: false,
