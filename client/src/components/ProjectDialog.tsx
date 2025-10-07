@@ -91,13 +91,13 @@ export function ProjectDialog({
       submitData.assignedTechnicianId = formData.assignedTechnicianId;
     }
     if (formData.startDate) {
-      submitData.startDate = new Date(formData.startDate).toISOString();
+      submitData.startDate = new Date(formData.startDate);
     }
     if (formData.estimatedCompletionDate) {
-      submitData.estimatedCompletionDate = new Date(formData.estimatedCompletionDate).toISOString();
+      submitData.estimatedCompletionDate = new Date(formData.estimatedCompletionDate);
     }
     if (formData.totalCost) {
-      submitData.totalCost = parseFloat(formData.totalCost);
+      submitData.totalCost = formData.totalCost;
     }
     if (formData.workNotes) {
       submitData.workNotes = formData.workNotes;
