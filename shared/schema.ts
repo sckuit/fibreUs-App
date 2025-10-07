@@ -338,6 +338,20 @@ export const suppliers = pgTable("suppliers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Activities - audit log for system actions
+export const activities = pgTable("activities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  action: varchar("action").notNull(), // created, updated, deleted, login, logout, etc.
+  entityType: varchar("entity_type").notNull(), // user, project, task, report, etc.
+  entityId: varchar("entity_id"), // ID of the affected entity
+  entityName: varchar("entity_name"), // Human-readable name/identifier
+  details: text("details"), // Additional context or changes made
+  ipAddress: varchar("ip_address"),
+  userAgent: varchar("user_agent"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   serviceRequests: many(serviceRequests),
@@ -453,6 +467,13 @@ export const salesRecordsRelations = relations(salesRecords, ({ one }) => ({
 export const financialLogsRelations = relations(financialLogs, ({ one }) => ({
   user: one(users, {
     fields: [financialLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  user: one(users, {
+    fields: [activities.userId],
     references: [users.id],
   }),
 }));
@@ -758,6 +779,14 @@ export type UpdateClientType = z.infer<typeof updateClientSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplierType = z.infer<typeof insertSupplierSchema>;
 export type UpdateSupplierType = z.infer<typeof updateSupplierSchema>;
+
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type Activity = typeof activities.$inferSelect;
+export type InsertActivityType = z.infer<typeof insertActivitySchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;

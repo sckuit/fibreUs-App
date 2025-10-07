@@ -21,7 +21,7 @@ import {
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
   UserPlus, Download, AlertTriangle, FileDown, Upload
 } from "lucide-react";
-import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
+import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -94,6 +94,11 @@ export default function Dashboard() {
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: !!typedUser?.role && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
+  });
+
+  const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
+    queryKey: ["/api/activities"],
+    enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewActivities'),
   });
 
   // User mutations
@@ -908,12 +913,59 @@ export default function Dashboard() {
           {/* Activities Tab */}
           <TabsContent value="activities" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>System Activity Logs</CardTitle>
-                <CardDescription>Track all system activities and changes</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <div>
+                  <CardTitle>System Activity Logs</CardTitle>
+                  <CardDescription>Track all system activities and changes for audit purposes</CardDescription>
+                </div>
+                <Button variant="outline" onClick={() => exportToCSV(activities, 'activities')} data-testid="button-export-activities">
+                  <Download className="w-4 h-4 mr-2" />Export
+                </Button>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-center py-8">Activity logging feature coming soon</p>
+                {activitiesLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading activities...</p>
+                ) : activities.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No activities recorded yet</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Timestamp</TableHead>
+                        <TableHead>User</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Entity</TableHead>
+                        <TableHead>Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activities.map((activity) => (
+                        <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
+                          <TableCell className="whitespace-nowrap">
+                            {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : '-'}
+                          </TableCell>
+                          <TableCell>{activity.userId || 'System'}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" data-testid={`badge-action-${activity.id}`}>
+                              {activity.action}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{activity.entityType}</span>
+                              {activity.entityName && (
+                                <span className="text-sm text-muted-foreground">{activity.entityName}</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="max-w-md truncate" title={activity.details || ''}>
+                            {activity.details || '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

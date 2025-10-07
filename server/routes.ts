@@ -64,6 +64,33 @@ function sanitizeCommunications(communications: Communication[], userRole: strin
     .filter((comm): comm is Communication => comm !== null);
 }
 
+// Activity logging helper
+async function logActivity(
+  userId: string | null,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  entityName: string | null,
+  details?: string,
+  req?: any
+) {
+  try {
+    await storage.logActivity({
+      userId: userId || undefined,
+      action,
+      entityType,
+      entityId: entityId || undefined,
+      entityName: entityName || undefined,
+      details: details || undefined,
+      ipAddress: req?.ip || req?.connection?.remoteAddress,
+      userAgent: req?.get('user-agent'),
+    });
+  } catch (error) {
+    console.error("Failed to log activity:", error);
+    // Don't throw - logging failures shouldn't break operations
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware must be configured before any routes that use sessions
   app.use(getSession());
@@ -194,11 +221,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userId = user.id;
         
         // Save session before responding
-        req.session.save((saveErr: any) => {
+        req.session.save(async (saveErr: any) => {
           if (saveErr) {
             console.error("Session save error:", saveErr);
             return res.status(500).json({ message: "Session creation failed" });
           }
+          
+          // Log login activity
+          await logActivity(
+            user.id,
+            'login',
+            'user',
+            user.id,
+            `${user.firstName} ${user.lastName}`,
+            `User logged in via email/password`,
+            req
+          );
           
           res.json({
             message: "Login successful",
@@ -222,7 +260,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/logout', isSessionAuthenticated, (req: any, res) => {
+  app.post('/api/auth/logout', isSessionAuthenticated, async (req: any, res) => {
+    const userId = req.session.userId;
+    
+    // Log logout activity before destroying session
+    if (userId) {
+      try {
+        const user = await storage.getUser(userId);
+        if (user) {
+          await logActivity(
+            userId,
+            'logout',
+            'user',
+            userId,
+            `${user.firstName} ${user.lastName}`,
+            'User logged out',
+            req
+          );
+        }
+      } catch (error) {
+        console.error("Failed to log logout activity:", error);
+      }
+    }
+    
     req.session.destroy((err: any) => {
       if (err) {
         console.error("Logout error:", err);
@@ -740,6 +800,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role,
         });
         
+        // Log activity
+        await logActivity(
+          userId,
+          'created',
+          'user',
+          newUser.id,
+          `${newUser.firstName} ${newUser.lastName}`,
+          `Created new user with role: ${newUser.role}`,
+          req
+        );
+        
         res.status(201).json(newUser);
       } catch (error) {
         console.error("Error creating user:", error);
@@ -772,6 +843,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!updatedUser) {
           return res.status(404).json({ message: "User not found" });
         }
+        
+        // Log activity
+        await logActivity(
+          userId,
+          'updated',
+          'user',
+          updatedUser.id,
+          `${updatedUser.firstName} ${updatedUser.lastName}`,
+          `Updated user information`,
+          req
+        );
         
         res.json(updatedUser);
       } catch (error) {
@@ -808,6 +890,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: !targetUser.isActive 
         });
         
+        // Log activity
+        await logActivity(
+          userId,
+          updatedUser?.isActive ? 'activated' : 'deactivated',
+          'user',
+          targetUserId,
+          `${targetUser.firstName} ${targetUser.lastName}`,
+          `User status changed to ${updatedUser?.isActive ? 'active' : 'inactive'}`,
+          req
+        );
+        
         res.json(updatedUser);
       } catch (error) {
         console.error("Error toggling user status:", error);
@@ -834,7 +927,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Cannot delete your own account" });
         }
         
+        // Get user info before deleting
+        const targetUser = await storage.getUser(targetUserId);
+        
         await storage.deleteUser(targetUserId);
+        
+        // Log activity
+        if (targetUser) {
+          await logActivity(
+            userId,
+            'deleted',
+            'user',
+            targetUserId,
+            `${targetUser.firstName} ${targetUser.lastName}`,
+            `Deleted user with role: ${targetUser.role}`,
+            req
+          );
+        }
+        
         res.json({ message: "User deleted successfully" });
       } catch (error: any) {
         console.error("Error deleting user:", error);
@@ -1552,6 +1662,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error fetching financial logs:", error);
         res.status(500).json({ message: "Failed to fetch financial logs" });
+      }
+    }
+  );
+
+  // Activity logs routes (admin read-only for audit trail)
+  app.get("/api/activities",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !user.role || !hasPermission(user.role, 'viewActivities')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const filters: any = {};
+        if (req.query.userId) filters.userId = req.query.userId;
+        if (req.query.entityType) filters.entityType = req.query.entityType;
+        if (req.query.action) filters.action = req.query.action;
+        if (req.query.limit) filters.limit = parseInt(req.query.limit as string);
+        
+        const activities = await storage.getActivities(filters);
+        res.json(activities);
+      } catch (error) {
+        console.error("Error fetching activities:", error);
+        res.status(500).json({ message: "Failed to fetch activities" });
       }
     }
   );

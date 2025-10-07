@@ -15,6 +15,7 @@ import {
   leads,
   clients,
   suppliers,
+  activities,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -52,6 +53,8 @@ import {
   type Supplier,
   type InsertSupplierType,
   type UpdateSupplierType,
+  type Activity,
+  type InsertActivityType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -156,6 +159,10 @@ export interface IStorage {
   // Financial log operations (read-only for admin, written by system)
   createFinancialLog(log: InsertFinancialLogType): Promise<FinancialLog>;
   getFinancialLogs(filters?: { entityType?: string; userId?: string; logType?: string; limit?: number }): Promise<FinancialLog[]>;
+
+  // Activity log operations (audit trail)
+  logActivity(activity: InsertActivityType): Promise<Activity>;
+  getActivities(filters?: { userId?: string; entityType?: string; action?: string; limit?: number }): Promise<Activity[]>;
 
   // Inquiry operations (quote requests and contact forms)
   createInquiry(inquiry: InsertInquiryType): Promise<Inquiry>;
@@ -937,6 +944,35 @@ export class DatabaseStorage implements IStorage {
     
     return query
       .orderBy(desc(financialLogs.createdAt))
+      .limit(filters?.limit || 100);
+  }
+
+  // Activity log operations
+  async logActivity(activity: InsertActivityType): Promise<Activity> {
+    const [result] = await db.insert(activities).values(activity).returning();
+    return result;
+  }
+
+  async getActivities(filters?: { userId?: string; entityType?: string; action?: string; limit?: number }): Promise<Activity[]> {
+    let query = db.select().from(activities);
+    
+    const conditions = [];
+    if (filters?.userId) {
+      conditions.push(eq(activities.userId, filters.userId));
+    }
+    if (filters?.entityType) {
+      conditions.push(eq(activities.entityType, filters.entityType));
+    }
+    if (filters?.action) {
+      conditions.push(eq(activities.action, filters.action));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query
+      .orderBy(desc(activities.timestamp))
       .limit(filters?.limit || 100);
   }
 
