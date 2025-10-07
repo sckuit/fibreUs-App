@@ -534,11 +534,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Permission denied" });
       }
       
-      // If user can view all projects, get all. Otherwise, get only their projects
-      const clientId = hasPermission(user.role, 'viewAllProjects') ? undefined : userId;
-      const projects = await storage.getProjects(clientId);
-      
-      res.json(projects);
+      // If user can view all projects, get all. Otherwise, filter based on role
+      if (hasPermission(user.role, 'viewAllProjects')) {
+        const projects = await storage.getProjects();
+        res.json(projects);
+      } else {
+        // For employees, filter by assignedTechnicianId. For clients, filter by clientId
+        const filters = user.role === 'employee' 
+          ? { assignedTechnicianId: userId }
+          : { clientId: userId };
+        const projects = await storage.getProjects(filters);
+        res.json(projects);
+      }
     } catch (error) {
       console.error("Error fetching projects:", error);
       res.status(500).json({ message: "Failed to fetch projects" });
@@ -1100,16 +1107,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'manageAllTasks')) {
+        // Check if user has permission to manage tasks (either own or all)
+        if (!user || !user.role || (!hasPermission(user.role, 'manageOwnTasks') && !hasPermission(user.role, 'manageAllTasks'))) {
           return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const task = await storage.getTask(req.params.id);
+        if (!task) {
+          return res.status(404).json({ message: "Task not found" });
+        }
+        
+        // Users with manageOwnTasks (but not manageAllTasks) can only edit their own assigned tasks
+        if (hasPermission(user.role, 'manageOwnTasks') && !hasPermission(user.role, 'manageAllTasks') && task.assignedToId !== userId) {
+          return res.status(403).json({ message: "Access denied: You can only edit tasks assigned to you" });
         }
         
         const validatedData = updateTaskSchema.parse(req.body);
         const updatedTask = await storage.updateTask(req.params.id, validatedData);
-        
-        if (!updatedTask) {
-          return res.status(404).json({ message: "Task not found" });
-        }
         
         res.json(updatedTask);
       } catch (error) {
@@ -1240,7 +1254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'manageAllReports')) {
+        // Check if user has permission to manage reports (either own or all)
+        if (!user || !user.role || (!hasPermission(user.role, 'manageOwnReports') && !hasPermission(user.role, 'manageAllReports'))) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
@@ -1249,9 +1264,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Report not found" });
         }
         
-        // Employees can only edit their own reports
-        if (user.role === 'employee' && report.submittedById !== userId) {
-          return res.status(403).json({ message: "Access denied" });
+        // Users with manageOwnReports (but not manageAllReports) can only edit their own reports
+        if (hasPermission(user.role, 'manageOwnReports') && !hasPermission(user.role, 'manageAllReports') && report.submittedById !== userId) {
+          return res.status(403).json({ message: "Access denied: You can only edit reports you submitted" });
         }
         
         const validatedData = updateReportSchema.parse(req.body);

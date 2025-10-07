@@ -84,7 +84,7 @@ export interface IStorage {
   
   // Project operations
   createProject(project: InsertProjectType): Promise<Project>;
-  getProjects(clientId?: string): Promise<Project[]>;
+  getProjects(filters?: { clientId?: string; assignedTechnicianId?: string }): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project>;
   getTechnicians(): Promise<User[]>;
@@ -331,7 +331,7 @@ export class DatabaseStorage implements IStorage {
     return newProject;
   }
 
-  async getProjects(clientId?: string): Promise<Project[]> {
+  async getProjects(filters?: { clientId?: string; assignedTechnicianId?: string }): Promise<Project[]> {
     const result = await db.select({
       id: projects.id,
       ticketNumber: projects.ticketNumber,
@@ -356,8 +356,12 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .orderBy(desc(projects.createdAt));
     
-    if (clientId) {
-      return result.filter(p => p.clientId === clientId);
+    if (filters?.clientId) {
+      return result.filter(p => p.clientId === filters.clientId);
+    }
+    
+    if (filters?.assignedTechnicianId) {
+      return result.filter(p => p.assignedTechnicianId === filters.assignedTechnicianId);
     }
     
     return result as any;
