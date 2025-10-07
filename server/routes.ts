@@ -528,8 +528,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
       
-      // If admin, get all projects. If client, get only their projects
-      const clientId = user.role === 'admin' ? undefined : userId;
+      // Check if user has permission to view projects
+      if (!hasPermission(user.role, 'viewOwnProjects')) {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      // If user can view all projects, get all. Otherwise, get only their projects
+      const clientId = hasPermission(user.role, 'viewAllProjects') ? undefined : userId;
       const projects = await storage.getProjects(clientId);
       
       res.json(projects);
@@ -548,9 +553,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
       
-      // Allow admin, project_manager, and manager to update projects
-      if (!['admin', 'project_manager', 'manager'].includes(user.role)) {
-        return res.status(403).json({ message: "Manager access or higher required" });
+      // Check if user has permission to manage all projects
+      if (!hasPermission(user.role, 'manageAllProjects')) {
+        return res.status(403).json({ message: "Permission denied" });
       }
       
       const projectId = req.params.id;
@@ -590,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Visitor analytics routes (admin and manager only)
+  // Visitor analytics routes
   app.get("/api/analytics/visitors", 
     isSessionAuthenticated,
     async (req: any, res) => {
@@ -603,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Check permission
-        if (!hasPermission(user.role, 'viewReports')) {
+        if (!hasPermission(user.role, 'viewVisitors')) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
@@ -627,8 +632,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(401).json({ message: "User not found" });
         }
         
-        // Check permission - managers and above can view visitors
-        if (!['manager', 'admin'].includes(user.role)) {
+        // Check permission
+        if (!hasPermission(user.role, 'viewVisitors')) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
