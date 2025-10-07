@@ -62,32 +62,32 @@ export default function Dashboard() {
   // Fetch all data for tabs
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    enabled: !!typedUser && hasPermission(typedUser.role, 'viewUsers'),
+    enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewUsers'),
   });
 
   const { data: visitors = [], isLoading: visitorsLoading } = useQuery<Visitor[]>({
     queryKey: ["/api/analytics/recent-visitors"],
-    enabled: !!typedUser && typedUser.role === 'admin',
+    enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewVisitors'),
   });
 
   const { data: inventoryItems = [], isLoading: inventoryLoading } = useQuery<InventoryItem[]>({
     queryKey: ["/api/inventory/items"],
-    enabled: !!typedUser && ['manager', 'project_manager', 'admin'].includes(typedUser.role),
+    enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewInventory'),
   });
 
   const { data: lowStockItems = [] } = useQuery<InventoryItem[]>({
     queryKey: ["/api/inventory/low-stock"],
-    enabled: !!typedUser && ['manager', 'project_manager', 'admin'].includes(typedUser.role),
+    enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewInventory'),
   });
 
   const { data: financialLogs = [], isLoading: financialLogsLoading } = useQuery<FinancialLog[]>({
     queryKey: ["/api/financial-logs"],
-    enabled: !!typedUser && ['sales', 'manager', 'admin'].includes(typedUser.role),
+    enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewFinancial'),
   });
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
-    enabled: !!typedUser && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
+    enabled: !!typedUser?.role && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
   });
 
   // User mutations
@@ -311,31 +311,31 @@ export default function Dashboard() {
                   Users
                 </TabsTrigger>
               )}
-              {['employee', 'manager', 'project_manager', 'admin'].includes(userRole) && (
+              {hasPermission(userRole, 'viewOwnTasks') && (
                 <TabsTrigger value="tasks" data-testid="tab-tasks">
                   <ClipboardList className="w-4 h-4 mr-2" />
                   Tasks
                 </TabsTrigger>
               )}
-              {(hasPermission(userRole, 'viewOwnProjects') || hasPermission(userRole, 'viewAllProjects')) && (
+              {hasPermission(userRole, 'viewOwnProjects') && (
                 <TabsTrigger value="projects" data-testid="tab-projects">
                   <Wrench className="w-4 h-4 mr-2" />
                   Projects
                 </TabsTrigger>
               )}
-              {hasPermission(userRole, 'viewReports') && (
+              {hasPermission(userRole, 'viewOwnReports') && (
                 <TabsTrigger value="reports" data-testid="tab-reports">
                   <FileText className="w-4 h-4 mr-2" />
                   Reports
                 </TabsTrigger>
               )}
-              {['manager', 'project_manager', 'admin'].includes(userRole) && (
+              {hasPermission(userRole, 'viewInventory') && (
                 <TabsTrigger value="inventory" data-testid="tab-inventory">
                   <Package className="w-4 h-4 mr-2" />
                   Inventory
                 </TabsTrigger>
               )}
-              {userRole === 'admin' && (
+              {hasPermission(userRole, 'viewSuppliers') && (
                 <TabsTrigger value="suppliers" data-testid="tab-suppliers">
                   <Truck className="w-4 h-4 mr-2" />
                   Suppliers
@@ -356,45 +356,45 @@ export default function Dashboard() {
             <TabsList className="w-full h-auto p-1 grid gap-1" style={{
               gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
             }}>
-              <TabsTrigger value="messages" data-testid="tab-messages">
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Messages
-              </TabsTrigger>
-              {['sales', 'manager', 'project_manager', 'admin'].includes(userRole) && (
+              {hasPermission(userRole, 'viewOwnMessages') && (
+                <TabsTrigger value="messages" data-testid="tab-messages">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Messages
+                </TabsTrigger>
+              )}
+              {hasPermission(userRole, 'viewClients') && (
                 <TabsTrigger value="clients" data-testid="tab-clients">
                   <UserCircle className="w-4 h-4 mr-2" />
                   Clients
                 </TabsTrigger>
               )}
-              {['sales', 'manager', 'admin'].includes(userRole) && (
+              {hasPermission(userRole, 'viewLeads') && (
                 <TabsTrigger value="leads" data-testid="tab-leads">
                   <BarChart className="w-4 h-4 mr-2" />
                   Leads
                 </TabsTrigger>
               )}
-              {userRole === 'admin' && (
+              {hasPermission(userRole, 'viewVisitors') && (
                 <TabsTrigger value="visitors" data-testid="tab-visitors">
                   <Eye className="w-4 h-4 mr-2" />
                   Visitors
                 </TabsTrigger>
               )}
-              {['sales', 'manager', 'admin'].includes(userRole) && (
+              {hasPermission(userRole, 'viewFinancial') && (
                 <TabsTrigger value="financial" data-testid="tab-financial">
                   <DollarSign className="w-4 h-4 mr-2" />
                   Financial
                 </TabsTrigger>
               )}
-              {userRole === 'admin' && (
+              {hasPermission(userRole, 'viewActivities') && (
                 <TabsTrigger value="activities" data-testid="tab-activities">
                   <Activity className="w-4 h-4 mr-2" />
                   Activities
                 </TabsTrigger>
               )}
-              {hasPermission(userRole, 'manageSettings') && (
-                <TabsTrigger value="settings" data-testid="tab-settings" className="px-3">
-                  <Settings className="w-4 h-4" />
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="settings" data-testid="tab-settings" className="px-3">
+                <Settings className="w-4 h-4" />
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -803,7 +803,14 @@ export default function Dashboard() {
                           <TableCell>
                             <Badge variant="secondary">{log.logType}</Badge>
                           </TableCell>
-                          <TableCell className="font-mono">{log.changedField || '-'}</TableCell>
+                          <TableCell className="font-mono">
+                            {log.previousValue && log.newValue 
+                              ? `$${log.previousValue} → $${log.newValue}`
+                              : log.newValue 
+                                ? `$${log.newValue}`
+                                : '-'
+                            }
+                          </TableCell>
                           <TableCell>{log.description}</TableCell>
                           <TableCell className="font-mono">{log.entityId || '-'}</TableCell>
                           <TableCell>{log.userId}</TableCell>

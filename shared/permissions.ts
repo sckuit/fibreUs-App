@@ -17,21 +17,57 @@ export interface Permission {
   manageAllProjects: boolean;
   assignProjects: boolean;
   
+  // Tasks
+  viewOwnTasks: boolean;
+  viewAllTasks: boolean;
+  manageOwnTasks: boolean;
+  manageAllTasks: boolean;
+  
+  // Reports
+  viewOwnReports: boolean;
+  viewAllReports: boolean;
+  manageOwnReports: boolean;
+  manageAllReports: boolean;
+  approveReports: boolean;
+  
+  // Inventory
+  viewInventory: boolean;
+  manageInventory: boolean;
+  
+  // Suppliers
+  viewSuppliers: boolean;
+  manageSuppliers: boolean;
+  
+  // Messages/Communications
+  viewOwnMessages: boolean;
+  viewAllMessages: boolean;
+  manageMessages: boolean;
+  
+  // Clients
+  viewClients: boolean;
+  manageClients: boolean;
+  
+  // Leads
+  viewLeads: boolean;
+  manageLeads: boolean;
+  
+  // Visitors
+  viewVisitors: boolean;
+  
+  // Financial
+  viewFinancial: boolean;
+  manageFinancial: boolean;
+  
   // Users/Employees
   viewUsers: boolean;
-  manageEmployees: boolean;
+  manageUsers: boolean;
   viewUserDetails: boolean;
-  
-  // Communications
-  viewOwnCommunications: boolean;
-  viewAllCommunications: boolean;
-  createCommunications: boolean;
-  viewInternalNotes: boolean;
   
   // Admin functions
   manageSystem: boolean;
-  viewReports: boolean;
+  viewSystemReports: boolean;
   manageSettings: boolean;
+  viewActivities: boolean;
 }
 
 // Permission definitions for each role
@@ -45,98 +81,275 @@ export const rolePermissions: Record<UserRole, Permission> = {
     editAllRequests: false,
     deleteRequests: false,
     
-    // Projects - clients can view their own projects but not manage
+    // Projects - clients can view their own projects
     viewOwnProjects: true,
     viewAllProjects: false,
     manageOwnProjects: false,
     manageAllProjects: false,
     assignProjects: false,
     
-    // Users - clients cannot view other users
-    viewUsers: false,
-    manageEmployees: false,
-    viewUserDetails: false,
+    // Tasks - no access
+    viewOwnTasks: false,
+    viewAllTasks: false,
+    manageOwnTasks: false,
+    manageAllTasks: false,
     
-    // Communications - clients can view/create communications for their requests
-    viewOwnCommunications: true,
-    viewAllCommunications: false,
-    createCommunications: true,
-    viewInternalNotes: false,
+    // Reports - no access
+    viewOwnReports: false,
+    viewAllReports: false,
+    manageOwnReports: false,
+    manageAllReports: false,
+    approveReports: false,
+    
+    // Inventory - no access
+    viewInventory: false,
+    manageInventory: false,
+    
+    // Suppliers - no access
+    viewSuppliers: false,
+    manageSuppliers: false,
+    
+    // Messages - clients can view own messages
+    viewOwnMessages: true,
+    viewAllMessages: false,
+    manageMessages: false,
+    
+    // Clients - no access
+    viewClients: false,
+    manageClients: false,
+    
+    // Leads - no access
+    viewLeads: false,
+    manageLeads: false,
+    
+    // Visitors - no access
+    viewVisitors: false,
+    
+    // Financial - no access
+    viewFinancial: false,
+    manageFinancial: false,
+    
+    // Users - no access
+    viewUsers: false,
+    manageUsers: false,
+    viewUserDetails: false,
     
     // Admin - no admin access
     manageSystem: false,
-    viewReports: false,
+    viewSystemReports: false,
     manageSettings: false,
+    viewActivities: false,
   },
   
   employee: {
-    // Service requests - employees can view assigned requests
-    viewOwnRequests: true,
+    // Service requests - no access
+    viewOwnRequests: false,
     viewAllRequests: false,
     createRequests: false,
     editOwnRequests: false,
     editAllRequests: false,
     deleteRequests: false,
     
-    // Projects - employees can view and manage their assigned projects
+    // Projects - linked access only
     viewOwnProjects: true,
     viewAllProjects: false,
     manageOwnProjects: true,
     manageAllProjects: false,
     assignProjects: false,
     
-    // Users - employees cannot manage other users
-    viewUsers: false,
-    manageEmployees: false,
-    viewUserDetails: false,
+    // Tasks - linked access only
+    viewOwnTasks: true,
+    viewAllTasks: false,
+    manageOwnTasks: true,
+    manageAllTasks: false,
     
-    // Communications - employees can view/create for their projects
-    viewOwnCommunications: true,
-    viewAllCommunications: false,
-    createCommunications: true,
-    viewInternalNotes: true,
+    // Reports - linked access only
+    viewOwnReports: true,
+    viewAllReports: false,
+    manageOwnReports: true,
+    manageAllReports: false,
+    approveReports: false,
+    
+    // Inventory - no access
+    viewInventory: false,
+    manageInventory: false,
+    
+    // Suppliers - no access
+    viewSuppliers: false,
+    manageSuppliers: false,
+    
+    // Messages - no access
+    viewOwnMessages: false,
+    viewAllMessages: false,
+    manageMessages: false,
+    
+    // Clients - no access
+    viewClients: false,
+    manageClients: false,
+    
+    // Leads - no access
+    viewLeads: false,
+    manageLeads: false,
+    
+    // Visitors - no access
+    viewVisitors: false,
+    
+    // Financial - no access
+    viewFinancial: false,
+    manageFinancial: false,
+    
+    // Users - no access
+    viewUsers: false,
+    manageUsers: false,
+    viewUserDetails: false,
     
     // Admin - no admin access
     manageSystem: false,
-    viewReports: false,
+    viewSystemReports: false,
     manageSettings: false,
+    viewActivities: false,
   },
   
-  manager: {
-    // Service requests - managers can view and manage all requests
-    viewOwnRequests: true,
-    viewAllRequests: true,
-    createRequests: true,
-    editOwnRequests: true,
-    editAllRequests: true,
+  sales: {
+    // Service requests - no access
+    viewOwnRequests: false,
+    viewAllRequests: false,
+    createRequests: false,
+    editOwnRequests: false,
+    editAllRequests: false,
     deleteRequests: false,
     
-    // Projects - managers can view and manage all projects
+    // Projects - full access
     viewOwnProjects: true,
     viewAllProjects: true,
     manageOwnProjects: true,
     manageAllProjects: true,
     assignProjects: true,
     
-    // Users - managers can view and manage employees
-    viewUsers: true,
-    manageEmployees: true,
-    viewUserDetails: true,
+    // Tasks - full access
+    viewOwnTasks: true,
+    viewAllTasks: true,
+    manageOwnTasks: true,
+    manageAllTasks: true,
     
-    // Communications - managers can view all communications
-    viewOwnCommunications: true,
-    viewAllCommunications: true,
-    createCommunications: true,
-    viewInternalNotes: true,
+    // Reports - full access
+    viewOwnReports: true,
+    viewAllReports: true,
+    manageOwnReports: true,
+    manageAllReports: true,
+    approveReports: false,
     
-    // Admin - limited admin access
+    // Inventory - no access
+    viewInventory: false,
+    manageInventory: false,
+    
+    // Suppliers - full access
+    viewSuppliers: true,
+    manageSuppliers: true,
+    
+    // Messages - full access
+    viewOwnMessages: true,
+    viewAllMessages: true,
+    manageMessages: true,
+    
+    // Clients - full access
+    viewClients: true,
+    manageClients: true,
+    
+    // Leads - full access
+    viewLeads: true,
+    manageLeads: true,
+    
+    // Visitors - full access
+    viewVisitors: true,
+    
+    // Financial - no access
+    viewFinancial: false,
+    manageFinancial: false,
+    
+    // Users - NO access
+    viewUsers: false,
+    manageUsers: false,
+    viewUserDetails: false,
+    
+    // Admin - no admin access
     manageSystem: false,
-    viewReports: true,
+    viewSystemReports: false,
     manageSettings: false,
+    viewActivities: false,
   },
   
-  admin: {
-    // Service requests - admins have full access
+  project_manager: {
+    // Service requests - no access
+    viewOwnRequests: false,
+    viewAllRequests: false,
+    createRequests: false,
+    editOwnRequests: false,
+    editAllRequests: false,
+    deleteRequests: false,
+    
+    // Projects - full access
+    viewOwnProjects: true,
+    viewAllProjects: true,
+    manageOwnProjects: true,
+    manageAllProjects: true,
+    assignProjects: true,
+    
+    // Tasks - full access
+    viewOwnTasks: true,
+    viewAllTasks: true,
+    manageOwnTasks: true,
+    manageAllTasks: true,
+    
+    // Reports - full access
+    viewOwnReports: true,
+    viewAllReports: true,
+    manageOwnReports: true,
+    manageAllReports: true,
+    approveReports: true,
+    
+    // Inventory - full access
+    viewInventory: true,
+    manageInventory: true,
+    
+    // Suppliers - full access
+    viewSuppliers: true,
+    manageSuppliers: true,
+    
+    // Messages - no access
+    viewOwnMessages: false,
+    viewAllMessages: false,
+    manageMessages: false,
+    
+    // Clients - full access
+    viewClients: true,
+    manageClients: true,
+    
+    // Leads - no access
+    viewLeads: false,
+    manageLeads: false,
+    
+    // Visitors - no access
+    viewVisitors: false,
+    
+    // Financial - no access
+    viewFinancial: false,
+    manageFinancial: false,
+    
+    // Users - NO access
+    viewUsers: false,
+    manageUsers: false,
+    viewUserDetails: false,
+    
+    // Admin - no admin access
+    manageSystem: false,
+    viewSystemReports: false,
+    manageSettings: false,
+    viewActivities: false,
+  },
+  
+  manager: {
+    // Service requests - full access
     viewOwnRequests: true,
     viewAllRequests: true,
     createRequests: true,
@@ -144,94 +357,133 @@ export const rolePermissions: Record<UserRole, Permission> = {
     editAllRequests: true,
     deleteRequests: true,
     
-    // Projects - admins have full access
+    // Projects - full access
     viewOwnProjects: true,
     viewAllProjects: true,
     manageOwnProjects: true,
     manageAllProjects: true,
     assignProjects: true,
     
-    // Users - admins can manage all users
+    // Tasks - full access
+    viewOwnTasks: true,
+    viewAllTasks: true,
+    manageOwnTasks: true,
+    manageAllTasks: true,
+    
+    // Reports - full access
+    viewOwnReports: true,
+    viewAllReports: true,
+    manageOwnReports: true,
+    manageAllReports: true,
+    approveReports: true,
+    
+    // Inventory - full access
+    viewInventory: true,
+    manageInventory: true,
+    
+    // Suppliers - full access
+    viewSuppliers: true,
+    manageSuppliers: true,
+    
+    // Messages - full access
+    viewOwnMessages: true,
+    viewAllMessages: true,
+    manageMessages: true,
+    
+    // Clients - full access
+    viewClients: true,
+    manageClients: true,
+    
+    // Leads - full access
+    viewLeads: true,
+    manageLeads: true,
+    
+    // Visitors - full access
+    viewVisitors: true,
+    
+    // Financial - full access
+    viewFinancial: true,
+    manageFinancial: true,
+    
+    // Users - full access
     viewUsers: true,
-    manageEmployees: true,
+    manageUsers: true,
     viewUserDetails: true,
     
-    // Communications - admins have full access
-    viewOwnCommunications: true,
-    viewAllCommunications: true,
-    createCommunications: true,
-    viewInternalNotes: true,
-    
-    // Admin - full admin access
-    manageSystem: true,
-    viewReports: true,
-    manageSettings: true,
-  },
-  
-  sales: {
-    // Service requests - sales can view requests to identify leads
-    viewOwnRequests: true,
-    viewAllRequests: true,
-    createRequests: false,
-    editOwnRequests: false,
-    editAllRequests: false,
-    deleteRequests: false,
-    
-    // Projects - sales can view all projects for deal tracking
-    viewOwnProjects: true,
-    viewAllProjects: true,
-    manageOwnProjects: false,
-    manageAllProjects: false,
-    assignProjects: false,
-    
-    // Users - sales can view clients and users
-    viewUsers: true,
-    manageEmployees: false,
-    viewUserDetails: true,
-    
-    // Communications - sales can view communications for customer relations
-    viewOwnCommunications: true,
-    viewAllCommunications: false,
-    createCommunications: true,
-    viewInternalNotes: false,
-    
-    // Admin - limited access, can view reports for metrics
+    // Admin - limited admin access
     manageSystem: false,
-    viewReports: true,
-    manageSettings: false,
+    viewSystemReports: true,
+    manageSettings: true,
+    viewActivities: true,
   },
   
-  project_manager: {
-    // Service requests - project managers can view and manage all requests
+  admin: {
+    // Service requests - full access
     viewOwnRequests: true,
     viewAllRequests: true,
     createRequests: true,
     editOwnRequests: true,
     editAllRequests: true,
-    deleteRequests: false,
+    deleteRequests: true,
     
-    // Projects - project managers have full control over projects
+    // Projects - full access
     viewOwnProjects: true,
     viewAllProjects: true,
     manageOwnProjects: true,
     manageAllProjects: true,
     assignProjects: true,
     
-    // Users - project managers can view and manage employees
+    // Tasks - full access
+    viewOwnTasks: true,
+    viewAllTasks: true,
+    manageOwnTasks: true,
+    manageAllTasks: true,
+    
+    // Reports - full access
+    viewOwnReports: true,
+    viewAllReports: true,
+    manageOwnReports: true,
+    manageAllReports: true,
+    approveReports: true,
+    
+    // Inventory - full access
+    viewInventory: true,
+    manageInventory: true,
+    
+    // Suppliers - full access
+    viewSuppliers: true,
+    manageSuppliers: true,
+    
+    // Messages - full access
+    viewOwnMessages: true,
+    viewAllMessages: true,
+    manageMessages: true,
+    
+    // Clients - full access
+    viewClients: true,
+    manageClients: true,
+    
+    // Leads - full access
+    viewLeads: true,
+    manageLeads: true,
+    
+    // Visitors - full access
+    viewVisitors: true,
+    
+    // Financial - full access
+    viewFinancial: true,
+    manageFinancial: true,
+    
+    // Users - full access
     viewUsers: true,
-    manageEmployees: true,
+    manageUsers: true,
     viewUserDetails: true,
     
-    // Communications - project managers can view all communications
-    viewOwnCommunications: true,
-    viewAllCommunications: true,
-    createCommunications: true,
-    viewInternalNotes: true,
-    
-    // Admin - project managers can view reports and manage settings
-    manageSystem: false,
-    viewReports: true,
+    // Admin - full admin access
+    manageSystem: true,
+    viewSystemReports: true,
     manageSettings: true,
+    viewActivities: true,
   },
 };
 
@@ -248,10 +500,7 @@ export function canAccessRoute(role: UserRole, route: string): boolean {
       return true; // Public routes
       
     case '/dashboard':
-      return ['client', 'employee', 'manager', 'admin', 'project_manager'].includes(role);
-      
-    case '/portal/sales':
-      return role === 'sales';
+      return true; // All authenticated users can access dashboard
       
     case '/requests':
     case '/service-requests':
@@ -260,12 +509,15 @@ export function canAccessRoute(role: UserRole, route: string): boolean {
     case '/projects':
       return hasPermission(role, 'viewOwnProjects');
       
+    case '/tasks':
+      return hasPermission(role, 'viewOwnTasks');
+      
+    case '/reports':
+      return hasPermission(role, 'viewOwnReports');
+      
     case '/users':
     case '/employees':
       return hasPermission(role, 'viewUsers');
-      
-    case '/reports':
-      return hasPermission(role, 'viewReports');
       
     case '/settings':
     case '/admin':
@@ -277,23 +529,8 @@ export function canAccessRoute(role: UserRole, route: string): boolean {
 }
 
 export function getDefaultRoute(role: UserRole): string {
-  // Return the default route for each role after login
-  switch (role) {
-    case 'client':
-      return '/dashboard';
-    case 'employee':
-      return '/projects';
-    case 'sales':
-      return '/portal/sales';
-    case 'project_manager':
-      return '/dashboard';
-    case 'manager':
-      return '/dashboard';
-    case 'admin':
-      return '/dashboard';
-    default:
-      return '/';
-  }
+  // All authenticated users go to dashboard
+  return '/dashboard';
 }
 
 // Role hierarchy for permission inheritance

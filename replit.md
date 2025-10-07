@@ -6,6 +6,15 @@ FibreUS is a professional electronic security and fiber optic services web appli
 
 The application follows a modern full-stack architecture with a React frontend, Express.js backend, and PostgreSQL database, designed specifically for the electronic security industry with professional branding and user experience.
 
+## Recent Changes
+
+### December 2024 - Navigation & Permissions Overhaul
+- **Simplified Top Navigation**: Streamlined to show only Dashboard link, welcome name, role badge, and sign out button
+- **Granular Role Permissions**: Implemented detailed permission system in `shared/permissions.ts` with specific tab access for each role
+- **Settings Tab Enhancement**: Added user profile display with ability to view and update personal information
+- **Login Flow Fix**: All authenticated users now redirect to /dashboard (unified portal experience)
+- **Dashboard Tab Visibility**: Tabs dynamically show/hide based on role-specific permissions using hasPermission() checks
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -38,10 +47,19 @@ Preferred communication style: Simple, everyday language.
   - Sessions (authentication state management)
 
 ### Authentication & Authorization
-- **Provider**: Replit Auth with OpenID Connect
+- **Provider**: Email/Password authentication with Argon2id hashing
 - **Session Management**: Secure HTTP-only cookies with PostgreSQL session store
-- **User Roles**: Three-tier system (client, admin, technician) with route protection
+- **User Roles**: Six-tier system (client, employee, sales, project_manager, manager, admin) with granular permissions
 - **Security**: CSRF protection, secure session configuration, role-based API access
+- **Login Flow**: All users redirect to /dashboard upon successful authentication
+
+### Role-Based Permissions (Granular Access Control)
+- **Client**: Basic access to own requests and projects
+- **Employee**: Linked access to assigned Tasks, Projects, and Reports only
+- **Sales**: Full access to Tasks, Projects, Reports, Suppliers, Messages, Clients, Visitors, Leads (NO Users)
+- **Project Manager**: Full access to Tasks, Projects, Reports, Inventory, Suppliers, Clients (NO Users)
+- **Manager**: Full access to Users, Tasks, Projects, Reports, Suppliers, Messages, Clients, Visitors, Leads, Financial
+- **Admin**: Complete system access including Activities and system management
 
 ### Design System
 - **Brand Identity**: Professional security industry theme with deep navy and steel blue colors
