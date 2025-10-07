@@ -171,15 +171,14 @@ export default function AdminProjectsDialog({ project, onSuccess }: AdminProject
               name="assignedTechnicianId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Assigned Technician</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Assigned Technician (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                     <FormControl>
                       <SelectTrigger data-testid="select-technician">
-                        <SelectValue placeholder="Select technician" />
+                        <SelectValue placeholder="Select technician (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Unassigned</SelectItem>
                       {technicians?.map((tech) => (
                         <SelectItem key={tech.id} value={tech.id}>
                           {tech.firstName} {tech.lastName}

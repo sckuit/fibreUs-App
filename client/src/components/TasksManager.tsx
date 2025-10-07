@@ -396,18 +396,17 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
                 name="projectId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Link to Project</FormLabel>
+                    <FormLabel>Link to Project (Optional)</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value === "" ? undefined : value)}
-                      value={field.value || undefined}
+                      onValueChange={field.onChange}
+                      value={field.value ?? undefined}
                     >
                       <FormControl>
                         <SelectTrigger data-testid="select-project">
-                          <SelectValue placeholder="Select a project" />
+                          <SelectValue placeholder="Select a project (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
                         {projectsData.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             {project.projectName}
