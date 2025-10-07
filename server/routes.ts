@@ -772,8 +772,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access or higher required" });
+        if (!user || !hasPermission(user.role, 'viewInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const includeInactive = req.query.includeInactive === 'true';
@@ -793,8 +793,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access or higher required" });
+        if (!user || !hasPermission(user.role, 'viewInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const item = await storage.getInventoryItem(req.params.id);
@@ -893,8 +893,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access or higher required" });
+        if (!user || !hasPermission(user.role, 'viewInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const items = await storage.getLowStockItems();
@@ -913,8 +913,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access or higher required" });
+        if (!user || !hasPermission(user.role, 'viewInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const itemId = req.query.itemId as string | undefined;
@@ -937,8 +937,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access or higher required" });
+        if (!user || !hasPermission(user.role, 'manageInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         // Validate request body but exclude performedById from user input
@@ -970,8 +970,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Manager access required" });
+        if (!user || !hasPermission(user.role, 'manageAllTasks')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = insertTaskSchema.parse(req.body);
@@ -999,8 +999,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access required" });
+        if (!user || !hasPermission(user.role, 'viewAllTasks')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const filters: any = {};
@@ -1029,8 +1029,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access required" });
+        if (!user || !hasPermission(user.role, 'viewAllTasks')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const task = await storage.getTask(req.params.id);
@@ -1058,8 +1058,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['manager', 'admin', 'project_manager'].includes(user.role)) {
-          return res.status(403).json({ message: "Manager access required" });
+        if (!user || !hasPermission(user.role, 'manageAllTasks')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = updateTaskSchema.parse(req.body);
@@ -1087,8 +1087,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Manager access required" });
+        if (!user || !hasPermission(user.role, 'manageAllTasks')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         await storage.deleteTask(req.params.id);
@@ -1108,8 +1108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access required" });
+        if (!user || !hasPermission(user.role, 'manageOwnReports')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = insertReportSchema.parse(req.body);
@@ -1137,8 +1137,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access required" });
+        if (!user || !hasPermission(user.role, 'viewAllReports')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const filters: any = {};
@@ -1167,8 +1167,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access required" });
+        if (!user || !hasPermission(user.role, 'viewAllReports')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const report = await storage.getReport(req.params.id);
@@ -1196,8 +1196,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access required" });
+        if (!user || !hasPermission(user.role, 'manageAllReports')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const report = await storage.getReport(req.params.id);
@@ -1230,8 +1230,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['employee', 'manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Employee access required" });
+        if (!user || !hasPermission(user.role, 'manageAllReports')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const report = await storage.getReport(req.params.id);
@@ -1260,8 +1260,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['manager', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Manager access required" });
+        if (!user || !hasPermission(user.role, 'approveReports')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const { approved, rejectionReason } = approveReportSchema.parse({ ...req.body, reportId: req.params.id });
