@@ -47,6 +47,8 @@ export const financialLogTypeEnum = pgEnum('financial_log_type', [
 export const leadSourceEnum = pgEnum('lead_source', ['manual', 'inquiry', 'referral', 'website']);
 export const leadStatusEnum = pgEnum('lead_status', ['new', 'contacted', 'qualified', 'converted', 'lost']);
 export const clientStatusEnum = pgEnum('client_status', ['potential', 'active', 'inactive', 'archived']);
+export const supplierTypeEnum = pgEnum('supplier_type', ['supplier', 'vendor', 'partner']);
+export const supplierStatusEnum = pgEnum('supplier_status', ['active', 'inactive', 'pending', 'suspended']);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -304,6 +306,31 @@ export const clients = pgTable("clients", {
   contractEndDate: timestamp("contract_end_date"),
   preferredContactMethod: varchar("preferred_contact_method"), // email, phone, both
   notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Suppliers - vendors, suppliers, and partners
+export const suppliers = pgTable("suppliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: supplierTypeEnum("type").notNull().default('supplier'),
+  companyName: varchar("company_name").notNull(),
+  contactPerson: varchar("contact_person").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone").notNull(),
+  alternatePhone: varchar("alternate_phone"),
+  address: text("address"),
+  website: varchar("website"),
+  industry: varchar("industry"),
+  servicesProvided: text("services_provided"), // Description of services/products
+  status: supplierStatusEnum("status").notNull().default('active'),
+  paymentTerms: varchar("payment_terms"), // Net 30, Net 60, etc.
+  taxId: varchar("tax_id"),
+  rating: integer("rating"), // 1-5 stars
+  notes: text("notes"),
+  contractStartDate: timestamp("contract_start_date"),
+  contractEndDate: timestamp("contract_end_date"),
+  createdById: varchar("created_by_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -670,6 +697,18 @@ export const updateClientSchema = createInsertSchema(clients).omit({
   updatedAt: true,
 }).partial();
 
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
 export type InsertTaskType = z.infer<typeof insertTaskSchema>;
 export type UpdateTaskType = z.infer<typeof updateTaskSchema>;
 export type InsertReportType = z.infer<typeof insertReportSchema>;
@@ -687,6 +726,9 @@ export type UpdateLeadType = z.infer<typeof updateLeadSchema>;
 export type Client = typeof clients.$inferSelect;
 export type InsertClientType = z.infer<typeof insertClientSchema>;
 export type UpdateClientType = z.infer<typeof updateClientSchema>;
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplierType = z.infer<typeof insertSupplierSchema>;
+export type UpdateSupplierType = z.infer<typeof updateSupplierSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
