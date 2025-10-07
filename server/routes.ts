@@ -172,6 +172,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid email or password" });
       }
       
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(403).json({ message: "Your account has been deactivated. Please contact an administrator." });
+      }
+      
       // Verify password
       const isValidPassword = await verifyPassword(user.passwordHash, validatedData.password);
       if (!isValidPassword) {
@@ -772,6 +777,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error updating user:", error);
         res.status(500).json({ message: "Failed to update user" });
+      }
+    }
+  );
+
+  app.patch("/api/users/:id/toggle-status",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !user.role || !hasPermission(user.role, 'manageUsers')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const targetUserId = req.params.id;
+        
+        // Prevent admin from deactivating themselves
+        if (targetUserId === userId) {
+          return res.status(400).json({ message: "Cannot deactivate your own account" });
+        }
+        
+        const targetUser = await storage.getUser(targetUserId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        const updatedUser = await storage.updateUser(targetUserId, { 
+          isActive: !targetUser.isActive 
+        });
+        
+        res.json(updatedUser);
+      } catch (error) {
+        console.error("Error toggling user status:", error);
+        res.status(500).json({ message: "Failed to toggle user status" });
       }
     }
   );

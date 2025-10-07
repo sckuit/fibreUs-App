@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -130,6 +131,17 @@ export default function Dashboard() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to delete user", variant: "destructive" });
+    },
+  });
+
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: (userId: string) => apiRequest("PATCH", `/api/users/${userId}/toggle-status`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "User status updated", description: "User status has been successfully toggled" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update user status", variant: "destructive" });
     },
   });
 
@@ -574,6 +586,7 @@ export default function Dashboard() {
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Company</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -586,6 +599,19 @@ export default function Dashboard() {
                             <Badge variant="secondary" data-testid={`badge-role-${u.id}`}>{u.role}</Badge>
                           </TableCell>
                           <TableCell>{u.company || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Switch 
+                                checked={u.isActive ?? true}
+                                disabled={u.id === typedUser?.id || toggleUserStatusMutation.isPending}
+                                onCheckedChange={() => toggleUserStatusMutation.mutate(u.id)}
+                                data-testid={`switch-status-${u.id}`}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {u.isActive ?? true ? "Active" : "Inactive"}
+                              </span>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex gap-1 justify-end">
                               <Button variant="ghost" size="sm" onClick={() => { setEditingUser(u); setIsUserDialogOpen(true); }} data-testid={`button-edit-${u.id}`}>
