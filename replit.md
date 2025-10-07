@@ -8,6 +8,15 @@ The application follows a modern full-stack architecture with a React frontend, 
 
 ## Recent Changes
 
+### October 2025 - Delete Routes Analysis & Permission Fixes
+- **Permission System Fix**: Updated task and report routes to allow users with viewOwnTasks/viewOwnReports to access their assigned items
+- **Delete Routes Analysis**: Comprehensive foreign key dependency analysis for all 9 DELETE endpoints:
+  - HIGH DEPENDENCY (users): 15+ FK references → requires soft delete strategy
+  - MEDIUM DEPENDENCY (inventory, tasks, inquiries, leads, clients): 1-2 FK references → needs dependency checks
+  - LOW DEPENDENCY (reports, sales_records, suppliers): No FK references → safe for hard delete
+- **Improved Error Handling**: User delete route now returns helpful 409 Conflict message when FK constraints prevent deletion
+- **Recommendation**: Implement soft delete for users and other audit-critical entities to preserve historical data
+
 ### December 2024 - Navigation & Permissions Overhaul
 - **Simplified Top Navigation**: Streamlined to show only Dashboard link, welcome name, role badge, and sign out button
 - **Granular Role Permissions**: Implemented detailed permission system in `shared/permissions.ts` with specific tab access for each role

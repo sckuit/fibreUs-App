@@ -789,8 +789,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         await storage.deleteUser(targetUserId);
         res.json({ message: "User deleted successfully" });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting user:", error);
+        
+        // Handle foreign key constraint violations
+        if (error.code === '23503') {
+          return res.status(409).json({ 
+            message: "Cannot delete user: This user has associated records (tasks, projects, reports, etc.). Consider deactivating the user instead of deleting." 
+          });
+        }
+        
         res.status(500).json({ message: "Failed to delete user" });
       }
     }
