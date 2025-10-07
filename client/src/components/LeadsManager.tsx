@@ -43,9 +43,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Mail, Phone, Building, MapPin, TrendingUp, AlertCircle } from "lucide-react";
 import { insertLeadSchema, type Lead, type Inquiry, type InsertLeadType } from "@shared/schema";
+import { LeadDialog } from "@/components/LeadDialog";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function LeadsManager() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const { toast } = useToast();
 
@@ -72,25 +75,39 @@ export default function LeadsManager() {
     },
   });
 
-  const createLead = useMutation({
-    mutationFn: async (data: InsertLeadType) => {
-      const response = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) throw new Error("Failed to create lead");
-      return response.json();
-    },
+  const createLeadMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/leads", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       setIsAddDialogOpen(false);
+      setEditingLead(undefined);
       form.reset();
       toast({
         title: "Lead Created",
         description: "New lead has been added successfully.",
       });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create lead", variant: "destructive" });
+    },
+  });
+
+  const updateLeadMutation = useMutation({
+    mutationFn: async (leadData: any) => {
+      const { id, ...updates } = leadData;
+      return apiRequest("PATCH", `/api/leads/${id}`, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      setIsAddDialogOpen(false);
+      setEditingLead(undefined);
+      toast({
+        title: "Lead Updated",
+        description: "Lead information has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update lead", variant: "destructive" });
     },
   });
 
@@ -113,16 +130,9 @@ export default function LeadsManager() {
     },
   });
 
-  const updateLead = useMutation({
+  const updateLeadStatus = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Lead> }) => {
-      const response = await fetch(`/api/leads/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(updates),
-      });
-      if (!response.ok) throw new Error("Failed to update lead");
-      return response.json();
+      return apiRequest("PATCH", `/api/leads/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
@@ -180,8 +190,26 @@ export default function LeadsManager() {
     (inquiry) => inquiry.status === "new" || inquiry.status === "contacted"
   );
 
+  const handleLeadSubmit = (leadData: any) => {
+    if (leadData.id) {
+      updateLeadMutation.mutate(leadData);
+    } else {
+      createLeadMutation.mutate(leadData);
+    }
+  };
+
+  const handleEditClick = (lead: Lead) => {
+    setEditingLead(lead);
+    setIsAddDialogOpen(true);
+  };
+
+  const handleCreateClick = () => {
+    setEditingLead(undefined);
+    setIsAddDialogOpen(true);
+  };
+
   const onSubmit = (data: InsertLeadType) => {
-    createLead.mutate(data);
+    createLeadMutation.mutate(data);
   };
 
   return (
@@ -223,139 +251,10 @@ export default function LeadsManager() {
                   </SelectContent>
                 </Select>
 
-                <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button data-testid="button-add-lead">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Add Lead
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Add New Lead</DialogTitle>
-                      <DialogDescription>
-                        Manually add a new potential client to your leads pipeline.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Full Name *</FormLabel>
-                                <FormControl>
-                                  <Input {...field} data-testid="input-lead-name" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="email"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email *</FormLabel>
-                                <FormControl>
-                                  <Input type="email" {...field} data-testid="input-lead-email" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Phone *</FormLabel>
-                                <FormControl>
-                                  <Input {...field} data-testid="input-lead-phone" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="company"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Company</FormLabel>
-                                <FormControl>
-                                  <Input {...field} value={field.value || ""} data-testid="input-lead-company" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <FormField
-                          control={form.control}
-                          name="serviceType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Service Type</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} placeholder="e.g., CCTV, Fiber Installation" data-testid="input-lead-service-type" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="address"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Address</FormLabel>
-                              <FormControl>
-                                <Input {...field} value={field.value || ""} data-testid="input-lead-address" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="notes"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Notes</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} value={field.value || ""} rows={3} data-testid="textarea-lead-notes" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setIsAddDialogOpen(false)}
-                            data-testid="button-cancel-lead"
-                          >
-                            Cancel
-                          </Button>
-                          <Button type="submit" disabled={createLead.isPending} data-testid="button-submit-lead">
-                            {createLead.isPending ? "Adding..." : "Add Lead"}
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
-                  </DialogContent>
-                </Dialog>
+                <Button onClick={handleCreateClick} data-testid="button-add-lead">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Lead
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -406,12 +305,12 @@ export default function LeadsManager() {
                             {lead.source}
                           </Badge>
                         </TableCell>
-                        <TableCell>{formatServiceType(lead.serviceType)}</TableCell>
+                        <TableCell>{formatServiceType(lead.serviceType || undefined)}</TableCell>
                         <TableCell>
                           <Select
                             value={lead.status || "new"}
                             onValueChange={(value) =>
-                              updateLead.mutate({ id: lead.id, updates: { status: value as any } })
+                              updateLeadStatus.mutate({ id: lead.id, updates: { status: value as any } })
                             }
                           >
                             <SelectTrigger className="w-32" data-testid={`select-lead-status-${lead.id}`}>
@@ -427,15 +326,25 @@ export default function LeadsManager() {
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={lead.status === "converted"}
-                            data-testid={`button-convert-lead-${lead.id}`}
-                          >
-                            <TrendingUp className="w-4 h-4 mr-1" />
-                            Convert to Client
-                          </Button>
+                          <div className="flex gap-2 flex-wrap">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditClick(lead)}
+                              data-testid={`button-edit-lead-${lead.id}`}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={lead.status === "converted"}
+                              data-testid={`button-convert-lead-${lead.id}`}
+                            >
+                              <TrendingUp className="w-4 h-4 mr-1" />
+                              Convert to Client
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -530,6 +439,14 @@ export default function LeadsManager() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <LeadDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onSubmit={handleLeadSubmit}
+        isPending={createLeadMutation.isPending || updateLeadMutation.isPending}
+        lead={editingLead}
+      />
     </div>
   );
 }
