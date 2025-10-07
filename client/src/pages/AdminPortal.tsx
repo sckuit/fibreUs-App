@@ -20,6 +20,7 @@ import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
+import MessagesManager from "@/components/MessagesManager";
 import type { User, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
 
 export default function AdminPortal() {
@@ -365,6 +366,9 @@ export default function AdminPortal() {
               </TabsTrigger>
             </TabsList>
             <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+              <TabsTrigger value="messages" data-testid="tab-messages">
+                Messages
+              </TabsTrigger>
               <TabsTrigger value="visitors" data-testid="tab-visitors">
                 Visitor Analytics
               </TabsTrigger>
@@ -608,6 +612,10 @@ export default function AdminPortal() {
 
           <TabsContent value="tasks" className="space-y-4">
             {user && <TasksManager role="admin" userId={user.id} />}
+          </TabsContent>
+
+          <TabsContent value="messages" className="space-y-4">
+            <MessagesManager />
           </TabsContent>
 
           <TabsContent value="visitors" className="space-y-4">

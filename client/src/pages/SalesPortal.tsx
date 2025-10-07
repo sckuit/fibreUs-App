@@ -46,6 +46,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSalesRecordSchema, salesRecords, users, projects, tasks, type InsertSalesRecord } from "@shared/schema";
 import type { User, Visitor } from "@shared/schema";
 import { format } from "date-fns";
+import MessagesManager from "@/components/MessagesManager";
 
 type SelectSalesRecord = typeof salesRecords.$inferSelect;
 type SelectUser = typeof users.$inferSelect;
@@ -306,6 +307,9 @@ export default function SalesPortal() {
             <TabsTrigger value="projects" data-testid="tab-projects">
               Projects
             </TabsTrigger>
+            <TabsTrigger value="messages" data-testid="tab-messages">
+              Messages
+            </TabsTrigger>
             <TabsTrigger value="visitors" data-testid="tab-visitors">
               Lead Analytics
             </TabsTrigger>
@@ -505,6 +509,10 @@ export default function SalesPortal() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="messages" className="space-y-4">
+            <MessagesManager />
           </TabsContent>
 
           <TabsContent value="visitors" className="space-y-4">

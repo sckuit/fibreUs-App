@@ -42,10 +42,18 @@ export default function MessagesManager() {
 
   const updateInquiry = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Inquiry> }) => {
-      return apiRequest(`/api/inquiries/${id}`, {
+      const response = await fetch(`/api/inquiries/${id}`, {
         method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify(updates),
       });
+      if (!response.ok) {
+        throw new Error("Failed to update inquiry");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });

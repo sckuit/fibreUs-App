@@ -98,13 +98,21 @@ export default function ScheduleAppointmentDialog({ children }: ScheduleAppointm
 
   const submitInquiry = useMutation({
     mutationFn: async (data: AppointmentFormData) => {
-      return apiRequest("/api/inquiries", {
+      const response = await fetch("/api/inquiries", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify({
           type: "appointment",
           ...data,
         }),
       });
+      if (!response.ok) {
+        throw new Error("Failed to submit inquiry");
+      }
+      return response.json();
     },
     onSuccess: () => {
       setIsSubmitted(true);

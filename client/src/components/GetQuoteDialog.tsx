@@ -73,13 +73,21 @@ export default function GetQuoteDialog({ children }: GetQuoteDialogProps) {
 
   const submitInquiry = useMutation({
     mutationFn: async (data: QuoteFormData) => {
-      return apiRequest("/api/inquiries", {
+      const response = await fetch("/api/inquiries", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify({
           type: "quote",
           ...data,
         }),
       });
+      if (!response.ok) {
+        throw new Error("Failed to submit inquiry");
+      }
+      return response.json();
     },
     onSuccess: () => {
       setIsSubmitted(true);
