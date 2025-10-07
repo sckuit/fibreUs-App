@@ -540,8 +540,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "User not found" });
       }
       
-      if (user.role !== 'admin') {
-        return res.status(403).json({ message: "Admin access required" });
+      // Allow admin, project_manager, and manager to update projects
+      if (!['admin', 'project_manager', 'manager'].includes(user.role)) {
+        return res.status(403).json({ message: "Manager access or higher required" });
       }
       
       const projectId = req.params.id;
@@ -834,7 +835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || !['manager', 'admin'].includes(user.role)) {
+        if (!user || !user.role || !['manager', 'admin', 'project_manager'].includes(user.role)) {
           return res.status(403).json({ message: "Manager access or higher required" });
         }
         
@@ -1049,7 +1050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['manager', 'admin'].includes(user.role)) {
+        if (!user || !['manager', 'admin', 'project_manager'].includes(user.role)) {
           return res.status(403).json({ message: "Manager access required" });
         }
         
