@@ -12,6 +12,8 @@ import {
   salesRecords,
   financialLogs,
   inquiries,
+  leads,
+  clients,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -40,6 +42,12 @@ import {
   type Inquiry,
   type InsertInquiryType,
   type UpdateInquiryType,
+  type Lead,
+  type InsertLeadType,
+  type UpdateLeadType,
+  type Client,
+  type InsertClientType,
+  type UpdateClientType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -151,6 +159,22 @@ export interface IStorage {
   getInquiry(id: string): Promise<Inquiry | undefined>;
   updateInquiry(id: string, updates: UpdateInquiryType): Promise<Inquiry | undefined>;
   deleteInquiry(id: string): Promise<void>;
+
+  // Lead operations (CRM - potential clients)
+  createLead(lead: InsertLeadType): Promise<Lead>;
+  getLeads(filters?: { source?: string; status?: string; assignedToId?: string }): Promise<Lead[]>;
+  getLead(id: string): Promise<Lead | undefined>;
+  updateLead(id: string, updates: UpdateLeadType): Promise<Lead | undefined>;
+  deleteLead(id: string): Promise<void>;
+  convertInquiryToLead(inquiryId: string, assignedToId: string): Promise<Lead>;
+
+  // Client operations (CRM - current customers)
+  createClient(client: InsertClientType): Promise<Client>;
+  getClients(filters?: { status?: string; accountManagerId?: string }): Promise<Client[]>;
+  getClient(id: string): Promise<Client | undefined>;
+  updateClient(id: string, updates: UpdateClientType): Promise<Client | undefined>;
+  deleteClient(id: string): Promise<void>;
+  convertLeadToClient(leadId: string, accountManagerId: string, additionalData: Partial<Client>): Promise<Client>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -903,6 +927,155 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInquiry(id: string): Promise<void> {
     await db.delete(inquiries).where(eq(inquiries.id, id));
+  }
+
+  // Lead operations
+  async createLead(lead: InsertLeadType): Promise<Lead> {
+    const [result] = await db.insert(leads).values(lead).returning();
+    return result;
+  }
+
+  async getLeads(filters?: { source?: string; status?: string; assignedToId?: string }): Promise<Lead[]> {
+    let query = db.select().from(leads);
+    
+    const conditions = [];
+    if (filters?.source) {
+      conditions.push(eq(leads.source, filters.source));
+    }
+    if (filters?.status) {
+      conditions.push(eq(leads.status, filters.status));
+    }
+    if (filters?.assignedToId) {
+      conditions.push(eq(leads.assignedToId, filters.assignedToId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(leads.createdAt));
+  }
+
+  async getLead(id: string): Promise<Lead | undefined> {
+    const [result] = await db.select().from(leads).where(eq(leads.id, id));
+    return result;
+  }
+
+  async updateLead(id: string, updates: UpdateLeadType): Promise<Lead | undefined> {
+    const [result] = await db
+      .update(leads)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(leads.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    await db.delete(leads).where(eq(leads.id, id));
+  }
+
+  async convertInquiryToLead(inquiryId: string, assignedToId: string): Promise<Lead> {
+    const inquiry = await this.getInquiry(inquiryId);
+    if (!inquiry) {
+      throw new Error('Inquiry not found');
+    }
+    
+    if (inquiry.convertedLeadId) {
+      throw new Error('Inquiry already converted to lead');
+    }
+    
+    const [lead] = await db.insert(leads).values({
+      source: 'inquiry',
+      inquiryId: inquiry.id,
+      name: inquiry.name,
+      email: inquiry.email,
+      phone: inquiry.phone,
+      company: inquiry.company,
+      serviceType: inquiry.serviceType,
+      address: inquiry.address,
+      status: 'new',
+      assignedToId,
+      notes: inquiry.description || inquiry.notes || '',
+    }).returning();
+    
+    await this.updateInquiry(inquiryId, {
+      convertedLeadId: lead.id,
+      status: 'converted',
+    });
+    
+    return lead;
+  }
+
+  // Client operations
+  async createClient(client: InsertClientType): Promise<Client> {
+    const [result] = await db.insert(clients).values(client).returning();
+    return result;
+  }
+
+  async getClients(filters?: { status?: string; accountManagerId?: string }): Promise<Client[]> {
+    let query = db.select().from(clients);
+    
+    const conditions = [];
+    if (filters?.status) {
+      conditions.push(eq(clients.status, filters.status));
+    }
+    if (filters?.accountManagerId) {
+      conditions.push(eq(clients.accountManagerId, filters.accountManagerId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(clients.createdAt));
+  }
+
+  async getClient(id: string): Promise<Client | undefined> {
+    const [result] = await db.select().from(clients).where(eq(clients.id, id));
+    return result;
+  }
+
+  async updateClient(id: string, updates: UpdateClientType): Promise<Client | undefined> {
+    const [result] = await db
+      .update(clients)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(clients.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteClient(id: string): Promise<void> {
+    await db.delete(clients).where(eq(clients.id, id));
+  }
+
+  async convertLeadToClient(leadId: string, accountManagerId: string, additionalData: Partial<Client> = {}): Promise<Client> {
+    const lead = await this.getLead(leadId);
+    if (!lead) {
+      throw new Error('Lead not found');
+    }
+    
+    if (lead.status === 'converted') {
+      throw new Error('Lead already converted to client');
+    }
+    
+    const [client] = await db.insert(clients).values({
+      leadId: lead.id,
+      accountManagerId,
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      company: lead.company,
+      address: lead.address,
+      status: 'active',
+      notes: lead.notes,
+      ...additionalData,
+    }).returning();
+    
+    await this.updateLead(leadId, {
+      status: 'converted',
+    });
+    
+    return client;
   }
 }
 
