@@ -616,9 +616,11 @@ export const insertReportSchema = createInsertSchema(reports).omit({
   ticketNumber: true,
   createdAt: true,
   updatedAt: true,
+  submittedById: true,
   approvedById: true,
   approvedAt: true,
   submittedAt: true,
+  rejectionReason: true,
 }).refine(
   (data) => data.taskId || data.projectId,
   {

@@ -8,14 +8,17 @@ The application follows a modern full-stack architecture with a React frontend, 
 
 ## Recent Changes
 
-### October 2025 - Delete Routes Analysis & Permission Fixes
+### October 2025 - Task/Report Editing & Schema Fixes
+- **Task Editing**: Updated PUT /api/tasks/:id to allow users with manageOwnTasks to edit their assigned tasks
+- **Report Editing**: Updated PUT /api/reports/:id to allow users with manageOwnReports to edit their submitted reports
+- **Project Access**: Fixed GET /api/projects to filter by assignedTechnicianId for employees (allows them to see assigned projects when creating tasks/reports)
+- **Report Schema Fix**: Added submittedById and rejectionReason to insertReportSchema omit list - these fields are set by the backend, not the form
 - **Permission System Fix**: Updated task and report routes to allow users with viewOwnTasks/viewOwnReports to access their assigned items
 - **Delete Routes Analysis**: Comprehensive foreign key dependency analysis for all 9 DELETE endpoints:
   - HIGH DEPENDENCY (users): 15+ FK references → requires soft delete strategy
   - MEDIUM DEPENDENCY (inventory, tasks, inquiries, leads, clients): 1-2 FK references → needs dependency checks
   - LOW DEPENDENCY (reports, sales_records, suppliers): No FK references → safe for hard delete
 - **Improved Error Handling**: User delete route now returns helpful 409 Conflict message when FK constraints prevent deletion
-- **Recommendation**: Implement soft delete for users and other audit-critical entities to preserve historical data
 
 ### December 2024 - Navigation & Permissions Overhaul
 - **Simplified Top Navigation**: Streamlined to show only Dashboard link, welcome name, role badge, and sign out button
