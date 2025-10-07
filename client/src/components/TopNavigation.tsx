@@ -88,7 +88,7 @@ export default function TopNavigation() {
 
           {/* Desktop Navigation Tabs */}
           {isAuthenticated && (
-            <Tabs value={location} className="hidden md:block flex-1 mx-8">
+            <Tabs value={location} className="flex-1 mx-8">
               <TabsList className="h-10">
                 <TabsTrigger value="/dashboard" onClick={() => setLocation('/dashboard')} data-testid="tab-dashboard">
                   <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -143,7 +143,7 @@ export default function TopNavigation() {
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
             {!isAuthenticated ? (
-              <div className="hidden md:flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
                 <GetQuoteDialog>
                   <Button variant="outline" size="sm" data-testid="button-get-quote">
                     <FileText className="w-4 h-4 mr-2" />
@@ -165,7 +165,7 @@ export default function TopNavigation() {
                 </LoginDialog>
               </div>
             ) : (
-              <div className="hidden md:flex items-center space-x-3">
+              <div className="flex items-center space-x-3">
                 <span className="text-sm text-muted-foreground">
                   Welcome, {typedUser?.firstName || typedUser?.email}
                 </span>
