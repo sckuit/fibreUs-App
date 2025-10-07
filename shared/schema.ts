@@ -241,6 +241,28 @@ export const financialLogs = pgTable("financial_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Inquiries from quote requests and contact forms
+export const inquiries = pgTable("inquiries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: varchar("type").notNull(), // 'quote' or 'appointment'
+  name: varchar("name").notNull(),
+  email: varchar("email").notNull(),
+  phone: varchar("phone").notNull(),
+  company: varchar("company"),
+  serviceType: varchar("service_type").notNull(),
+  propertyType: varchar("property_type"), // for quotes only
+  address: varchar("address").notNull(),
+  description: text("description"), // project description for quotes
+  notes: text("notes"), // additional notes for appointments
+  urgency: varchar("urgency"), // for quotes only
+  preferredDate: varchar("preferred_date"), // for appointments only
+  preferredTime: varchar("preferred_time"), // for appointments only
+  status: varchar("status").default('new'), // new, contacted, converted, closed
+  assignedToId: varchar("assigned_to_id").references(() => users.id), // sales/admin assigned
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   serviceRequests: many(serviceRequests),
@@ -564,6 +586,20 @@ export const insertFinancialLogSchema = createInsertSchema(financialLogs).omit({
   createdAt: true,
 });
 
+export const insertInquirySchema = createInsertSchema(inquiries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true,
+  assignedToId: true,
+});
+
+export const updateInquirySchema = createInsertSchema(inquiries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
 export type InsertTaskType = z.infer<typeof insertTaskSchema>;
 export type UpdateTaskType = z.infer<typeof updateTaskSchema>;
 export type InsertReportType = z.infer<typeof insertReportSchema>;
@@ -572,6 +608,9 @@ export type ApproveReportType = z.infer<typeof approveReportSchema>;
 export type InsertSalesRecordType = z.infer<typeof insertSalesRecordSchema>;
 export type UpdateSalesRecordType = z.infer<typeof updateSalesRecordSchema>;
 export type InsertFinancialLogType = z.infer<typeof insertFinancialLogSchema>;
+export type Inquiry = typeof inquiries.$inferSelect;
+export type InsertInquiryType = z.infer<typeof insertInquirySchema>;
+export type UpdateInquiryType = z.infer<typeof updateInquirySchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
