@@ -650,8 +650,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !user.role || !hasPermission(user.role, 'viewUsers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const users = await storage.getAllUsers();
@@ -670,8 +670,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !user.role || !hasPermission(user.role, 'manageUsers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const { email, password, firstName, lastName, phone, company, role } = req.body;
@@ -711,8 +711,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !user.role || !hasPermission(user.role, 'manageUsers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const targetUserId = req.params.id;
@@ -744,8 +744,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !user.role || !hasPermission(user.role, 'manageUsers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const targetUserId = req.params.id;
@@ -873,8 +873,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !user.role || !hasPermission(user.role, 'manageInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         await storage.deleteInventoryItem(req.params.id);
@@ -1438,8 +1438,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !user.role || !hasPermission(user.role, 'viewFinancial')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const filters: any = {};
@@ -1479,8 +1479,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'viewAllMessages')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const filters: any = {};
@@ -1504,8 +1504,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'viewAllMessages')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const inquiry = await storage.getInquiry(req.params.id);
@@ -1528,8 +1528,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'manageMessages')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = updateInquirySchema.parse(req.body);
@@ -1557,8 +1557,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'manageMessages')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         await storage.deleteInquiry(req.params.id);
@@ -1578,8 +1578,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = insertLeadSchema.parse(req.body);
@@ -1606,8 +1606,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const lead = await storage.convertInquiryToLead(req.params.inquiryId, userId);
@@ -1632,8 +1632,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'viewLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const filters: any = {};
@@ -1657,8 +1657,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'viewLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const lead = await storage.getLead(req.params.id);
@@ -1682,8 +1682,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = updateLeadSchema.parse(req.body);
@@ -1711,8 +1711,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         await storage.deleteLead(req.params.id);
@@ -1732,8 +1732,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'manageClients')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = insertClientSchema.parse(req.body);
@@ -1757,8 +1757,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const { accountManagerId, ...additionalData } = req.body;
@@ -1788,8 +1788,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'viewClients')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const filters: any = {};
@@ -1812,8 +1812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'viewClients')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const client = await storage.getClient(req.params.id);
@@ -1837,8 +1837,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['sales', 'admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Sales or admin access required" });
+        if (!user || !hasPermission(user.role, 'manageClients')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = updateClientSchema.parse(req.body);
@@ -1866,8 +1866,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'manageClients')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         await storage.deleteClient(req.params.id);
@@ -1887,8 +1887,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'manageSuppliers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = insertSupplierSchema.parse(req.body);
@@ -1912,8 +1912,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'viewSuppliers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const filters: any = {};
@@ -1936,8 +1936,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'viewSuppliers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const supplier = await storage.getSupplier(req.params.id);
@@ -1960,8 +1960,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !['admin'].includes(user.role)) {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'manageSuppliers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         const validatedData = updateSupplierSchema.parse(req.body);
@@ -1989,8 +1989,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || user.role !== 'admin') {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!user || !hasPermission(user.role, 'manageSuppliers')) {
+          return res.status(403).json({ message: "Permission denied" });
         }
         
         await storage.deleteSupplier(req.params.id);
