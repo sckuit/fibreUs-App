@@ -649,7 +649,7 @@ export default function Dashboard() {
                         <TableRow key={project.id}>
                           <TableCell className="font-mono">{project.ticketNumber}</TableCell>
                           <TableCell>{project.projectName || '-'}</TableCell>
-                          <TableCell>{project.serviceRequestId || '-'}</TableCell>
+                          <TableCell>{(project as any).clientName || '-'}</TableCell>
                           <TableCell>
                             <Badge variant="secondary">{project.status}</Badge>
                           </TableCell>

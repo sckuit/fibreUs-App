@@ -332,15 +332,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjects(clientId?: string): Promise<Project[]> {
-    if (clientId) {
-      const result = await db.select().from(projects)
-        .innerJoin(serviceRequests, eq(projects.serviceRequestId, serviceRequests.id))
-        .where(eq(serviceRequests.clientId, clientId))
-        .orderBy(desc(projects.createdAt));
-      return result.map(row => row.projects);
-    }
-    return db.select().from(projects)
+    const result = await db.select({
+      id: projects.id,
+      ticketNumber: projects.ticketNumber,
+      serviceRequestId: projects.serviceRequestId,
+      clientId: projects.clientId,
+      serviceType: projects.serviceType,
+      assignedTechnicianId: projects.assignedTechnicianId,
+      projectName: projects.projectName,
+      status: projects.status,
+      startDate: projects.startDate,
+      estimatedCompletionDate: projects.estimatedCompletionDate,
+      actualCompletionDate: projects.actualCompletionDate,
+      totalCost: projects.totalCost,
+      equipmentUsed: projects.equipmentUsed,
+      workNotes: projects.workNotes,
+      clientFeedback: projects.clientFeedback,
+      clientRating: projects.clientRating,
+      createdAt: projects.createdAt,
+      updatedAt: projects.updatedAt,
+      clientName: clients.name,
+    }).from(projects)
+      .leftJoin(clients, eq(projects.clientId, clients.id))
       .orderBy(desc(projects.createdAt));
+    
+    if (clientId) {
+      return result.filter(p => p.clientId === clientId);
+    }
+    
+    return result as any;
   }
 
   async getTechnicians(): Promise<User[]> {
