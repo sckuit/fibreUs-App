@@ -47,6 +47,8 @@ import { insertSalesRecordSchema, salesRecords, users, projects, tasks, type Ins
 import type { User, Visitor } from "@shared/schema";
 import { format } from "date-fns";
 import MessagesManager from "@/components/MessagesManager";
+import LeadsManager from "@/components/LeadsManager";
+import ClientsManager from "@/components/ClientsManager";
 
 type SelectSalesRecord = typeof salesRecords.$inferSelect;
 type SelectUser = typeof users.$inferSelect;
@@ -301,6 +303,9 @@ export default function SalesPortal() {
             <TabsTrigger value="deals" data-testid="tab-deals">
               Sales Deals
             </TabsTrigger>
+            <TabsTrigger value="leads" data-testid="tab-leads">
+              Leads
+            </TabsTrigger>
             <TabsTrigger value="clients" data-testid="tab-clients">
               Clients
             </TabsTrigger>
@@ -423,43 +428,12 @@ export default function SalesPortal() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="leads" className="space-y-4">
+            <LeadsManager />
+          </TabsContent>
+
           <TabsContent value="clients" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Directory</CardTitle>
-                <CardDescription>
-                  View all clients and their information
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {clients.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No clients found</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Company</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {clients.map((client) => (
-                        <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
-                          <TableCell className="font-medium">
-                            {client.firstName} {client.lastName}
-                          </TableCell>
-                          <TableCell>{client.email}</TableCell>
-                          <TableCell>{client.phone || "-"}</TableCell>
-                          <TableCell>{client.company || "-"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+            <ClientsManager />
           </TabsContent>
 
           <TabsContent value="projects" className="space-y-4">

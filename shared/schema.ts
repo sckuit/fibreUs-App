@@ -46,7 +46,7 @@ export const financialLogTypeEnum = pgEnum('financial_log_type', [
 ]);
 export const leadSourceEnum = pgEnum('lead_source', ['manual', 'inquiry', 'referral', 'website']);
 export const leadStatusEnum = pgEnum('lead_status', ['new', 'contacted', 'qualified', 'converted', 'lost']);
-export const clientStatusEnum = pgEnum('client_status', ['active', 'inactive', 'archived']);
+export const clientStatusEnum = pgEnum('client_status', ['potential', 'active', 'inactive', 'archived']);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -298,7 +298,7 @@ export const clients = pgTable("clients", {
   industry: varchar("industry"),
   companySize: varchar("company_size"), // small, medium, large, enterprise
   address: text("address"),
-  status: clientStatusEnum("status").notNull().default('active'),
+  status: clientStatusEnum("status").notNull().default('potential'),
   contractValue: decimal("contract_value", { precision: 10, scale: 2 }),
   contractStartDate: timestamp("contract_start_date"),
   contractEndDate: timestamp("contract_end_date"),

@@ -84,9 +84,10 @@ export default function ClientsManager() {
       .join(" ");
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | Date | null) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -172,7 +173,7 @@ export default function ClientsManager() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{formatServiceType(client.serviceType)}</TableCell>
+                    <TableCell>{client.industry || "N/A"}</TableCell>
                     <TableCell>
                       <Select
                         value={client.status || "potential"}
@@ -251,8 +252,8 @@ export default function ClientsManager() {
 
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <label className="text-sm font-medium text-muted-foreground">Service Type</label>
-                                  <p className="text-sm mt-1">{formatServiceType(selectedClient.serviceType)}</p>
+                                  <label className="text-sm font-medium text-muted-foreground">Industry</label>
+                                  <p className="text-sm mt-1">{selectedClient.industry || "N/A"}</p>
                                 </div>
                                 <div>
                                   <label className="text-sm font-medium text-muted-foreground">Status</label>
@@ -275,12 +276,12 @@ export default function ClientsManager() {
                                     <label className="font-medium">Converted On</label>
                                     <p className="mt-1">{formatDate(selectedClient.createdAt)}</p>
                                   </div>
-                                  {selectedClient.convertedFromLeadId && (
+                                  {selectedClient.leadId && (
                                     <div>
                                       <label className="font-medium">Converted From Lead</label>
                                       <p className="mt-1 flex items-center gap-1">
                                         <ExternalLink className="w-3 h-3" />
-                                        Lead ID: {selectedClient.convertedFromLeadId.slice(0, 8)}...
+                                        Lead ID: {selectedClient.leadId.slice(0, 8)}...
                                       </p>
                                     </div>
                                   )}
