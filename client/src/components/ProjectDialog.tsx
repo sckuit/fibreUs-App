@@ -38,9 +38,9 @@ export function ProjectDialog({
   users 
 }: ProjectDialogProps) {
   const [formData, setFormData] = useState({
-    serviceRequestId: "",
+    serviceRequestId: undefined as string | undefined,
     projectName: "",
-    assignedTechnicianId: "",
+    assignedTechnicianId: undefined as string | undefined,
     status: "scheduled",
     startDate: "",
     estimatedCompletionDate: "",
@@ -52,9 +52,9 @@ export function ProjectDialog({
   useEffect(() => {
     if (open) {
       setFormData({
-        serviceRequestId: "",
+        serviceRequestId: undefined,
         projectName: "",
-        assignedTechnicianId: "",
+        assignedTechnicianId: undefined,
         status: "scheduled",
         startDate: "",
         estimatedCompletionDate: "",
@@ -66,6 +66,10 @@ export function ProjectDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.serviceRequestId || !formData.projectName) {
+      return;
+    }
     
     const submitData: any = {
       serviceRequestId: formData.serviceRequestId,
@@ -111,12 +115,11 @@ export function ProjectDialog({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="serviceRequestId" className="text-right">
-                Service Request
+                Service Request *
               </Label>
               <Select
                 value={formData.serviceRequestId}
                 onValueChange={(value) => handleChange("serviceRequestId", value)}
-                required
               >
                 <SelectTrigger className="col-span-3" data-testid="select-service-request">
                   <SelectValue placeholder="Select a service request" />
@@ -133,14 +136,13 @@ export function ProjectDialog({
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="projectName" className="text-right">
-                Project Name
+                Project Name *
               </Label>
               <Input
                 id="projectName"
                 value={formData.projectName}
                 onChange={(e) => handleChange("projectName", e.target.value)}
                 className="col-span-3"
-                required
                 data-testid="input-project-name"
               />
             </div>
@@ -249,7 +251,11 @@ export function ProjectDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending} data-testid="button-submit-project">
+            <Button 
+              type="submit" 
+              disabled={isPending || !formData.serviceRequestId || !formData.projectName} 
+              data-testid="button-submit-project"
+            >
               {isPending ? "Creating..." : "Create Project"}
             </Button>
           </DialogFooter>
