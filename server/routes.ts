@@ -1031,7 +1031,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'viewAllTasks')) {
+        // Check if user has permission to view tasks (either own or all)
+        if (!user || !user.role || (!hasPermission(user.role, 'viewOwnTasks') && !hasPermission(user.role, 'viewAllTasks'))) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
@@ -1040,8 +1041,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.query.createdById) filters.createdById = req.query.createdById as string;
         if (req.query.status) filters.status = req.query.status;
         
-        // Employees can only see their own assigned tasks
-        if (user.role === 'employee') {
+        // Users with viewOwnTasks (but not viewAllTasks) can only see their own assigned tasks
+        if (hasPermission(user.role, 'viewOwnTasks') && !hasPermission(user.role, 'viewAllTasks')) {
           filters.assignedToId = userId!;
         }
         
@@ -1061,7 +1062,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'viewAllTasks')) {
+        // Check if user has permission to view tasks (either own or all)
+        if (!user || !user.role || (!hasPermission(user.role, 'viewOwnTasks') && !hasPermission(user.role, 'viewAllTasks'))) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
@@ -1070,8 +1072,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Task not found" });
         }
         
-        // Employees can only see their own assigned tasks
-        if (user.role === 'employee' && task.assignedToId !== userId) {
+        // Users with viewOwnTasks (but not viewAllTasks) can only see their own assigned tasks
+        if (hasPermission(user.role, 'viewOwnTasks') && !hasPermission(user.role, 'viewAllTasks') && task.assignedToId !== userId) {
           return res.status(403).json({ message: "Access denied" });
         }
         
@@ -1169,7 +1171,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'viewAllReports')) {
+        // Check if user has permission to view reports (either own or all)
+        if (!user || !user.role || (!hasPermission(user.role, 'viewOwnReports') && !hasPermission(user.role, 'viewAllReports'))) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
@@ -1178,8 +1181,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (req.query.taskId) filters.taskId = req.query.taskId;
         if (req.query.status) filters.status = req.query.status;
         
-        // Employees can only see their own reports
-        if (user.role === 'employee') {
+        // Users with viewOwnReports (but not viewAllReports) can only see their own reports
+        if (hasPermission(user.role, 'viewOwnReports') && !hasPermission(user.role, 'viewAllReports')) {
           filters.submittedById = userId;
         }
         
@@ -1199,7 +1202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'viewAllReports')) {
+        // Check if user has permission to view reports (either own or all)
+        if (!user || !user.role || (!hasPermission(user.role, 'viewOwnReports') && !hasPermission(user.role, 'viewAllReports'))) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
@@ -1208,8 +1212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Report not found" });
         }
         
-        // Employees can only see their own reports
-        if (user.role === 'employee' && report.submittedById !== userId) {
+        // Users with viewOwnReports (but not viewAllReports) can only see their own reports
+        if (hasPermission(user.role, 'viewOwnReports') && !hasPermission(user.role, 'viewAllReports') && report.submittedById !== userId) {
           return res.status(403).json({ message: "Access denied" });
         }
         
