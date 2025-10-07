@@ -28,6 +28,7 @@ import { exportToCSV, downloadInventoryTemplate, parseCSV } from "@/lib/exportUt
 import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import { ProjectDialog } from "@/components/ProjectDialog";
+import { ClientDialog } from "@/components/ClientDialog";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
 import MessagesManager from "@/components/MessagesManager";
@@ -54,6 +55,7 @@ export default function Dashboard() {
   const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
   const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | undefined>();
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   
   // Fetch dashboard data based on user role
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
@@ -185,6 +187,18 @@ export default function Dashboard() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to create project", variant: "destructive" });
+    },
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: (clientData: any) => apiRequest("POST", "/api/clients", clientData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsClientDialogOpen(false);
+      toast({ title: "Client created", description: "New client has been successfully added" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create client", variant: "destructive" });
     },
   });
 
@@ -609,12 +623,20 @@ export default function Dashboard() {
                     {hasPermission(userRole, 'viewAllProjects') ? 'All project records' : 'Your assigned projects'}
                   </CardDescription>
                 </div>
-                {hasPermission(userRole, 'manageAllProjects') && (
-                  <Button onClick={() => setIsProjectDialogOpen(true)} data-testid="button-create-project">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Project
-                  </Button>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {hasPermission(userRole, 'manageClients') && (
+                    <Button onClick={() => setIsClientDialogOpen(true)} variant="outline" data-testid="button-create-client">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create New Client
+                    </Button>
+                  )}
+                  {hasPermission(userRole, 'manageAllProjects') && (
+                    <Button onClick={() => setIsProjectDialogOpen(true)} data-testid="button-create-project">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create New Project
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {projects.length === 0 ? (
@@ -944,6 +966,12 @@ export default function Dashboard() {
           isPending={createProjectMutation.isPending}
           serviceRequests={serviceRequests}
           users={users}
+        />
+        <ClientDialog
+          open={isClientDialogOpen}
+          onOpenChange={setIsClientDialogOpen}
+          onSubmit={createClientMutation.mutate}
+          isPending={createClientMutation.isPending}
         />
       </div>
     </div>
