@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, downloadInventoryTemplate, parseCSV } from "@/lib/exportUtils";
 import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
+import { ProjectDialog } from "@/components/ProjectDialog";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
 import MessagesManager from "@/components/MessagesManager";
@@ -52,6 +53,7 @@ export default function Dashboard() {
   const [editingUser, setEditingUser] = useState<User | undefined>();
   const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
   const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | undefined>();
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   
   // Fetch dashboard data based on user role
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
@@ -88,6 +90,11 @@ export default function Dashboard() {
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     enabled: !!typedUser?.role && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
+  });
+
+  const { data: serviceRequests = [] } = useQuery<ServiceRequest[]>({
+    queryKey: ["/api/service-requests"],
+    enabled: !!typedUser?.role && isProjectDialogOpen,
   });
 
   // User mutations
@@ -166,6 +173,18 @@ export default function Dashboard() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to delete inventory item", variant: "destructive" });
+    },
+  });
+
+  const createProjectMutation = useMutation({
+    mutationFn: (projectData: any) => apiRequest("POST", "/api/projects", projectData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setIsProjectDialogOpen(false);
+      toast({ title: "Project created", description: "New project has been successfully created" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create project", variant: "destructive" });
     },
   });
 
@@ -583,11 +602,19 @@ export default function Dashboard() {
           {/* Projects Tab */}
           <TabsContent value="projects" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Projects Overview</CardTitle>
-                <CardDescription>
-                  {hasPermission(userRole, 'viewAllProjects') ? 'All project records' : 'Your assigned projects'}
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap space-y-0 pb-4">
+                <div>
+                  <CardTitle>Projects Overview</CardTitle>
+                  <CardDescription>
+                    {hasPermission(userRole, 'viewAllProjects') ? 'All project records' : 'Your assigned projects'}
+                  </CardDescription>
+                </div>
+                {hasPermission(userRole, 'manageAllProjects') && (
+                  <Button onClick={() => setIsProjectDialogOpen(true)} data-testid="button-create-project">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Project
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {projects.length === 0 ? (
@@ -909,6 +936,14 @@ export default function Dashboard() {
           onSubmit={handleInventorySubmit}
           item={editingInventoryItem}
           isPending={createInventoryMutation.isPending || updateInventoryMutation.isPending}
+        />
+        <ProjectDialog
+          open={isProjectDialogOpen}
+          onOpenChange={setIsProjectDialogOpen}
+          onSubmit={createProjectMutation.mutate}
+          isPending={createProjectMutation.isPending}
+          serviceRequests={serviceRequests}
+          users={users}
         />
       </div>
     </div>

@@ -544,6 +544,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/projects", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Check if user has permission to manage all projects
+      if (!hasPermission(user.role, 'manageAllProjects')) {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const validatedData = insertProjectSchema.parse(req.body);
+      const newProject = await storage.createProject(validatedData);
+      res.status(201).json(newProject);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid project data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
   app.put("/api/projects/:id", isSessionAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
