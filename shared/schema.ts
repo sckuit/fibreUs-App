@@ -102,7 +102,9 @@ export const serviceRequests = pgTable("service_requests", {
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   ticketNumber: varchar("ticket_number").notNull().unique(),
-  serviceRequestId: varchar("service_request_id").notNull().references(() => serviceRequests.id),
+  serviceRequestId: varchar("service_request_id").references(() => serviceRequests.id),
+  clientId: varchar("client_id").references(() => users.id),
+  serviceType: serviceTypeEnum("service_type"),
   assignedTechnicianId: varchar("assigned_technician_id").references(() => users.id),
   projectName: varchar("project_name").notNull(),
   status: requestStatusEnum("status").default('scheduled'),

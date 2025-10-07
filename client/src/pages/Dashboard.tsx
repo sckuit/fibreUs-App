@@ -94,11 +94,6 @@ export default function Dashboard() {
     enabled: !!typedUser?.role && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
   });
 
-  const { data: serviceRequests = [] } = useQuery<ServiceRequest[]>({
-    queryKey: ["/api/service-requests"],
-    enabled: !!typedUser?.role && isProjectDialogOpen,
-  });
-
   // User mutations
   const createUserMutation = useMutation({
     mutationFn: (userData: any) => apiRequest("POST", "/api/users", userData),
@@ -623,20 +618,12 @@ export default function Dashboard() {
                     {hasPermission(userRole, 'viewAllProjects') ? 'All project records' : 'Your assigned projects'}
                   </CardDescription>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  {hasPermission(userRole, 'manageClients') && (
-                    <Button onClick={() => setIsClientDialogOpen(true)} variant="outline" data-testid="button-create-client">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create New Client
-                    </Button>
-                  )}
-                  {hasPermission(userRole, 'manageAllProjects') && (
-                    <Button onClick={() => setIsProjectDialogOpen(true)} data-testid="button-create-project">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create New Project
-                    </Button>
-                  )}
-                </div>
+                {hasPermission(userRole, 'manageAllProjects') && (
+                  <Button onClick={() => setIsProjectDialogOpen(true)} data-testid="button-create-project">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Project
+                  </Button>
+                )}
               </CardHeader>
               <CardContent>
                 {projects.length === 0 ? (
@@ -964,8 +951,6 @@ export default function Dashboard() {
           onOpenChange={setIsProjectDialogOpen}
           onSubmit={createProjectMutation.mutate}
           isPending={createProjectMutation.isPending}
-          serviceRequests={serviceRequests}
-          users={users}
         />
         <ClientDialog
           open={isClientDialogOpen}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,16 +31,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Mail, Phone, MapPin, Calendar, FileText, ExternalLink } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, Calendar, FileText, ExternalLink, Plus } from "lucide-react";
 import type { Client } from "@shared/schema";
+import { ClientDialog } from "@/components/ClientDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { hasPermission } from "@shared/permissions";
+import type { User } from "@shared/schema";
 
 export default function ClientsManager() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const typedUser = user as User | undefined;
+  const userRole = typedUser?.role || 'client';
 
   const { data: clients = [], isLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: (clientData: any) => apiRequest("POST", "/api/clients", clientData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      setIsClientDialogOpen(false);
+      toast({ title: "Client created", description: "New client has been successfully added" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create client", variant: "destructive" });
+    },
   });
 
   const updateClient = useMutation({
@@ -102,22 +122,30 @@ export default function ClientsManager() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap space-y-0">
           <div>
             <CardTitle>Clients Management</CardTitle>
             <CardDescription>View and manage your client accounts</CardDescription>
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-40" data-testid="select-filter-status">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Clients</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="potential">Potential</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2 flex-wrap">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="w-40" data-testid="select-filter-status">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Clients</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="potential">Potential</SelectItem>
+              </SelectContent>
+            </Select>
+            {hasPermission(userRole, 'manageClients') && (
+              <Button onClick={() => setIsClientDialogOpen(true)} data-testid="button-create-client">
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Client
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -299,6 +327,13 @@ export default function ClientsManager() {
           )}
         </CardContent>
       </Card>
+
+      <ClientDialog
+        open={isClientDialogOpen}
+        onOpenChange={setIsClientDialogOpen}
+        onSubmit={(data) => createClientMutation.mutate(data)}
+        isPending={createClientMutation.isPending}
+      />
     </div>
   );
 }

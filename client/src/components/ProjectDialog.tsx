@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,27 +19,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ServiceRequest, User } from "@shared/schema";
+import type { Client, User } from "@shared/schema";
 
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (projectData: any) => void;
   isPending: boolean;
-  serviceRequests: ServiceRequest[];
-  users: User[];
 }
 
 export function ProjectDialog({ 
   open, 
   onOpenChange, 
   onSubmit, 
-  isPending, 
-  serviceRequests,
-  users 
+  isPending,
 }: ProjectDialogProps) {
   const [formData, setFormData] = useState({
-    serviceRequestId: undefined as string | undefined,
+    clientId: undefined as string | undefined,
+    serviceType: undefined as string | undefined,
     projectName: "",
     assignedTechnicianId: undefined as string | undefined,
     status: "scheduled",
@@ -48,11 +46,22 @@ export function ProjectDialog({
     workNotes: "",
   });
 
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+    enabled: open,
+  });
+
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: open,
+  });
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setFormData({
-        serviceRequestId: undefined,
+        clientId: undefined,
+        serviceType: undefined,
         projectName: "",
         assignedTechnicianId: undefined,
         status: "scheduled",
@@ -67,12 +76,13 @@ export function ProjectDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.serviceRequestId || !formData.projectName) {
+    if (!formData.clientId || !formData.serviceType || !formData.projectName) {
       return;
     }
     
     const submitData: any = {
-      serviceRequestId: formData.serviceRequestId,
+      clientId: formData.clientId,
+      serviceType: formData.serviceType,
       projectName: formData.projectName,
       status: formData.status,
     };
@@ -109,27 +119,51 @@ export function ProjectDialog({
           <DialogHeader>
             <DialogTitle>Create New Project</DialogTitle>
             <DialogDescription>
-              Create a new project from a service request
+              Create a new project for a client
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="serviceRequestId" className="text-right">
-                Service Request *
+              <Label htmlFor="clientId" className="text-right">
+                Client *
               </Label>
               <Select
-                value={formData.serviceRequestId}
-                onValueChange={(value) => handleChange("serviceRequestId", value)}
+                value={formData.clientId}
+                onValueChange={(value) => handleChange("clientId", value)}
               >
-                <SelectTrigger className="col-span-3" data-testid="select-service-request">
-                  <SelectValue placeholder="Select a service request" />
+                <SelectTrigger className="col-span-3" data-testid="select-client">
+                  <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {serviceRequests.map((sr) => (
-                    <SelectItem key={sr.id} value={sr.id}>
-                      {sr.title}
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name} {client.company ? `(${client.company})` : ''}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="serviceType" className="text-right">
+                Service Type *
+              </Label>
+              <Select
+                value={formData.serviceType}
+                onValueChange={(value) => handleChange("serviceType", value)}
+              >
+                <SelectTrigger className="col-span-3" data-testid="select-service-type">
+                  <SelectValue placeholder="Select service type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cctv">CCTV Installation</SelectItem>
+                  <SelectItem value="alarm">Alarm System</SelectItem>
+                  <SelectItem value="access_control">Access Control</SelectItem>
+                  <SelectItem value="intercom">Intercom System</SelectItem>
+                  <SelectItem value="cloud_storage">Cloud Storage</SelectItem>
+                  <SelectItem value="monitoring">Remote Monitoring</SelectItem>
+                  <SelectItem value="fiber_installation">Fiber Installation</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -253,7 +287,7 @@ export function ProjectDialog({
             </Button>
             <Button 
               type="submit" 
-              disabled={isPending || !formData.serviceRequestId || !formData.projectName} 
+              disabled={isPending || !formData.clientId || !formData.serviceType || !formData.projectName} 
               data-testid="button-submit-project"
             >
               {isPending ? "Creating..." : "Create Project"}
