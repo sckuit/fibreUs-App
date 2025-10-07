@@ -11,6 +11,7 @@ import {
   reports,
   salesRecords,
   financialLogs,
+  inquiries,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -36,6 +37,9 @@ import {
   type UpdateSalesRecordType,
   type FinancialLog,
   type InsertFinancialLogType,
+  type Inquiry,
+  type InsertInquiryType,
+  type UpdateInquiryType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -140,6 +144,13 @@ export interface IStorage {
   // Financial log operations (read-only for admin, written by system)
   createFinancialLog(log: InsertFinancialLogType): Promise<FinancialLog>;
   getFinancialLogs(filters?: { entityType?: string; userId?: string; logType?: string; limit?: number }): Promise<FinancialLog[]>;
+
+  // Inquiry operations (quote requests and contact forms)
+  createInquiry(inquiry: InsertInquiryType): Promise<Inquiry>;
+  getInquiries(filters?: { type?: string; status?: string; assignedToId?: string }): Promise<Inquiry[]>;
+  getInquiry(id: string): Promise<Inquiry | undefined>;
+  updateInquiry(id: string, updates: UpdateInquiryType): Promise<Inquiry | undefined>;
+  deleteInquiry(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -847,6 +858,51 @@ export class DatabaseStorage implements IStorage {
     return query
       .orderBy(desc(financialLogs.createdAt))
       .limit(filters?.limit || 100);
+  }
+
+  // Inquiry operations
+  async createInquiry(inquiry: InsertInquiryType): Promise<Inquiry> {
+    const [result] = await db.insert(inquiries).values(inquiry).returning();
+    return result;
+  }
+
+  async getInquiries(filters?: { type?: string; status?: string; assignedToId?: string }): Promise<Inquiry[]> {
+    let query = db.select().from(inquiries);
+    
+    const conditions = [];
+    if (filters?.type) {
+      conditions.push(eq(inquiries.type, filters.type));
+    }
+    if (filters?.status) {
+      conditions.push(eq(inquiries.status, filters.status));
+    }
+    if (filters?.assignedToId) {
+      conditions.push(eq(inquiries.assignedToId, filters.assignedToId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(inquiries.createdAt));
+  }
+
+  async getInquiry(id: string): Promise<Inquiry | undefined> {
+    const [result] = await db.select().from(inquiries).where(eq(inquiries.id, id));
+    return result;
+  }
+
+  async updateInquiry(id: string, updates: UpdateInquiryType): Promise<Inquiry | undefined> {
+    const [result] = await db
+      .update(inquiries)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(inquiries.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteInquiry(id: string): Promise<void> {
+    await db.delete(inquiries).where(eq(inquiries.id, id));
   }
 }
 

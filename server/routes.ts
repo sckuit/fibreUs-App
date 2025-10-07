@@ -23,6 +23,8 @@ import {
   approveReportSchema,
   insertSalesRecordSchema,
   updateSalesRecordSchema,
+  insertInquirySchema,
+  updateInquirySchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -1445,6 +1447,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error fetching financial logs:", error);
         res.status(500).json({ message: "Failed to fetch financial logs" });
+      }
+    }
+  );
+
+  // Inquiry routes (quote requests and contact forms - public POST, sales/admin GET/UPDATE)
+  app.post("/api/inquiries", async (req, res) => {
+    try {
+      const validatedData = insertInquirySchema.parse(req.body);
+      const inquiry = await storage.createInquiry(validatedData);
+      res.status(201).json(inquiry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid inquiry data", errors: error.errors });
+      }
+      console.error("Error creating inquiry:", error);
+      res.status(500).json({ message: "Failed to create inquiry" });
+    }
+  });
+
+  app.get("/api/inquiries",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const filters: any = {};
+        if (req.query.type) filters.type = req.query.type;
+        if (req.query.status) filters.status = req.query.status;
+        if (req.query.assignedToId) filters.assignedToId = req.query.assignedToId;
+        
+        const inquiries = await storage.getInquiries(filters);
+        res.json(inquiries);
+      } catch (error) {
+        console.error("Error fetching inquiries:", error);
+        res.status(500).json({ message: "Failed to fetch inquiries" });
+      }
+    }
+  );
+
+  app.get("/api/inquiries/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const inquiry = await storage.getInquiry(req.params.id);
+        if (!inquiry) {
+          return res.status(404).json({ message: "Inquiry not found" });
+        }
+        
+        res.json(inquiry);
+      } catch (error) {
+        console.error("Error fetching inquiry:", error);
+        res.status(500).json({ message: "Failed to fetch inquiry" });
+      }
+    }
+  );
+
+  app.patch("/api/inquiries/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !['sales', 'admin'].includes(user.role)) {
+          return res.status(403).json({ message: "Sales or admin access required" });
+        }
+        
+        const validatedData = updateInquirySchema.parse(req.body);
+        const inquiry = await storage.updateInquiry(req.params.id, validatedData);
+        
+        if (!inquiry) {
+          return res.status(404).json({ message: "Inquiry not found" });
+        }
+        
+        res.json(inquiry);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating inquiry:", error);
+        res.status(500).json({ message: "Failed to update inquiry" });
+      }
+    }
+  );
+
+  app.delete("/api/inquiries/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== 'admin') {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        await storage.deleteInquiry(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting inquiry:", error);
+        res.status(500).json({ message: "Failed to delete inquiry" });
       }
     }
   );
