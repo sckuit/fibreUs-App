@@ -60,8 +60,6 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       return result;
     },
     onSuccess: (data: any) => {
-      const role = data?.user?.role || 'client';
-      
       toast({
         title: "Welcome back!",
         description: "You've been successfully signed in.",
@@ -70,7 +68,7 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       setOpen(false);
       
       // Use full page reload to ensure auth state is fresh
-      window.location.href = `/portal/${role}`;
+      window.location.href = '/dashboard';
     },
     onError: (error: any) => {
       toast({
@@ -89,8 +87,6 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       return result;
     },
     onSuccess: (data: any) => {
-      const role = data?.user?.role || 'client';
-      
       toast({
         title: "Account created!",
         description: "Welcome to FibreUS. You've been automatically signed in.",
@@ -99,7 +95,7 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       setOpen(false);
       
       // Use full page reload to ensure auth state is fresh
-      window.location.href = `/portal/${role}`;
+      window.location.href = '/dashboard';
     },
     onError: (error: any) => {
       toast({
