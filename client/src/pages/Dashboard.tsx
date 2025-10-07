@@ -1,17 +1,38 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link, useLocation } from "wouter";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useLocation } from "wouter";
 import { 
   Plus, FileText, Wrench, Clock, Users, ClipboardList, 
   DollarSign, MessageSquare, BarChart, Package, Truck,
-  Home, UserCircle, Eye, Activity, Settings
+  Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
+  UserPlus, Download, AlertTriangle, FileDown, Upload
 } from "lucide-react";
-import type { User, ServiceRequest, Project, Communication } from "@shared/schema";
+import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { exportToCSV, downloadInventoryTemplate, parseCSV } from "@/lib/exportUtils";
+import { UserDialog } from "@/components/UserDialog";
+import { InventoryDialog } from "@/components/InventoryDialog";
+import ReportsManager from "@/components/ReportsManager";
+import { TasksManager } from "@/components/TasksManager";
+import MessagesManager from "@/components/MessagesManager";
+import LeadsManager from "@/components/LeadsManager";
+import ClientsManager from "@/components/ClientsManager";
+import SuppliersManager from "@/components/SuppliersManager";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -24,6 +45,13 @@ export default function Dashboard() {
   const { user } = useAuth();
   const typedUser = user as User | undefined;
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
+  // Dialog states
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | undefined>();
+  const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
+  const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | undefined>();
   
   // Fetch dashboard data based on user role
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
@@ -31,33 +59,205 @@ export default function Dashboard() {
     enabled: !!typedUser,
   });
 
+  // Fetch all data for tabs
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: !!typedUser && hasPermission(typedUser.role, 'viewUsers'),
+  });
+
+  const { data: visitors = [], isLoading: visitorsLoading } = useQuery<Visitor[]>({
+    queryKey: ["/api/analytics/recent-visitors"],
+    enabled: !!typedUser && typedUser.role === 'admin',
+  });
+
+  const { data: inventoryItems = [], isLoading: inventoryLoading } = useQuery<InventoryItem[]>({
+    queryKey: ["/api/inventory/items"],
+    enabled: !!typedUser && ['manager', 'project_manager', 'admin'].includes(typedUser.role),
+  });
+
+  const { data: lowStockItems = [] } = useQuery<InventoryItem[]>({
+    queryKey: ["/api/inventory/low-stock"],
+    enabled: !!typedUser && ['manager', 'project_manager', 'admin'].includes(typedUser.role),
+  });
+
+  const { data: financialLogs = [], isLoading: financialLogsLoading } = useQuery<FinancialLog[]>({
+    queryKey: ["/api/financial-logs"],
+    enabled: !!typedUser && ['sales', 'manager', 'admin'].includes(typedUser.role),
+  });
+
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+    enabled: !!typedUser && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
+  });
+
+  // User mutations
+  const createUserMutation = useMutation({
+    mutationFn: (userData: any) => apiRequest("POST", "/api/users", userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsUserDialogOpen(false);
+      setEditingUser(undefined);
+      toast({ title: "User created", description: "New user has been successfully added" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create user", variant: "destructive" });
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PUT", `/api/users/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsUserDialogOpen(false);
+      setEditingUser(undefined);
+      toast({ title: "User updated", description: "User has been successfully updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update user", variant: "destructive" });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: string) => apiRequest("DELETE", `/api/users/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "User deleted", description: "User has been successfully removed" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete user", variant: "destructive" });
+    },
+  });
+
+  // Inventory mutations
+  const createInventoryMutation = useMutation({
+    mutationFn: (itemData: any) => apiRequest("POST", "/api/inventory/items", itemData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+      setIsInventoryDialogOpen(false);
+      setEditingInventoryItem(undefined);
+      toast({ title: "Item created", description: "Inventory item has been successfully added" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create inventory item", variant: "destructive" });
+    },
+  });
+
+  const updateInventoryMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PUT", `/api/inventory/items/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+      setIsInventoryDialogOpen(false);
+      setEditingInventoryItem(undefined);
+      toast({ title: "Item updated", description: "Inventory item has been successfully updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update inventory item", variant: "destructive" });
+    },
+  });
+
+  const deleteInventoryMutation = useMutation({
+    mutationFn: (itemId: string) => apiRequest("DELETE", `/api/inventory/items/${itemId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+      toast({ title: "Item deleted", description: "Inventory item has been successfully deleted" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete inventory item", variant: "destructive" });
+    },
+  });
+
+  // Handlers
+  const handleUserSubmit = (userData: any) => {
+    if (editingUser) {
+      updateUserMutation.mutate({ id: editingUser.id, data: userData });
+    } else {
+      createUserMutation.mutate(userData);
+    }
+  };
+
+  const handleInventorySubmit = (itemData: any) => {
+    if (editingInventoryItem) {
+      updateInventoryMutation.mutate({ id: editingInventoryItem.id, data: itemData });
+    } else {
+      createInventoryMutation.mutate(itemData);
+    }
+  };
+
+  const handleImportInventory = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsedData = parseCSV(text);
+        
+        if (parsedData.length === 0) {
+          toast({ title: "Error", description: "No data found in CSV file", variant: "destructive" });
+          return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const item of parsedData) {
+          try {
+            await apiRequest("POST", "/api/inventory/items", {
+              sku: item.sku,
+              name: item.name,
+              description: item.description || null,
+              category: item.category,
+              quantityInStock: parseInt(item.quantityInStock) || 0,
+              minimumStockLevel: parseInt(item.minimumStockLevel) || 0,
+              unitOfMeasure: item.unitOfMeasure || 'piece',
+              unitCost: item.unitCost ? parseFloat(item.unitCost) : null,
+              supplier: item.supplier || null,
+              location: item.location || null,
+              notes: item.notes || null,
+            });
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/inventory/low-stock"] });
+
+        toast({
+          title: "Import complete",
+          description: `Successfully imported ${successCount} items${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+        });
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message || "Failed to import inventory", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
   // Get portal name based on role
   const getPortalName = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'Admin Portal';
-      case 'manager':
-        return 'Manager Portal';
-      case 'employee':
-        return 'Employee Portal';
-      case 'sales':
-        return 'Sales Portal';
-      case 'project_manager':
-        return 'Project Manager Portal';
-      case 'client':
-        return 'Client Portal';
-      default:
-        return 'Dashboard';
+      case 'admin': return 'Admin Portal';
+      case 'manager': return 'Manager Portal';
+      case 'employee': return 'Employee Portal';
+      case 'sales': return 'Sales Portal';
+      case 'project_manager': return 'Project Manager Portal';
+      case 'client': return 'Client Portal';
+      default: return 'Dashboard';
     }
   };
 
   // Get role display name
   const getRoleDisplayName = (role: string) => {
     switch (role) {
-      case 'project_manager':
-        return 'Project Manager';
-      default:
-        return role.charAt(0).toUpperCase() + role.slice(1);
+      case 'project_manager': return 'Project Manager';
+      default: return role.charAt(0).toUpperCase() + role.slice(1);
     }
   };
 
@@ -72,7 +272,7 @@ export default function Dashboard() {
     );
   }
 
-  const userRole = typedUser?.role || 'client';
+  const userRole = (typedUser?.role || 'client') as 'client' | 'employee' | 'manager' | 'admin' | 'sales' | 'project_manager';
   const portalName = getPortalName(userRole);
   const roleDisplayName = getRoleDisplayName(userRole);
 
@@ -105,55 +305,42 @@ export default function Dashboard() {
             <TabsList className="w-full h-auto p-1 grid gap-1" style={{
               gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
             }}>
-              {/* Users Tab */}
               {hasPermission(userRole, 'viewUsers') && (
                 <TabsTrigger value="users" data-testid="tab-users">
                   <Users className="w-4 h-4 mr-2" />
                   Users
                 </TabsTrigger>
               )}
-
-              {/* Tasks Tab */}
               {['employee', 'manager', 'project_manager', 'admin'].includes(userRole) && (
                 <TabsTrigger value="tasks" data-testid="tab-tasks">
                   <ClipboardList className="w-4 h-4 mr-2" />
                   Tasks
                 </TabsTrigger>
               )}
-
-              {/* Projects Tab */}
               {(hasPermission(userRole, 'viewOwnProjects') || hasPermission(userRole, 'viewAllProjects')) && (
                 <TabsTrigger value="projects" data-testid="tab-projects">
                   <Wrench className="w-4 h-4 mr-2" />
                   Projects
                 </TabsTrigger>
               )}
-
-              {/* Reports Tab */}
               {hasPermission(userRole, 'viewReports') && (
                 <TabsTrigger value="reports" data-testid="tab-reports">
                   <FileText className="w-4 h-4 mr-2" />
                   Reports
                 </TabsTrigger>
               )}
-
-              {/* Inventory Tab */}
               {['manager', 'project_manager', 'admin'].includes(userRole) && (
                 <TabsTrigger value="inventory" data-testid="tab-inventory">
                   <Package className="w-4 h-4 mr-2" />
                   Inventory
                 </TabsTrigger>
               )}
-
-              {/* Suppliers Tab */}
               {userRole === 'admin' && (
                 <TabsTrigger value="suppliers" data-testid="tab-suppliers">
                   <Truck className="w-4 h-4 mr-2" />
                   Suppliers
                 </TabsTrigger>
               )}
-
-              {/* Home Arrow Button */}
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -169,53 +356,40 @@ export default function Dashboard() {
             <TabsList className="w-full h-auto p-1 grid gap-1" style={{
               gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
             }}>
-              {/* Messages Tab */}
               <TabsTrigger value="messages" data-testid="tab-messages">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Messages
               </TabsTrigger>
-
-              {/* Clients Tab */}
               {['sales', 'manager', 'project_manager', 'admin'].includes(userRole) && (
                 <TabsTrigger value="clients" data-testid="tab-clients">
                   <UserCircle className="w-4 h-4 mr-2" />
                   Clients
                 </TabsTrigger>
               )}
-
-              {/* Leads Tab */}
               {['sales', 'manager', 'admin'].includes(userRole) && (
                 <TabsTrigger value="leads" data-testid="tab-leads">
                   <BarChart className="w-4 h-4 mr-2" />
                   Leads
                 </TabsTrigger>
               )}
-
-              {/* Visitors Tab */}
               {userRole === 'admin' && (
                 <TabsTrigger value="visitors" data-testid="tab-visitors">
                   <Eye className="w-4 h-4 mr-2" />
                   Visitors
                 </TabsTrigger>
               )}
-
-              {/* Financial Tab */}
               {['sales', 'manager', 'admin'].includes(userRole) && (
                 <TabsTrigger value="financial" data-testid="tab-financial">
                   <DollarSign className="w-4 h-4 mr-2" />
                   Financial
                 </TabsTrigger>
               )}
-
-              {/* Activities Tab */}
               {userRole === 'admin' && (
                 <TabsTrigger value="activities" data-testid="tab-activities">
                   <Activity className="w-4 h-4 mr-2" />
                   Activities
                 </TabsTrigger>
               )}
-
-              {/* Settings Tab (icon only) */}
               {hasPermission(userRole, 'manageSettings') && (
                 <TabsTrigger value="settings" data-testid="tab-settings" className="px-3">
                   <Settings className="w-4 h-4" />
@@ -224,9 +398,8 @@ export default function Dashboard() {
             </TabsList>
           </div>
 
-          {/* Overview Tab Content (Default) */}
+          {/* Overview Tab Content */}
           <TabsContent value="overview" className="mt-6 space-y-6">
-            {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {hasPermission(userRole, 'createRequests') && (
                 <Card className="hover-elevate" data-testid="card-new-request">
@@ -235,20 +408,15 @@ export default function Dashboard() {
                       <Plus className="w-5 h-5 mr-2 text-primary" />
                       New Service Request
                     </CardTitle>
-                    <CardDescription>
-                      Request a quote for security services
-                    </CardDescription>
+                    <CardDescription>Request a quote for security services</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Link href="/requests?action=new">
-                      <Button className="w-full" data-testid="button-new-request">
-                        Create Request
-                      </Button>
-                    </Link>
+                    <Button className="w-full" onClick={() => setLocation('/requests?action=new')} data-testid="button-new-request">
+                      Create Request
+                    </Button>
                   </CardContent>
                 </Card>
               )}
-
               <Card data-testid="card-active-requests">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center text-lg">
@@ -265,7 +433,6 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-
               <Card data-testid="card-active-projects">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center text-lg">
@@ -283,8 +450,6 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* Active Requests Overview */}
             {dashboardData?.activeRequests && dashboardData.activeRequests.length > 0 && (
               <Card data-testid="card-active-requests-overview">
                 <CardHeader>
@@ -303,38 +468,21 @@ export default function Dashboard() {
                             {request.serviceType?.replace('_', ' ')} • {request.priority} priority
                           </p>
                           {request.quotedAmount && (
-                            <p className="text-sm font-medium text-green-600 mt-1">
-                              Quote: ${request.quotedAmount}
-                            </p>
+                            <p className="text-sm font-medium text-green-600 mt-1">Quote: ${request.quotedAmount}</p>
                           )}
                         </div>
                         <div className="flex items-center space-x-3">
-                          <Badge variant="secondary">
-                            {request.status?.replace('_', ' ')}
-                          </Badge>
-                          <Link href="/requests">
-                            <Button size="sm" variant="outline" data-testid={`button-view-request-${request.id}`}>
-                              View
-                            </Button>
-                          </Link>
+                          <Badge variant="secondary">{request.status?.replace('_', ' ')}</Badge>
+                          <Button size="sm" variant="outline" onClick={() => setLocation('/requests')} data-testid={`button-view-request-${request.id}`}>
+                            View
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
-                  {dashboardData?.activeRequests && dashboardData.activeRequests.length > 3 && (
-                    <div className="mt-4 text-center">
-                      <Link href="/requests">
-                        <Button variant="outline" data-testid="button-view-all-requests">
-                          View All Requests ({dashboardData?.activeRequests?.length || 0})
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
-
-            {/* Recent Activity */}
             <Card data-testid="card-recent-activity">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -358,267 +506,358 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-center py-8" data-testid="text-no-activity">
-                    No recent activity to display
-                  </p>
+                  <p className="text-muted-foreground text-center py-8" data-testid="text-no-activity">No recent activity to display</p>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Users Tab Content */}
-          <TabsContent value="users" className="mt-6">
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
-                  {userRole === 'admin' ? 'Manage all system users' : 'View and manage employees'}
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-2">
+                <div>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>Manage all system users and their roles</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => exportToCSV(users, 'users')} data-testid="button-export-users">
+                    <Download className="w-4 h-4 mr-2" />Export
+                  </Button>
+                  <Button onClick={() => { setEditingUser(undefined); setIsUserDialogOpen(true); }} data-testid="button-add-user">
+                    <UserPlus className="w-4 h-4 mr-2" />Add User
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-users">
-                    Go to Users
-                  </Button>
-                </Link>
+                {usersLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading users...</p>
+                ) : users.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No users found</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((u) => (
+                        <TableRow key={u.id} data-testid={`row-user-${u.id}`}>
+                          <TableCell className="font-medium">{u.firstName} {u.lastName}</TableCell>
+                          <TableCell data-testid={`text-email-${u.id}`}>{u.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" data-testid={`badge-role-${u.id}`}>{u.role}</Badge>
+                          </TableCell>
+                          <TableCell>{u.company || "-"}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1 justify-end">
+                              <Button variant="ghost" size="sm" onClick={() => { setEditingUser(u); setIsUserDialogOpen(true); }} data-testid={`button-edit-${u.id}`}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" disabled={u.id === typedUser?.id} onClick={() => deleteUserMutation.mutate(u.id)} data-testid={`button-delete-${u.id}`}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Tasks Tab Content */}
-          <TabsContent value="tasks" className="mt-6">
+          {/* Tasks Tab */}
+          <TabsContent value="tasks" className="space-y-4">
+            {typedUser && (
+              <TasksManager role={userRole as "manager" | "admin"} userId={typedUser.id} />
+            )}
+          </TabsContent>
+
+          {/* Projects Tab */}
+          <TabsContent value="projects" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Task Management</CardTitle>
+                <CardTitle>Projects Overview</CardTitle>
                 <CardDescription>
-                  Manage project tasks and assignments
+                  {hasPermission(userRole, 'viewAllProjects') ? 'All project records' : 'Your assigned projects'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-tasks">
-                    Go to Tasks
-                  </Button>
-                </Link>
+                {projects.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No projects found</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Ticket #</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Start Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {projects.slice(0, 10).map((project) => (
+                        <TableRow key={project.id}>
+                          <TableCell className="font-mono">{project.ticketNumber}</TableCell>
+                          <TableCell>{project.projectName || '-'}</TableCell>
+                          <TableCell>{project.serviceRequestId || '-'}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{project.status}</Badge>
+                          </TableCell>
+                          <TableCell>{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Projects Tab Content */}
-          <TabsContent value="projects" className="mt-6">
+          {/* Reports Tab */}
+          <TabsContent value="reports" className="space-y-4">
+            {typedUser && <ReportsManager role={userRole as "manager" | "admin"} userId={typedUser.id} />}
+          </TabsContent>
+
+          {/* Inventory Tab */}
+          <TabsContent value="inventory" className="space-y-4">
+            {lowStockItems.length > 0 && (
+              <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <div>
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      Low Stock Alert
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      {lowStockItems.length} items at or below minimum stock level
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+            )}
             <Card>
-              <CardHeader>
-                <CardTitle>Projects</CardTitle>
-                <CardDescription>
-                  {hasPermission(userRole, 'viewAllProjects') 
-                    ? 'Manage all projects' 
-                    : 'View your assigned projects'}
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap space-y-0 pb-4">
+                <div>
+                  <CardTitle>Inventory Management</CardTitle>
+                  <CardDescription>Manage equipment and parts inventory</CardDescription>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" onClick={() => exportToCSV(inventoryItems, 'inventory')} data-testid="button-export-inventory">
+                    <Download className="w-4 h-4 mr-2" />Export
+                  </Button>
+                  <Button variant="outline" onClick={downloadInventoryTemplate} data-testid="button-template-inventory">
+                    <FileDown className="w-4 h-4 mr-2" />Template
+                  </Button>
+                  <Button variant="outline" onClick={() => document.getElementById('inventory-import')?.click()} data-testid="button-import-inventory">
+                    <Upload className="w-4 h-4 mr-2" />Import
+                  </Button>
+                  <input id="inventory-import" type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportInventory} />
+                  <Button onClick={() => { setEditingInventoryItem(undefined); setIsInventoryDialogOpen(true); }} data-testid="button-add-inventory">
+                    <Package className="w-4 h-4 mr-2" />Add Item
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <Link href="/projects">
-                  <Button data-testid="button-go-to-projects">
-                    Go to Projects
-                  </Button>
-                </Link>
+                {inventoryLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading inventory...</p>
+                ) : inventoryItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No inventory items yet</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Min Stock</TableHead>
+                        <TableHead>Unit Cost</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {inventoryItems.map((item) => (
+                        <TableRow key={item.id} data-testid={`row-inventory-${item.id}`} className={(item.quantityInStock ?? 0) <= (item.minimumStockLevel ?? 0) ? "bg-yellow-50 dark:bg-yellow-950" : ""}>
+                          <TableCell className="font-mono">{item.sku}</TableCell>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.category}</TableCell>
+                          <TableCell>{item.quantityInStock} {item.unitOfMeasure}</TableCell>
+                          <TableCell>{item.minimumStockLevel}</TableCell>
+                          <TableCell>{item.unitCost ? `$${Number(item.unitCost).toFixed(2)}` : '-'}</TableCell>
+                          <TableCell>{item.supplier || '-'}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1 justify-end">
+                              <Button variant="ghost" size="sm" onClick={() => { setEditingInventoryItem(item); setIsInventoryDialogOpen(true); }} data-testid={`button-edit-inventory-${item.id}`}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => deleteInventoryMutation.mutate(item.id)} data-testid={`button-delete-inventory-${item.id}`}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Reports Tab Content */}
-          <TabsContent value="reports" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Reports</CardTitle>
-                <CardDescription>
-                  {userRole === 'employee' 
-                    ? 'Submit work reports' 
-                    : 'Review and approve employee reports'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-reports">
-                    Go to Reports
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+          {/* Suppliers Tab */}
+          <TabsContent value="suppliers" className="space-y-4">
+            <SuppliersManager />
           </TabsContent>
 
-          {/* Inventory Tab Content */}
-          <TabsContent value="inventory" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Inventory Management</CardTitle>
-                <CardDescription>
-                  Manage inventory items and stock levels
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-inventory">
-                    Go to Inventory
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+          {/* Messages Tab */}
+          <TabsContent value="messages" className="space-y-4">
+            <MessagesManager />
           </TabsContent>
 
-          {/* Suppliers Tab Content */}
-          <TabsContent value="suppliers" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Suppliers Management</CardTitle>
-                <CardDescription>
-                  Manage suppliers, vendors, and partners
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-suppliers">
-                    Go to Suppliers
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+          {/* Clients Tab */}
+          <TabsContent value="clients" className="space-y-4">
+            <ClientsManager />
           </TabsContent>
 
-          {/* Messages Tab Content */}
-          <TabsContent value="messages" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Messages & Communications</CardTitle>
-                <CardDescription>
-                  View and manage messages and inquiries
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-messages">
-                    Go to Messages
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+          {/* Leads Tab */}
+          <TabsContent value="leads" className="space-y-4">
+            <LeadsManager />
           </TabsContent>
 
-          {/* Clients Tab Content */}
-          <TabsContent value="clients" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Management</CardTitle>
-                <CardDescription>
-                  Manage client relationships and accounts
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-clients">
-                    Go to Clients
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Leads Tab Content */}
-          <TabsContent value="leads" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Lead Management</CardTitle>
-                <CardDescription>
-                  Track and convert leads to clients
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-leads">
-                    Go to Leads
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Visitors Tab Content */}
-          <TabsContent value="visitors" className="mt-6">
+          {/* Visitors Tab */}
+          <TabsContent value="visitors" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Visitor Analytics</CardTitle>
-                <CardDescription>
-                  Track website visitor activity and analytics
-                </CardDescription>
+                <CardDescription>Recent visitor activity</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-visitors">
-                    Go to Visitors
-                  </Button>
-                </Link>
+                {visitorsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading visitors...</p>
+                ) : visitors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No visitor data available</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>IP Address</TableHead>
+                        <TableHead>Path</TableHead>
+                        <TableHead>Referrer</TableHead>
+                        <TableHead>Timestamp</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visitors.slice(0, 10).map((visitor) => (
+                        <TableRow key={visitor.id}>
+                          <TableCell className="font-mono">{visitor.ipAddress || '-'}</TableCell>
+                          <TableCell>{visitor.landingPage || '-'}</TableCell>
+                          <TableCell>{visitor.referrer || '-'}</TableCell>
+                          <TableCell>{visitor.visitedAt ? new Date(visitor.visitedAt).toLocaleString() : '-'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Financial Tab Content */}
-          <TabsContent value="financial" className="mt-6">
+          {/* Financial Tab */}
+          <TabsContent value="financial" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Financial Management</CardTitle>
-                <CardDescription>
-                  {userRole === 'sales' 
-                    ? 'View sales and financial data' 
-                    : 'Manage financial records and audit logs'}
-                </CardDescription>
+                <CardTitle>Financial Logs (Read-Only)</CardTitle>
+                <CardDescription>Audit trail of all financial transactions</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-financial">
-                    Go to Financial
-                  </Button>
-                </Link>
+                {financialLogsLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading financial logs...</p>
+                ) : financialLogs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No financial logs found</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Ticket #</TableHead>
+                        <TableHead>User</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {financialLogs.slice(0, 10).map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell>{log.createdAt ? new Date(log.createdAt).toLocaleDateString() : '-'}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{log.logType}</Badge>
+                          </TableCell>
+                          <TableCell className="font-mono">{log.changedField || '-'}</TableCell>
+                          <TableCell>{log.description}</TableCell>
+                          <TableCell className="font-mono">{log.entityId || '-'}</TableCell>
+                          <TableCell>{log.userId}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Activities Tab Content */}
-          <TabsContent value="activities" className="mt-6">
+          {/* Activities Tab */}
+          <TabsContent value="activities" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Activity Logs</CardTitle>
-                <CardDescription>
-                  View system activity and audit logs
-                </CardDescription>
+                <CardTitle>System Activity Logs</CardTitle>
+                <CardDescription>Track all system activities and changes</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-activities">
-                    Go to Activities
-                  </Button>
-                </Link>
+                <p className="text-muted-foreground text-center py-8">Activity logging feature coming soon</p>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Settings Tab Content */}
-          <TabsContent value="settings" className="mt-6">
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Settings</CardTitle>
-                <CardDescription>
-                  Configure system settings and preferences
-                </CardDescription>
+                <CardTitle>System Settings</CardTitle>
+                <CardDescription>Configure system preferences and settings</CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-settings">
-                    Go to Settings
-                  </Button>
-                </Link>
+                <p className="text-muted-foreground text-center py-8">Settings configuration coming soon</p>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialogs */}
+        <UserDialog
+          open={isUserDialogOpen}
+          onOpenChange={setIsUserDialogOpen}
+          onSubmit={handleUserSubmit}
+          user={editingUser}
+          isPending={createUserMutation.isPending || updateUserMutation.isPending}
+        />
+        <InventoryDialog
+          open={isInventoryDialogOpen}
+          onOpenChange={setIsInventoryDialogOpen}
+          onSubmit={handleInventorySubmit}
+          item={editingInventoryItem}
+          isPending={createInventoryMutation.isPending || updateInventoryMutation.isPending}
+        />
       </div>
     </div>
   );
