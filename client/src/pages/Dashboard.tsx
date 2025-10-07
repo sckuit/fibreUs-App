@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useLocation } from "wouter";
 import { 
   Plus, FileText, Wrench, Clock, Users, ClipboardList, 
-  DollarSign, MessageSquare, BarChart, Package 
+  DollarSign, MessageSquare, BarChart, Package, Truck,
+  Home, UserCircle, Eye, Activity, Settings
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
@@ -97,80 +98,133 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Role-based Tabular Navigation */}
+        {/* Role-based Tabular Navigation - Two Rows */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full gap-2" style={{
-            gridTemplateColumns: `repeat(auto-fit, minmax(120px, 1fr))`
-          }}>
-            <TabsTrigger value="overview" data-testid="tab-overview">
-              <BarChart className="w-4 h-4 mr-2" />
-              Overview
-            </TabsTrigger>
+          <div className="space-y-2 mb-6">
+            {/* Row 1 */}
+            <TabsList className="w-full h-auto p-1 grid gap-1" style={{
+              gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
+            }}>
+              {/* Users Tab */}
+              {hasPermission(userRole, 'viewUsers') && (
+                <TabsTrigger value="users" data-testid="tab-users">
+                  <Users className="w-4 h-4 mr-2" />
+                  Users
+                </TabsTrigger>
+              )}
 
-            {/* Requests Tab - for roles that can view requests */}
-            {(hasPermission(userRole, 'viewOwnRequests') || hasPermission(userRole, 'viewAllRequests')) && (
-              <TabsTrigger value="requests" data-testid="tab-requests">
-                <FileText className="w-4 h-4 mr-2" />
-                Requests
+              {/* Tasks Tab */}
+              {['employee', 'manager', 'project_manager', 'admin'].includes(userRole) && (
+                <TabsTrigger value="tasks" data-testid="tab-tasks">
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Tasks
+                </TabsTrigger>
+              )}
+
+              {/* Projects Tab */}
+              {(hasPermission(userRole, 'viewOwnProjects') || hasPermission(userRole, 'viewAllProjects')) && (
+                <TabsTrigger value="projects" data-testid="tab-projects">
+                  <Wrench className="w-4 h-4 mr-2" />
+                  Projects
+                </TabsTrigger>
+              )}
+
+              {/* Reports Tab */}
+              {hasPermission(userRole, 'viewReports') && (
+                <TabsTrigger value="reports" data-testid="tab-reports">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Reports
+                </TabsTrigger>
+              )}
+
+              {/* Inventory Tab */}
+              {['manager', 'project_manager', 'admin'].includes(userRole) && (
+                <TabsTrigger value="inventory" data-testid="tab-inventory">
+                  <Package className="w-4 h-4 mr-2" />
+                  Inventory
+                </TabsTrigger>
+              )}
+
+              {/* Suppliers Tab */}
+              {userRole === 'admin' && (
+                <TabsTrigger value="suppliers" data-testid="tab-suppliers">
+                  <Truck className="w-4 h-4 mr-2" />
+                  Suppliers
+                </TabsTrigger>
+              )}
+
+              {/* Home Arrow Button */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setLocation('/')}
+                className="h-9"
+                data-testid="button-goto-home"
+              >
+                <Home className="w-4 h-4" />
+              </Button>
+            </TabsList>
+
+            {/* Row 2 */}
+            <TabsList className="w-full h-auto p-1 grid gap-1" style={{
+              gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
+            }}>
+              {/* Messages Tab */}
+              <TabsTrigger value="messages" data-testid="tab-messages">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Messages
               </TabsTrigger>
-            )}
 
-            {/* Projects Tab - for roles that can view projects */}
-            {(hasPermission(userRole, 'viewOwnProjects') || hasPermission(userRole, 'viewAllProjects')) && (
-              <TabsTrigger value="projects" data-testid="tab-projects">
-                <Wrench className="w-4 h-4 mr-2" />
-                Projects
-              </TabsTrigger>
-            )}
+              {/* Clients Tab */}
+              {['sales', 'manager', 'project_manager', 'admin'].includes(userRole) && (
+                <TabsTrigger value="clients" data-testid="tab-clients">
+                  <UserCircle className="w-4 h-4 mr-2" />
+                  Clients
+                </TabsTrigger>
+              )}
 
-            {/* Tasks Tab - for employee, manager, project_manager, admin */}
-            {['employee', 'manager', 'project_manager', 'admin'].includes(userRole) && (
-              <TabsTrigger value="tasks" data-testid="tab-tasks">
-                <ClipboardList className="w-4 h-4 mr-2" />
-                Tasks
-              </TabsTrigger>
-            )}
+              {/* Leads Tab */}
+              {['sales', 'manager', 'admin'].includes(userRole) && (
+                <TabsTrigger value="leads" data-testid="tab-leads">
+                  <BarChart className="w-4 h-4 mr-2" />
+                  Leads
+                </TabsTrigger>
+              )}
 
-            {/* Reports Tab - for employee, manager, project_manager, admin */}
-            {['employee', 'manager', 'project_manager', 'admin'].includes(userRole) && (
-              <TabsTrigger value="reports" data-testid="tab-reports">
-                <FileText className="w-4 h-4 mr-2" />
-                Reports
-              </TabsTrigger>
-            )}
+              {/* Visitors Tab */}
+              {userRole === 'admin' && (
+                <TabsTrigger value="visitors" data-testid="tab-visitors">
+                  <Eye className="w-4 h-4 mr-2" />
+                  Visitors
+                </TabsTrigger>
+              )}
 
-            {/* Users/Employees Tab - for roles with user management */}
-            {hasPermission(userRole, 'viewUsers') && (
-              <TabsTrigger value="users" data-testid="tab-users">
-                <Users className="w-4 h-4 mr-2" />
-                {userRole === 'admin' ? 'Users' : 'Employees'}
-              </TabsTrigger>
-            )}
+              {/* Financial Tab */}
+              {['sales', 'manager', 'admin'].includes(userRole) && (
+                <TabsTrigger value="financial" data-testid="tab-financial">
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Financial
+                </TabsTrigger>
+              )}
 
-            {/* Inventory Tab - for manager, project_manager, admin */}
-            {['manager', 'project_manager', 'admin'].includes(userRole) && (
-              <TabsTrigger value="inventory" data-testid="tab-inventory">
-                <Package className="w-4 h-4 mr-2" />
-                Inventory
-              </TabsTrigger>
-            )}
+              {/* Activities Tab */}
+              {userRole === 'admin' && (
+                <TabsTrigger value="activities" data-testid="tab-activities">
+                  <Activity className="w-4 h-4 mr-2" />
+                  Activities
+                </TabsTrigger>
+              )}
 
-            {/* Financial Tab - for sales, manager, admin */}
-            {['sales', 'manager', 'admin'].includes(userRole) && (
-              <TabsTrigger value="financial" data-testid="tab-financial">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Financial
-              </TabsTrigger>
-            )}
+              {/* Settings Tab (icon only) */}
+              {hasPermission(userRole, 'manageSettings') && (
+                <TabsTrigger value="settings" data-testid="tab-settings" className="px-3">
+                  <Settings className="w-4 h-4" />
+                </TabsTrigger>
+              )}
+            </TabsList>
+          </div>
 
-            {/* Messages Tab - all authenticated users */}
-            <TabsTrigger value="messages" data-testid="tab-messages">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Messages
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab Content */}
+          {/* Overview Tab Content (Default) */}
           <TabsContent value="overview" className="mt-6 space-y-6">
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -312,21 +366,38 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          {/* Requests Tab Content */}
-          <TabsContent value="requests" className="mt-6">
+          {/* Users Tab Content */}
+          <TabsContent value="users" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Service Requests</CardTitle>
+                <CardTitle>User Management</CardTitle>
                 <CardDescription>
-                  {hasPermission(userRole, 'viewAllRequests') 
-                    ? 'Manage all service requests' 
-                    : 'View and manage your service requests'}
+                  {userRole === 'admin' ? 'Manage all system users' : 'View and manage employees'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Link href="/requests">
-                  <Button data-testid="button-go-to-requests">
-                    Go to Requests
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-users">
+                    Go to Users
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tasks Tab Content */}
+          <TabsContent value="tasks" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Task Management</CardTitle>
+                <CardDescription>
+                  Manage project tasks and assignments
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-tasks">
+                    Go to Tasks
                   </Button>
                 </Link>
               </CardContent>
@@ -354,25 +425,6 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          {/* Tasks Tab Content */}
-          <TabsContent value="tasks" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tasks</CardTitle>
-                <CardDescription>
-                  Manage project tasks and assignments
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-tasks">
-                    Go to Tasks
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Reports Tab Content */}
           <TabsContent value="reports" className="mt-6">
             <Card>
@@ -394,27 +446,6 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          {/* Users Tab Content */}
-          <TabsContent value="users" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{userRole === 'admin' ? 'Users' : 'Employees'}</CardTitle>
-                <CardDescription>
-                  {userRole === 'admin' 
-                    ? 'Manage all system users' 
-                    : 'View and manage employees'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Link href="/admin">
-                  <Button data-testid="button-go-to-users">
-                    Go to {userRole === 'admin' ? 'Users' : 'Employees'}
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Inventory Tab Content */}
           <TabsContent value="inventory" className="mt-6">
             <Card>
@@ -428,6 +459,101 @@ export default function Dashboard() {
                 <Link href="/admin">
                   <Button data-testid="button-go-to-inventory">
                     Go to Inventory
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Suppliers Tab Content */}
+          <TabsContent value="suppliers" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Suppliers Management</CardTitle>
+                <CardDescription>
+                  Manage suppliers, vendors, and partners
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-suppliers">
+                    Go to Suppliers
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Messages Tab Content */}
+          <TabsContent value="messages" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Messages & Communications</CardTitle>
+                <CardDescription>
+                  View and manage messages and inquiries
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-messages">
+                    Go to Messages
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Clients Tab Content */}
+          <TabsContent value="clients" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Management</CardTitle>
+                <CardDescription>
+                  Manage client relationships and accounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-clients">
+                    Go to Clients
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Leads Tab Content */}
+          <TabsContent value="leads" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lead Management</CardTitle>
+                <CardDescription>
+                  Track and convert leads to clients
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-leads">
+                    Go to Leads
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Visitors Tab Content */}
+          <TabsContent value="visitors" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Visitor Analytics</CardTitle>
+                <CardDescription>
+                  Track website visitor activity and analytics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-visitors">
+                    Go to Visitors
                   </Button>
                 </Link>
               </CardContent>
@@ -455,19 +581,38 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          {/* Messages Tab Content */}
-          <TabsContent value="messages" className="mt-6">
+          {/* Activities Tab Content */}
+          <TabsContent value="activities" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Messages & Communications</CardTitle>
+                <CardTitle>Activity Logs</CardTitle>
                 <CardDescription>
-                  View and manage messages and inquiries
+                  View system activity and audit logs
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Link href="/admin">
-                  <Button data-testid="button-go-to-messages">
-                    Go to Messages
+                  <Button data-testid="button-go-to-activities">
+                    Go to Activities
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab Content */}
+          <TabsContent value="settings" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Settings</CardTitle>
+                <CardDescription>
+                  Configure system settings and preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/admin">
+                  <Button data-testid="button-go-to-settings">
+                    Go to Settings
                   </Button>
                 </Link>
               </CardContent>
