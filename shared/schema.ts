@@ -507,6 +507,11 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   ticketNumber: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  startDate: z.coerce.date().optional(),
+  estimatedCompletionDate: z.coerce.date().optional(),
+  actualCompletionDate: z.coerce.date().optional(),
+  totalCost: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
 });
 
 export const insertCommunicationSchema = createInsertSchema(communications).omit({
