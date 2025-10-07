@@ -76,8 +76,8 @@ export function InventoryDialog({ item, open, onOpenChange, onSubmit, isPending 
     
     const submitData = {
       ...formData,
-      unitCost: formData.unitCost ? parseFloat(formData.unitCost) : undefined,
-      unitPrice: formData.unitPrice ? parseFloat(formData.unitPrice) : undefined,
+      unitCost: formData.unitCost ? formData.unitCost.toString() : undefined,
+      unitPrice: formData.unitPrice ? formData.unitPrice.toString() : undefined,
     };
     
     onSubmit(submitData);
@@ -212,11 +212,12 @@ export function InventoryDialog({ item, open, onOpenChange, onSubmit, isPending 
               </Label>
               <Input
                 id="unitCost"
-                type="number"
+                type="text"
                 step="0.01"
                 value={formData.unitCost}
                 onChange={(e) => handleChange("unitCost", e.target.value)}
                 className="col-span-3"
+                placeholder="0.00"
                 data-testid="input-unit-cost"
               />
             </div>
@@ -226,11 +227,12 @@ export function InventoryDialog({ item, open, onOpenChange, onSubmit, isPending 
               </Label>
               <Input
                 id="unitPrice"
-                type="number"
+                type="text"
                 step="0.01"
                 value={formData.unitPrice}
                 onChange={(e) => handleChange("unitPrice", e.target.value)}
                 className="col-span-3"
+                placeholder="0.00"
                 data-testid="input-unit-price"
               />
             </div>
