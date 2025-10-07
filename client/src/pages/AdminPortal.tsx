@@ -374,11 +374,15 @@ export default function AdminPortal() {
               <TabsTrigger value="suppliers" data-testid="tab-suppliers">
                 Suppliers
               </TabsTrigger>
-              <Link href="/" data-testid="link-site">
-                <Button variant="ghost" size="sm" className="h-9 px-3">
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-9 px-3"
+                onClick={() => window.location.href = "/"}
+                data-testid="button-site"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </TabsList>
             <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
               <TabsTrigger value="messages" data-testid="tab-messages">
