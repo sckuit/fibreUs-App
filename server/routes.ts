@@ -16,6 +16,7 @@ import {
   changePasswordSchema,
   insertInventoryItemSchema,
   insertInventoryTransactionSchema,
+  insertProjectSchema,
   insertTaskSchema,
   updateTaskSchema,
   insertReportSchema,
