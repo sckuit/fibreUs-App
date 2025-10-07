@@ -103,7 +103,7 @@ export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   ticketNumber: varchar("ticket_number").notNull().unique(),
   serviceRequestId: varchar("service_request_id").references(() => serviceRequests.id),
-  clientId: varchar("client_id").references(() => users.id),
+  clientId: varchar("client_id").references(() => clients.id),
   serviceType: serviceTypeEnum("service_type"),
   assignedTechnicianId: varchar("assigned_technician_id").references(() => users.id),
   projectName: varchar("project_name").notNull(),
