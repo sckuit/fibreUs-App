@@ -370,9 +370,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProject(id: string): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects)
+    const [project] = await db.select({
+      id: projects.id,
+      ticketNumber: projects.ticketNumber,
+      serviceRequestId: projects.serviceRequestId,
+      clientId: projects.clientId,
+      serviceType: projects.serviceType,
+      assignedTechnicianId: projects.assignedTechnicianId,
+      projectName: projects.projectName,
+      status: projects.status,
+      startDate: projects.startDate,
+      estimatedCompletionDate: projects.estimatedCompletionDate,
+      actualCompletionDate: projects.actualCompletionDate,
+      totalCost: projects.totalCost,
+      equipmentUsed: projects.equipmentUsed,
+      workNotes: projects.workNotes,
+      clientFeedback: projects.clientFeedback,
+      clientRating: projects.clientRating,
+      createdAt: projects.createdAt,
+      updatedAt: projects.updatedAt,
+      clientName: clients.name,
+    }).from(projects)
+      .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(eq(projects.id, id));
-    return project;
+    return project as any;
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
