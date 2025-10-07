@@ -23,6 +23,7 @@ import { TasksManager } from "@/components/TasksManager";
 import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
+import SuppliersManager from "@/components/SuppliersManager";
 import type { User, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
 
 export default function AdminPortal() {
@@ -363,6 +364,9 @@ export default function AdminPortal() {
               <TabsTrigger value="clients" data-testid="tab-clients">
                 Clients
               </TabsTrigger>
+              <TabsTrigger value="suppliers" data-testid="tab-suppliers">
+                Suppliers
+              </TabsTrigger>
               <TabsTrigger value="inventory" data-testid="tab-inventory">
                 Inventory
               </TabsTrigger>
@@ -481,6 +485,10 @@ export default function AdminPortal() {
 
           <TabsContent value="clients" className="space-y-4">
             <ClientsManager />
+          </TabsContent>
+
+          <TabsContent value="suppliers" className="space-y-4">
+            <SuppliersManager />
           </TabsContent>
 
           <TabsContent value="inventory" className="space-y-4">
