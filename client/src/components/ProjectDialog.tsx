@@ -19,13 +19,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Client, User } from "@shared/schema";
+import type { Client, User, Project } from "@shared/schema";
 
 interface ProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (projectData: any) => void;
   isPending: boolean;
+  project?: Project;
 }
 
 export function ProjectDialog({ 
@@ -33,6 +34,7 @@ export function ProjectDialog({
   onOpenChange, 
   onSubmit, 
   isPending,
+  project,
 }: ProjectDialogProps) {
   const [formData, setFormData] = useState({
     clientId: undefined as string | undefined,
@@ -56,22 +58,38 @@ export function ProjectDialog({
     enabled: open,
   });
 
-  // Reset form when dialog opens
+  // Reset or populate form when dialog opens
   useEffect(() => {
     if (open) {
-      setFormData({
-        clientId: undefined,
-        serviceType: undefined,
-        projectName: "",
-        assignedTechnicianId: undefined,
-        status: "scheduled",
-        startDate: "",
-        estimatedCompletionDate: "",
-        totalCost: "",
-        workNotes: "",
-      });
+      if (project) {
+        // Edit mode - populate with existing data
+        setFormData({
+          clientId: project.clientId || undefined,
+          serviceType: project.serviceType || undefined,
+          projectName: project.projectName || "",
+          assignedTechnicianId: project.assignedTechnicianId || undefined,
+          status: project.status || "scheduled",
+          startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
+          estimatedCompletionDate: project.estimatedCompletionDate ? new Date(project.estimatedCompletionDate).toISOString().split('T')[0] : "",
+          totalCost: project.totalCost ? String(project.totalCost) : "",
+          workNotes: project.workNotes || "",
+        });
+      } else {
+        // Create mode - reset form
+        setFormData({
+          clientId: undefined,
+          serviceType: undefined,
+          projectName: "",
+          assignedTechnicianId: undefined,
+          status: "scheduled",
+          startDate: "",
+          estimatedCompletionDate: "",
+          totalCost: "",
+          workNotes: "",
+        });
+      }
     }
-  }, [open]);
+  }, [open, project]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +121,11 @@ export function ProjectDialog({
       submitData.workNotes = formData.workNotes;
     }
     
+    // If editing, include the project ID
+    if (project) {
+      submitData.id = project.id;
+    }
+    
     onSubmit(submitData);
   };
 
@@ -117,9 +140,9 @@ export function ProjectDialog({
       <DialogContent className="sm:max-w-[600px]" data-testid="dialog-project">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle>{project ? 'Edit Project' : 'Create New Project'}</DialogTitle>
             <DialogDescription>
-              Create a new project for a client
+              {project ? 'Update project details' : 'Create a new project for a client'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -289,7 +312,7 @@ export function ProjectDialog({
               disabled={isPending || !formData.clientId || !formData.serviceType || !formData.projectName} 
               data-testid="button-submit-project"
             >
-              {isPending ? "Creating..." : "Create Project"}
+              {isPending ? (project ? "Updating..." : "Creating...") : (project ? "Update Project" : "Create Project")}
             </Button>
           </DialogFooter>
         </form>

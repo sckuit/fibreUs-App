@@ -55,6 +55,7 @@ export default function Dashboard() {
   const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
   const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | undefined>();
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   
   // Fetch dashboard data based on user role
@@ -178,10 +179,24 @@ export default function Dashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       setIsProjectDialogOpen(false);
+      setEditingProject(undefined);
       toast({ title: "Project created", description: "New project has been successfully created" });
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to create project", variant: "destructive" });
+    },
+  });
+
+  const updateProjectMutation = useMutation({
+    mutationFn: ({ id, ...projectData }: any) => apiRequest("PATCH", `/api/projects/${id}`, projectData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setIsProjectDialogOpen(false);
+      setEditingProject(undefined);
+      toast({ title: "Project updated", description: "Project has been successfully updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update project", variant: "destructive" });
     },
   });
 
@@ -211,6 +226,14 @@ export default function Dashboard() {
       updateInventoryMutation.mutate({ id: editingInventoryItem.id, data: itemData });
     } else {
       createInventoryMutation.mutate(itemData);
+    }
+  };
+
+  const handleProjectSubmit = (projectData: any) => {
+    if (editingProject) {
+      updateProjectMutation.mutate({ id: editingProject.id, ...projectData });
+    } else {
+      createProjectMutation.mutate(projectData);
     }
   };
 
@@ -600,7 +623,7 @@ export default function Dashboard() {
                   </CardDescription>
                 </div>
                 {hasPermission(userRole, 'manageAllProjects') && (
-                  <Button onClick={() => setIsProjectDialogOpen(true)} data-testid="button-create-project">
+                  <Button onClick={() => { setEditingProject(undefined); setIsProjectDialogOpen(true); }} data-testid="button-create-project">
                     <Plus className="w-4 h-4 mr-2" />
                     Create New Project
                   </Button>
@@ -618,6 +641,7 @@ export default function Dashboard() {
                         <TableHead>Client</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Start Date</TableHead>
+                        {hasPermission(userRole, 'manageAllProjects') && <TableHead className="text-right">Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -630,6 +654,21 @@ export default function Dashboard() {
                             <Badge variant="secondary">{project.status}</Badge>
                           </TableCell>
                           <TableCell>{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</TableCell>
+                          {hasPermission(userRole, 'manageAllProjects') && (
+                            <TableCell className="text-right">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => { 
+                                  setEditingProject(project); 
+                                  setIsProjectDialogOpen(true); 
+                                }} 
+                                data-testid={`button-edit-project-${project.id}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -930,8 +969,9 @@ export default function Dashboard() {
         <ProjectDialog
           open={isProjectDialogOpen}
           onOpenChange={setIsProjectDialogOpen}
-          onSubmit={createProjectMutation.mutate}
-          isPending={createProjectMutation.isPending}
+          onSubmit={handleProjectSubmit}
+          isPending={createProjectMutation.isPending || updateProjectMutation.isPending}
+          project={editingProject}
         />
         <ClientDialog
           open={isClientDialogOpen}
