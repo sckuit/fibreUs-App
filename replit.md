@@ -53,13 +53,13 @@ Preferred communication style: Simple, everyday language.
 - **Security**: CSRF protection, secure session configuration, role-based API access
 - **Login Flow**: All users redirect to /dashboard upon successful authentication
 
-### Role-Based Permissions (Granular Access Control)
-- **Client**: Basic access to own requests and projects
-- **Employee**: Linked access to assigned Tasks, Projects, and Reports only
-- **Sales**: Full access to Tasks, Projects, Reports, Suppliers, Messages, Clients, Visitors, Leads (NO Users)
-- **Project Manager**: Full access to Tasks, Projects, Reports, Inventory, Suppliers, Clients (NO Users)
-- **Manager**: Full access to Users, Tasks, Projects, Reports, Suppliers, Messages, Clients, Visitors, Leads, Financial
-- **Admin**: Complete system access including Activities and system management
+### Role-Based Permissions (Granular CRUD Access Control)
+- **Client**: Basic access to own requests and projects (view only)
+- **Employee**: Full CRUD on assigned Tasks, Projects, and Reports only (linked to assignments)
+- **Sales**: Full CRUD on Tasks, Projects, Reports, Suppliers, Messages, Clients, Leads + view Visitors (NO Users tab)
+- **Project Manager**: Full CRUD on Tasks, Projects, Reports, Inventory, Suppliers, Clients (NO Users tab)
+- **Manager**: Full CRUD on Users, Tasks, Projects, Reports, Suppliers, Messages, Clients, Leads, Financial + view Visitors
+- **Admin**: Complete system access with full CRUD on all entities including Activities and system management
 
 ### Design System
 - **Brand Identity**: Professional security industry theme with deep navy and steel blue colors

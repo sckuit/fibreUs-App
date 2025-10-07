@@ -150,20 +150,20 @@ export const rolePermissions: Record<UserRole, Permission> = {
     editAllRequests: false,
     deleteRequests: false,
     
-    // Projects - linked access only (view and manage own assigned)
+    // Projects - linked FULL CRUD (own assigned only)
     viewOwnProjects: true,
     viewAllProjects: false,
     manageOwnProjects: true,
     manageAllProjects: false,
     assignProjects: false,
     
-    // Tasks - linked access only (view and manage own assigned)
+    // Tasks - linked FULL CRUD (own assigned only)
     viewOwnTasks: true,
     viewAllTasks: false,
     manageOwnTasks: true,
     manageAllTasks: false,
     
-    // Reports - linked access only (view and manage own)
+    // Reports - linked FULL CRUD (own only)
     viewOwnReports: true,
     viewAllReports: false,
     manageOwnReports: true,
@@ -219,48 +219,48 @@ export const rolePermissions: Record<UserRole, Permission> = {
     editAllRequests: false,
     deleteRequests: false,
     
-    // Projects - view access only
+    // Projects - FULL CRUD
     viewOwnProjects: true,
     viewAllProjects: true,
-    manageOwnProjects: false,
-    manageAllProjects: false,
-    assignProjects: false,
+    manageOwnProjects: true,
+    manageAllProjects: true,
+    assignProjects: true,
     
-    // Tasks - view access only
+    // Tasks - FULL CRUD
     viewOwnTasks: true,
     viewAllTasks: true,
-    manageOwnTasks: false,
-    manageAllTasks: false,
+    manageOwnTasks: true,
+    manageAllTasks: true,
     
-    // Reports - view access only
+    // Reports - FULL CRUD
     viewOwnReports: true,
     viewAllReports: true,
-    manageOwnReports: false,
-    manageAllReports: false,
-    approveReports: false,
+    manageOwnReports: true,
+    manageAllReports: true,
+    approveReports: true,
     
     // Inventory - no access
     viewInventory: false,
     manageInventory: false,
     
-    // Suppliers - view access only
+    // Suppliers - FULL CRUD
     viewSuppliers: true,
-    manageSuppliers: false,
+    manageSuppliers: true,
     
-    // Messages - view access only
+    // Messages - FULL CRUD
     viewOwnMessages: true,
     viewAllMessages: true,
-    manageMessages: false,
+    manageMessages: true,
     
-    // Clients - view access only
+    // Clients - FULL CRUD
     viewClients: true,
-    manageClients: false,
+    manageClients: true,
     
-    // Leads - view access only
+    // Leads - FULL CRUD
     viewLeads: true,
-    manageLeads: false,
+    manageLeads: true,
     
-    // Visitors - view access only
+    // Visitors - view only (can't CRUD visitors, only view analytics)
     viewVisitors: true,
     
     // Financial - no access
@@ -288,42 +288,42 @@ export const rolePermissions: Record<UserRole, Permission> = {
     editAllRequests: false,
     deleteRequests: false,
     
-    // Projects - view access only
+    // Projects - FULL CRUD
     viewOwnProjects: true,
     viewAllProjects: true,
-    manageOwnProjects: false,
-    manageAllProjects: false,
-    assignProjects: false,
+    manageOwnProjects: true,
+    manageAllProjects: true,
+    assignProjects: true,
     
-    // Tasks - view access only
+    // Tasks - FULL CRUD
     viewOwnTasks: true,
     viewAllTasks: true,
-    manageOwnTasks: false,
-    manageAllTasks: false,
+    manageOwnTasks: true,
+    manageAllTasks: true,
     
-    // Reports - view access only
+    // Reports - FULL CRUD
     viewOwnReports: true,
     viewAllReports: true,
-    manageOwnReports: false,
-    manageAllReports: false,
-    approveReports: false,
+    manageOwnReports: true,
+    manageAllReports: true,
+    approveReports: true,
     
-    // Inventory - view access only
+    // Inventory - FULL CRUD
     viewInventory: true,
-    manageInventory: false,
+    manageInventory: true,
     
-    // Suppliers - view access only
+    // Suppliers - FULL CRUD
     viewSuppliers: true,
-    manageSuppliers: false,
+    manageSuppliers: true,
     
     // Messages - no access
     viewOwnMessages: false,
     viewAllMessages: false,
     manageMessages: false,
     
-    // Clients - view access only
+    // Clients - FULL CRUD
     viewClients: true,
-    manageClients: false,
+    manageClients: true,
     
     // Leads - no access
     viewLeads: false,
@@ -357,57 +357,57 @@ export const rolePermissions: Record<UserRole, Permission> = {
     editAllRequests: true,
     deleteRequests: true,
     
-    // Projects - view access only
+    // Projects - FULL CRUD
     viewOwnProjects: true,
     viewAllProjects: true,
-    manageOwnProjects: false,
-    manageAllProjects: false,
-    assignProjects: false,
+    manageOwnProjects: true,
+    manageAllProjects: true,
+    assignProjects: true,
     
-    // Tasks - view access only
+    // Tasks - FULL CRUD
     viewOwnTasks: true,
     viewAllTasks: true,
-    manageOwnTasks: false,
-    manageAllTasks: false,
+    manageOwnTasks: true,
+    manageAllTasks: true,
     
-    // Reports - view access only
+    // Reports - FULL CRUD
     viewOwnReports: true,
     viewAllReports: true,
-    manageOwnReports: false,
-    manageAllReports: false,
-    approveReports: false,
+    manageOwnReports: true,
+    manageAllReports: true,
+    approveReports: true,
     
     // Inventory - full access
     viewInventory: true,
     manageInventory: true,
     
-    // Suppliers - view access only
+    // Suppliers - FULL CRUD
     viewSuppliers: true,
-    manageSuppliers: false,
+    manageSuppliers: true,
     
-    // Messages - view access only
+    // Messages - FULL CRUD
     viewOwnMessages: true,
     viewAllMessages: true,
-    manageMessages: false,
+    manageMessages: true,
     
-    // Clients - view access only
+    // Clients - FULL CRUD
     viewClients: true,
-    manageClients: false,
+    manageClients: true,
     
-    // Leads - view access only
+    // Leads - FULL CRUD
     viewLeads: true,
-    manageLeads: false,
+    manageLeads: true,
     
-    // Visitors - view access only
+    // Visitors - view only (can't CRUD visitors, only view analytics)
     viewVisitors: true,
     
-    // Financial - view access only
+    // Financial - FULL CRUD
     viewFinancial: true,
-    manageFinancial: false,
+    manageFinancial: true,
     
-    // Users - view access only
+    // Users - FULL CRUD
     viewUsers: true,
-    manageUsers: false,
+    manageUsers: true,
     viewUserDetails: true,
     
     // Admin - limited admin access
