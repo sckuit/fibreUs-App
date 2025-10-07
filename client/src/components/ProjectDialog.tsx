@@ -193,7 +193,6 @@ export function ProjectDialog({
                   <SelectValue placeholder="Select technician (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {technicians.map((tech) => (
                     <SelectItem key={tech.id} value={tech.id}>
                       {tech.firstName} {tech.lastName} ({tech.email})
