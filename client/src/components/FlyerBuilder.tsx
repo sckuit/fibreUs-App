@@ -137,6 +137,17 @@ export default function FlyerBuilder() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden flyer for PDF/PNG generation (not scaled) */}
+      {selectedLead && selectedServices.length > 0 && (
+        <div className="fixed -left-[9999px] top-0">
+          <FlyerTemplate
+            ref={flyerRef}
+            lead={selectedLead}
+            selectedServices={selectedServices}
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Configuration Panel */}
         <div className="space-y-6">
@@ -242,7 +253,6 @@ export default function FlyerBuilder() {
                 <div className="overflow-auto max-h-[800px] border rounded-lg">
                   <div className="scale-75 origin-top-left">
                     <FlyerTemplate
-                      ref={flyerRef}
                       lead={selectedLead}
                       selectedServices={selectedServices}
                     />

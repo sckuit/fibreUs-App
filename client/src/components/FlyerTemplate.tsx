@@ -74,14 +74,14 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
       >
         {/* Header */}
         <div className="border-b-4 border-[#1e3a5f] pb-6">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex-1">
               <h1 className="text-4xl font-bold text-[#1e3a5f] mb-2">FibreUS</h1>
               <p className="text-lg text-[#4a90e2]">Electronic Security & Fiber Optic Services</p>
             </div>
-            <div className="text-right text-sm text-gray-600">
-              <p className="font-semibold">Professional Solutions For</p>
-              <p className="text-xl font-bold text-[#1e3a5f] mt-1">{lead.company || lead.name}</p>
+            <div className="text-right text-sm text-gray-600 flex-shrink-0">
+              <p className="font-semibold whitespace-nowrap">Professional Solutions For</p>
+              <p className="text-xl font-bold text-[#1e3a5f] mt-1 break-words max-w-[300px]">{lead.company || lead.name}</p>
             </div>
           </div>
         </div>
@@ -98,8 +98,8 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
         {/* Services Offered */}
         <div>
           <h2 className="text-2xl font-bold text-[#1e3a5f] mb-4 flex items-center gap-2">
-            <Shield className="w-8 h-8 text-[#4a90e2]" />
-            Recommended Services for Your Business
+            <Shield className="w-8 h-8 text-[#4a90e2] flex-shrink-0" />
+            <span>Recommended Services for Your Business</span>
           </h2>
           <div className="space-y-4">
             {selectedServices.map((serviceKey) => {
@@ -109,11 +109,11 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
               
               return (
                 <div key={serviceKey} className="border-l-4 border-[#4a90e2] pl-4 py-2">
-                  <h3 className="text-lg font-bold text-[#1e3a5f] flex items-center gap-2">
-                    <ServiceIcon className="w-6 h-6 text-[#4a90e2]" />
-                    {service.name}
+                  <h3 className="text-lg font-bold text-[#1e3a5f] flex items-start gap-2 mb-1">
+                    <ServiceIcon className="w-6 h-6 text-[#4a90e2] flex-shrink-0 mt-0.5" />
+                    <span className="leading-tight">{service.name}</span>
                   </h3>
-                  <p className="text-sm text-gray-700 mt-1">{service.description}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{service.description}</p>
                 </div>
               );
             })}
@@ -158,29 +158,29 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
         {/* Contact Information */}
         <div className="border-t-2 border-gray-300 pt-6">
           <h2 className="text-xl font-bold text-[#1e3a5f] mb-4">Let's Get Started</h2>
-          <div className="flex justify-between items-end">
-            <div className="space-y-2 text-sm">
-              <p className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#1e3a5f]" />
-                <span className="font-semibold">Email:</span>
+          <div className="flex justify-between items-start gap-6">
+            <div className="space-y-2 text-sm flex-1">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                <span className="font-semibold whitespace-nowrap">Email:</span>
                 <span className="text-[#4a90e2]">info@fibreus.com</span>
-              </p>
-              <p className="flex items-center gap-2">
-                <PhoneIcon className="w-4 h-4 text-[#1e3a5f]" />
-                <span className="font-semibold">Phone:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <PhoneIcon className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                <span className="font-semibold whitespace-nowrap">Phone:</span>
                 <span className="text-[#4a90e2]">1-800-FIBREUS</span>
-              </p>
-              <p className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-[#1e3a5f]" />
-                <span className="font-semibold">Web:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                <span className="font-semibold whitespace-nowrap">Web:</span>
                 <span className="text-[#4a90e2]">www.fibreus.com</span>
-              </p>
+              </div>
             </div>
-            <div className="text-right">
+            <div className="text-right flex-shrink-0 max-w-[300px]">
               <p className="text-xs text-gray-500 mb-2">Prepared for:</p>
-              <p className="font-semibold text-[#1e3a5f]">{lead.name}</p>
-              {lead.email && <p className="text-sm text-gray-600">{lead.email}</p>}
-              {lead.phone && <p className="text-sm text-gray-600">{lead.phone}</p>}
+              <p className="font-semibold text-[#1e3a5f] break-words">{lead.name}</p>
+              {lead.email && <p className="text-sm text-gray-600 break-all">{lead.email}</p>}
+              {lead.phone && <p className="text-sm text-gray-600 whitespace-nowrap">{lead.phone}</p>}
             </div>
           </div>
         </div>
