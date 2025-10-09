@@ -12,6 +12,8 @@ interface ObjectUploaderProps {
   onGetUploadParameters: (file: any) => Promise<{
     method: "PUT";
     url: string;
+    fields?: Record<string, never>;
+    headers?: Record<string, string>;
   }>;
   onComplete?: (
     result: UploadResult<Record<string, unknown>, Record<string, unknown>>

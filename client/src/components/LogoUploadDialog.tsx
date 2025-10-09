@@ -75,6 +75,10 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
     return {
       method: 'PUT' as const,
       url: response.uploadURL,
+      fields: {},
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+      },
     };
   };
 
