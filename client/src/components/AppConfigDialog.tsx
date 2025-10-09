@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { SystemConfig, UpdateSystemConfigType } from "@shared/schema";
@@ -11,7 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateSystemConfigSchema } from "@shared/schema";
-import { Settings } from "lucide-react";
+import { Settings, Upload, Loader2 } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 interface AppConfigDialogProps {
   open: boolean;
@@ -20,6 +22,9 @@ interface AppConfigDialogProps {
 
 export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
   const { toast } = useToast();
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingDarkLogo, setUploadingDarkLogo] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
 
   const { data: config, isLoading } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
@@ -83,6 +88,49 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
 
   const handleSubmit = async (values: UpdateSystemConfigType) => {
     updateMutation.mutate(values);
+  };
+
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest('/api/objects/upload', 'POST', {});
+    return {
+      method: 'PUT' as const,
+      url: response.uploadURL,
+    };
+  };
+
+  const createUploadCompleteHandler = (
+    fieldName: 'logoUrl' | 'darkLogoUrl' | 'iconUrl',
+    setUploading: (value: boolean) => void
+  ) => {
+    return async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+      if (result.successful && result.successful.length > 0) {
+        const uploadedFile = result.successful[0];
+        const uploadURL = uploadedFile.uploadURL;
+
+        try {
+          setUploading(true);
+          const response = await apiRequest('/api/logos/upload', 'POST', {
+            logoURL: uploadURL,
+          });
+
+          form.setValue(fieldName, response.objectPath);
+          
+          toast({
+            title: "Upload successful",
+            description: "Logo uploaded and ready to use",
+          });
+        } catch (error) {
+          console.error("Error setting logo ACL:", error);
+          toast({
+            title: "Upload failed",
+            description: "Failed to process uploaded logo",
+            variant: "destructive",
+          });
+        } finally {
+          setUploading(false);
+        }
+      }
+    };
   };
 
   return (
@@ -289,11 +337,11 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                 />
               </div>
 
-              {/* Logo URLs */}
+              {/* Logo Upload */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm">Branding (Logo URLs)</h3>
+                <h3 className="font-semibold text-sm">Branding (Logos)</h3>
                 <p className="text-xs text-muted-foreground">
-                  Upload logo files to Object Storage first, then paste the URLs below
+                  Upload logo files directly to secure storage
                 </p>
 
                 <FormField
@@ -301,17 +349,38 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                   name="logoUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Main Logo URL</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="/public-objects/logo.png"
-                          data-testid="input-logo-url"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Upload via Object Storage pane, then paste the public URL
-                      </FormDescription>
+                      <FormLabel>Main Logo</FormLabel>
+                      <div className="flex gap-2 items-start">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="/objects/..."
+                            data-testid="input-logo-url"
+                            readOnly
+                            className="flex-1"
+                          />
+                        </FormControl>
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={5242880}
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={createUploadCompleteHandler('logoUrl', setUploadingLogo)}
+                          buttonVariant="outline"
+                          disabled={uploadingLogo}
+                        >
+                          {uploadingLogo ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Upload
+                            </>
+                          )}
+                        </ObjectUploader>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -322,14 +391,38 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                   name="darkLogoUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Dark Mode Logo URL (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="/public-objects/logo-dark.png"
-                          data-testid="input-dark-logo-url"
-                        />
-                      </FormControl>
+                      <FormLabel>Dark Mode Logo (Optional)</FormLabel>
+                      <div className="flex gap-2 items-start">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="/objects/..."
+                            data-testid="input-dark-logo-url"
+                            readOnly
+                            className="flex-1"
+                          />
+                        </FormControl>
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={5242880}
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={createUploadCompleteHandler('darkLogoUrl', setUploadingDarkLogo)}
+                          buttonVariant="outline"
+                          disabled={uploadingDarkLogo}
+                        >
+                          {uploadingDarkLogo ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Upload
+                            </>
+                          )}
+                        </ObjectUploader>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -340,14 +433,38 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                   name="iconUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Icon/Favicon URL (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="/public-objects/icon.png"
-                          data-testid="input-icon-url"
-                        />
-                      </FormControl>
+                      <FormLabel>Icon/Favicon (Optional)</FormLabel>
+                      <div className="flex gap-2 items-start">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="/objects/..."
+                            data-testid="input-icon-url"
+                            readOnly
+                            className="flex-1"
+                          />
+                        </FormControl>
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={2097152}
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={createUploadCompleteHandler('iconUrl', setUploadingIcon)}
+                          buttonVariant="outline"
+                          disabled={uploadingIcon}
+                        >
+                          {uploadingIcon ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Upload
+                            </>
+                          )}
+                        </ObjectUploader>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
