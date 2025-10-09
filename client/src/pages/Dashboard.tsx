@@ -36,6 +36,8 @@ import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
 import SuppliersManager from "@/components/SuppliersManager";
+import { ServiceTypesManager } from "@/components/ServiceTypesManager";
+import { AppConfigDialog } from "@/components/AppConfigDialog";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -58,6 +60,7 @@ export default function Dashboard() {
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+  const [isAppConfigDialogOpen, setIsAppConfigDialogOpen] = useState(false);
   
   // Fetch dashboard data based on user role
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
@@ -1026,6 +1029,29 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
+
+            {/* System Configuration (only for managers and admins) */}
+            {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+              <>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
+                    <div>
+                      <CardTitle>App Configuration</CardTitle>
+                      <CardDescription>Manage application settings and branding</CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => setIsAppConfigDialogOpen(true)}
+                      data-testid="button-open-app-config"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Configure
+                    </Button>
+                  </CardHeader>
+                </Card>
+
+                <ServiceTypesManager />
+              </>
+            )}
           </TabsContent>
         </Tabs>
 
@@ -1056,6 +1082,10 @@ export default function Dashboard() {
           onOpenChange={setIsClientDialogOpen}
           onSubmit={createClientMutation.mutate}
           isPending={createClientMutation.isPending}
+        />
+        <AppConfigDialog
+          open={isAppConfigDialogOpen}
+          onOpenChange={setIsAppConfigDialogOpen}
         />
       </div>
     </div>
