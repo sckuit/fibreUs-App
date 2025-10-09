@@ -64,9 +64,9 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
         <div className="border-b-4 border-[#1e3a5f] pb-6">
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1 flex items-start gap-4">
-              {/* Logo - Doubled size */}
+              {/* Logo - Reduced height to 3/4 */}
               {logoUrl ? (
-                <div className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden">
+                <div className="flex-shrink-0 w-32 h-24 rounded-lg overflow-hidden">
                   <img 
                     src={logoUrl} 
                     alt={companyName}
@@ -74,10 +74,10 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
                   />
                 </div>
               ) : (
-                <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-[#1e3a5f] to-[#4a90e2] rounded-lg flex items-center justify-center">
+                <div className="flex-shrink-0 w-32 h-24 bg-gradient-to-br from-[#1e3a5f] to-[#4a90e2] rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <Network className="w-16 h-16 text-white mx-auto mb-1" />
-                    <div className="text-base font-bold text-white tracking-wider">FIBRE</div>
+                    <Network className="w-12 h-12 text-white mx-auto mb-1" />
+                    <div className="text-sm font-bold text-white tracking-wider">FIBRE</div>
                   </div>
                 </div>
               )}
