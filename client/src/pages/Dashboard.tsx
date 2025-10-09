@@ -38,6 +38,7 @@ import ClientsManager from "@/components/ClientsManager";
 import SuppliersManager from "@/components/SuppliersManager";
 import { ServiceTypesManager } from "@/components/ServiceTypesManager";
 import { AppConfigDialog } from "@/components/AppConfigDialog";
+import { LogoUploadDialog } from "@/components/LogoUploadDialog";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -61,6 +62,7 @@ export default function Dashboard() {
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [isAppConfigDialogOpen, setIsAppConfigDialogOpen] = useState(false);
+  const [isLogoUploadDialogOpen, setIsLogoUploadDialogOpen] = useState(false);
   
   // Fetch dashboard data based on user role
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
@@ -1049,6 +1051,22 @@ export default function Dashboard() {
                   </CardHeader>
                 </Card>
 
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
+                    <div>
+                      <CardTitle>Logo Upload</CardTitle>
+                      <CardDescription>Upload and manage application logos</CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => setIsLogoUploadDialogOpen(true)}
+                      data-testid="button-open-logo-upload"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Logos
+                    </Button>
+                  </CardHeader>
+                </Card>
+
                 <ServiceTypesManager />
               </>
             )}
@@ -1086,6 +1104,10 @@ export default function Dashboard() {
         <AppConfigDialog
           open={isAppConfigDialogOpen}
           onOpenChange={setIsAppConfigDialogOpen}
+        />
+        <LogoUploadDialog
+          open={isLogoUploadDialogOpen}
+          onOpenChange={setIsLogoUploadDialogOpen}
         />
       </div>
     </div>
