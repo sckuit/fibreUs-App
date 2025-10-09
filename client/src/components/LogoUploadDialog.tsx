@@ -10,9 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateSystemConfigSchema } from "@shared/schema";
-import { Image, Upload, Loader2 } from "lucide-react";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { Image, Upload, Loader2, X } from "lucide-react";
 
 interface LogoUploadDialogProps {
   open: boolean;
@@ -70,51 +68,52 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
     updateMutation.mutate(values);
   };
 
-  const handleGetUploadParameters = async (file: any) => {
-    const response = await apiRequest('/api/objects/upload', 'POST', {}) as unknown as { uploadURL: string };
-    return {
-      method: 'PUT' as const,
-      url: response.uploadURL,
-      fields: {},
-      headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-      },
-    };
-  };
-
-  const createUploadCompleteHandler = (
+  const handleFileUpload = async (
+    file: File,
     fieldName: 'logoUrl' | 'darkLogoUrl' | 'iconUrl',
     setUploading: (value: boolean) => void
   ) => {
-    return async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
-      if (result.successful && result.successful.length > 0) {
-        const uploadedFile = result.successful[0];
-        const uploadURL = uploadedFile.uploadURL;
+    try {
+      setUploading(true);
 
-        try {
-          setUploading(true);
-          const response = await apiRequest('/api/logos/upload', 'POST', {
-            logoURL: uploadURL,
-          }) as unknown as { objectPath: string };
+      // Step 1: Get presigned URL
+      const uploadParams = await apiRequest('/api/objects/upload', 'POST', {}) as unknown as { uploadURL: string };
 
-          form.setValue(fieldName, response.objectPath);
-          
-          toast({
-            title: "Upload successful",
-            description: "Logo uploaded and ready to use",
-          });
-        } catch (error) {
-          console.error("Error setting logo ACL:", error);
-          toast({
-            title: "Upload failed",
-            description: "Failed to process uploaded logo",
-            variant: "destructive",
-          });
-        } finally {
-          setUploading(false);
-        }
+      // Step 2: Upload to object storage using presigned URL
+      const uploadResponse = await fetch(uploadParams.uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
       }
-    };
+
+      // Step 3: Set ACL and get final path
+      const aclResponse = await apiRequest('/api/logos/upload', 'POST', {
+        logoURL: uploadParams.uploadURL,
+      }) as unknown as { objectPath: string };
+
+      // Step 4: Update form field
+      form.setValue(fieldName, aclResponse.objectPath);
+
+      toast({
+        title: "Upload successful",
+        description: "Logo uploaded and ready to use",
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload logo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -157,13 +156,26 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
                             className="flex-1"
                           />
                         </FormControl>
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={5242880}
-                          onGetUploadParameters={handleGetUploadParameters}
-                          onComplete={createUploadCompleteHandler('logoUrl', setUploadingLogo)}
-                          buttonVariant="outline"
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id="logo-file"
                           disabled={uploadingLogo}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleFileUpload(file, 'logoUrl', setUploadingLogo);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={uploadingLogo}
+                          onClick={() => document.getElementById('logo-file')?.click()}
+                          data-testid="button-upload-logo"
                         >
                           {uploadingLogo ? (
                             <>
@@ -176,7 +188,7 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
                               Upload
                             </>
                           )}
-                        </ObjectUploader>
+                        </Button>
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -200,13 +212,26 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
                             className="flex-1"
                           />
                         </FormControl>
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={5242880}
-                          onGetUploadParameters={handleGetUploadParameters}
-                          onComplete={createUploadCompleteHandler('darkLogoUrl', setUploadingDarkLogo)}
-                          buttonVariant="outline"
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id="dark-logo-file"
                           disabled={uploadingDarkLogo}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleFileUpload(file, 'darkLogoUrl', setUploadingDarkLogo);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={uploadingDarkLogo}
+                          onClick={() => document.getElementById('dark-logo-file')?.click()}
+                          data-testid="button-upload-dark-logo"
                         >
                           {uploadingDarkLogo ? (
                             <>
@@ -219,7 +244,7 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
                               Upload
                             </>
                           )}
-                        </ObjectUploader>
+                        </Button>
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -243,13 +268,26 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
                             className="flex-1"
                           />
                         </FormControl>
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          maxFileSize={2097152}
-                          onGetUploadParameters={handleGetUploadParameters}
-                          onComplete={createUploadCompleteHandler('iconUrl', setUploadingIcon)}
-                          buttonVariant="outline"
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id="icon-file"
                           disabled={uploadingIcon}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleFileUpload(file, 'iconUrl', setUploadingIcon);
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={uploadingIcon}
+                          onClick={() => document.getElementById('icon-file')?.click()}
+                          data-testid="button-upload-icon"
                         >
                           {uploadingIcon ? (
                             <>
@@ -262,7 +300,7 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
                               Upload
                             </>
                           )}
-                        </ObjectUploader>
+                        </Button>
                       </div>
                       <FormMessage />
                     </FormItem>
