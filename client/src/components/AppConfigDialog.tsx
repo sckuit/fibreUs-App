@@ -111,6 +111,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Input
                           {...field}
+                          value={field.value || ''}
                           placeholder="FibreUS"
                           data-testid="input-company-name"
                         />
@@ -129,6 +130,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Input
                           {...field}
+                          value={field.value || ''}
                           placeholder="https://www.fibreus.com"
                           data-testid="input-website"
                         />
@@ -148,6 +150,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                         <FormControl>
                           <Input
                             {...field}
+                            value={field.value || ''}
                             type="email"
                             placeholder="contact@fibreus.com"
                             data-testid="input-contact-email"
@@ -167,6 +170,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                         <FormControl>
                           <Input
                             {...field}
+                            value={field.value || ''}
                             type="email"
                             placeholder="info@fibreus.com"
                             data-testid="input-info-email"
@@ -187,6 +191,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Input
                           {...field}
+                          value={field.value || ''}
                           placeholder="+1 (555) 123-4567"
                           data-testid="input-phone"
                         />
@@ -205,6 +210,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Textarea
                           {...field}
+                          value={field.value || ''}
                           placeholder="123 Business Ave, Suite 100, City, State 12345"
                           rows={2}
                           data-testid="textarea-address"
@@ -229,6 +235,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Textarea
                           {...field}
+                          value={field.value || ''}
                           placeholder="Our mission is to..."
                           rows={3}
                           data-testid="textarea-mission"
@@ -248,6 +255,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Textarea
                           {...field}
+                          value={field.value || ''}
                           placeholder="About FibreUS..."
                           rows={4}
                           data-testid="textarea-about"
@@ -272,6 +280,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Input
                           {...field}
+                          value={field.value || ''}
                           placeholder="Professional Security Solutions"
                           data-testid="input-header-tagline"
                         />
@@ -291,6 +300,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                       <FormControl>
                         <Input
                           {...field}
+                          value={field.value || ''}
                           placeholder="Securing Your Future"
                           data-testid="input-footer-tagline"
                         />
