@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -12,14 +13,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Download, FileText, Image as ImageIcon } from "lucide-react";
-import { type Lead, type SystemConfig, type ServiceType } from "@shared/schema";
+import { type Lead, type Client, type SystemConfig, type ServiceType, type User } from "@shared/schema";
 import { FlyerTemplate } from "./FlyerTemplate";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 export default function FlyerBuilder() {
+  const [recipientType, setRecipientType] = useState<"lead" | "client">("lead");
   const [selectedLeadId, setSelectedLeadId] = useState<string>("");
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [selectedSalesPersonId, setSelectedSalesPersonId] = useState<string>("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
@@ -27,6 +31,14 @@ export default function FlyerBuilder() {
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
     queryKey: ["/api/leads"],
+  });
+
+  const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+  });
+
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
   });
 
   const { data: systemConfig } = useQuery<SystemConfig>({
@@ -38,6 +50,12 @@ export default function FlyerBuilder() {
   });
 
   const selectedLead = leads.find(lead => lead.id === selectedLeadId);
+  const selectedClient = clients.find(client => client.id === selectedClientId);
+  const selectedRecipient = recipientType === "lead" ? selectedLead : selectedClient;
+  
+  // Filter users who can be sales contacts (sales, manager, admin roles)
+  const salesUsers = users.filter(u => ['sales', 'manager', 'admin'].includes(u.role || ''));
+  const selectedSalesPerson = salesUsers.find(u => u.id === selectedSalesPersonId);
 
   const handleServiceToggle = (serviceValue: string) => {
     setSelectedServices(prev =>
@@ -48,7 +66,7 @@ export default function FlyerBuilder() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!flyerRef.current || !selectedLead) return;
+    if (!flyerRef.current || !selectedRecipient) return;
 
     setIsGenerating(true);
     try {
@@ -75,7 +93,8 @@ export default function FlyerBuilder() {
       const imgY = 0;
 
       pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`FibreUS-Flyer-${selectedLead.name.replace(/\s+/g, '-')}.pdf`);
+      const recipientName = selectedRecipient.name || selectedRecipient.company || 'Client';
+      pdf.save(`${systemConfig?.companyName || 'FibreUS'}-Flyer-${recipientName.replace(/\s+/g, '-')}.pdf`);
 
       toast({
         title: "PDF Downloaded",
@@ -94,7 +113,7 @@ export default function FlyerBuilder() {
   };
 
   const handleDownloadPNG = async () => {
-    if (!flyerRef.current || !selectedLead) return;
+    if (!flyerRef.current || !selectedRecipient) return;
 
     setIsGenerating(true);
     try {
@@ -109,7 +128,8 @@ export default function FlyerBuilder() {
         if (blob) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = `FibreUS-Flyer-${selectedLead.name.replace(/\s+/g, '-')}.png`;
+          const recipientName = selectedRecipient.name || selectedRecipient.company || 'Client';
+          link.download = `${systemConfig?.companyName || 'FibreUS'}-Flyer-${recipientName.replace(/\s+/g, '-')}.png`;
           link.href = url;
           link.click();
           URL.revokeObjectURL(url);
@@ -137,14 +157,15 @@ export default function FlyerBuilder() {
   return (
     <div className="space-y-6">
       {/* Hidden flyer for PDF/PNG generation (not scaled) */}
-      {selectedLead && selectedServices.length > 0 && (
+      {selectedRecipient && selectedServices.length > 0 && (
         <div className="fixed -left-[9999px] top-0">
           <FlyerTemplate
             ref={flyerRef}
-            lead={selectedLead}
+            recipient={selectedRecipient}
             selectedServices={selectedServices}
             systemConfig={systemConfig}
             serviceTypes={serviceTypes}
+            salesPerson={selectedSalesPerson}
           />
         </div>
       )}
@@ -156,26 +177,92 @@ export default function FlyerBuilder() {
             <CardHeader>
               <CardTitle>Create Service Flyer</CardTitle>
               <CardDescription>
-                Select a lead and services to generate a professional proposal flyer
+                Select a recipient and services to generate a professional proposal flyer
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Lead Selection */}
+              {/* Recipient Type Selection */}
               <div className="space-y-2">
-                <Label>Select Lead</Label>
-                <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
-                  <SelectTrigger data-testid="select-lead-flyer">
-                    <SelectValue placeholder="Choose a lead..." />
+                <Label>Recipient Type</Label>
+                <RadioGroup value={recipientType} onValueChange={(value: "lead" | "client") => {
+                  setRecipientType(value);
+                  setSelectedLeadId("");
+                  setSelectedClientId("");
+                }}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="lead" id="lead" data-testid="radio-recipient-lead" />
+                    <Label htmlFor="lead" className="font-normal cursor-pointer">Lead</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="client" id="client" data-testid="radio-recipient-client" />
+                    <Label htmlFor="client" className="font-normal cursor-pointer">Existing Client</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {/* Recipient Selection */}
+              {recipientType === "lead" ? (
+                <div className="space-y-2">
+                  <Label>Select Lead</Label>
+                  <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+                    <SelectTrigger data-testid="select-lead-flyer">
+                      <SelectValue placeholder="Choose a lead..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leadsLoading ? (
+                        <SelectItem value="loading" disabled>Loading leads...</SelectItem>
+                      ) : leads.length === 0 ? (
+                        <SelectItem value="empty" disabled>No leads available</SelectItem>
+                      ) : (
+                        leads.map((lead) => (
+                          <SelectItem key={lead.id} value={lead.id}>
+                            {lead.name} {lead.company ? `(${lead.company})` : ''}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Select Client</Label>
+                  <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                    <SelectTrigger data-testid="select-client-flyer">
+                      <SelectValue placeholder="Choose a client..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clientsLoading ? (
+                        <SelectItem value="loading" disabled>Loading clients...</SelectItem>
+                      ) : clients.length === 0 ? (
+                        <SelectItem value="empty" disabled>No clients available</SelectItem>
+                      ) : (
+                        clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name} {client.company ? `(${client.company})` : ''}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Sales Contact Person Selection */}
+              <div className="space-y-2">
+                <Label>Sales Contact Person</Label>
+                <Select value={selectedSalesPersonId} onValueChange={setSelectedSalesPersonId}>
+                  <SelectTrigger data-testid="select-sales-person">
+                    <SelectValue placeholder="Choose sales contact..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {leadsLoading ? (
-                      <SelectItem value="loading" disabled>Loading leads...</SelectItem>
-                    ) : leads.length === 0 ? (
-                      <SelectItem value="empty" disabled>No leads available</SelectItem>
+                    {usersLoading ? (
+                      <SelectItem value="loading" disabled>Loading users...</SelectItem>
+                    ) : salesUsers.length === 0 ? (
+                      <SelectItem value="empty" disabled>No sales users available</SelectItem>
                     ) : (
-                      leads.map((lead) => (
-                        <SelectItem key={lead.id} value={lead.id}>
-                          {lead.name} {lead.company ? `(${lead.company})` : ''}
+                      salesUsers.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.firstName} {user.lastName} ({user.role})
                         </SelectItem>
                       ))
                     )}
@@ -216,7 +303,7 @@ export default function FlyerBuilder() {
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={handleDownloadPDF}
-                  disabled={!selectedLead || selectedServices.length === 0 || isGenerating}
+                  disabled={!selectedRecipient || selectedServices.length === 0 || isGenerating}
                   className="flex-1"
                   data-testid="button-download-pdf"
                 >
@@ -225,7 +312,7 @@ export default function FlyerBuilder() {
                 </Button>
                 <Button
                   onClick={handleDownloadPNG}
-                  disabled={!selectedLead || selectedServices.length === 0 || isGenerating}
+                  disabled={!selectedRecipient || selectedServices.length === 0 || isGenerating}
                   variant="outline"
                   className="flex-1"
                   data-testid="button-download-png"
@@ -248,9 +335,9 @@ export default function FlyerBuilder() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!selectedLead ? (
+              {!selectedRecipient ? (
                 <div className="flex items-center justify-center h-64 text-muted-foreground">
-                  <p>Select a lead to see preview</p>
+                  <p>Select a {recipientType} to see preview</p>
                 </div>
               ) : selectedServices.length === 0 ? (
                 <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -260,10 +347,11 @@ export default function FlyerBuilder() {
                 <div className="overflow-auto max-h-[800px] border rounded-lg">
                   <div className="scale-75 origin-top-left">
                     <FlyerTemplate
-                      lead={selectedLead}
+                      recipient={selectedRecipient}
                       selectedServices={selectedServices}
                       systemConfig={systemConfig}
                       serviceTypes={serviceTypes}
+                      salesPerson={selectedSalesPerson}
                     />
                   </div>
                 </div>

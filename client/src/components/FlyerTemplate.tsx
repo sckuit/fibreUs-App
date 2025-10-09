@@ -12,15 +12,17 @@ import {
   CheckCircle,
   Mail,
   Phone as PhoneIcon,
-  Globe
+  Globe,
+  User
 } from "lucide-react";
-import { type Lead, type SystemConfig, type ServiceType } from "@shared/schema";
+import { type Lead, type Client, type SystemConfig, type ServiceType, type User as UserType } from "@shared/schema";
 
 interface FlyerTemplateProps {
-  lead: Lead;
+  recipient: Lead | Client;
   selectedServices: string[];
   systemConfig?: SystemConfig;
   serviceTypes: ServiceType[];
+  salesPerson?: UserType;
 }
 
 // Map service names to icons
@@ -36,8 +38,8 @@ const iconMap: Record<string, any> = {
 };
 
 export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
-  ({ lead, selectedServices, systemConfig, serviceTypes }, ref) => {
-    const companyName = "FibreUS"; // Static for now as schema doesn't have companyName
+  ({ recipient, selectedServices, systemConfig, serviceTypes, salesPerson }, ref) => {
+    const companyName = systemConfig?.companyName || "FibreUS";
     const headerTagline = systemConfig?.headerTagline || "Electronic Security & Fiber Optic Services";
     const footerTagline = systemConfig?.footerTagline || "Your Trusted Security Partner | Licensed, Bonded & Insured";
     const contactEmail = systemConfig?.contactEmail || "info@fibreus.com";
@@ -49,6 +51,9 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
       .map(serviceName => serviceTypes?.find(st => st.name === serviceName))
       .filter(Boolean) as ServiceType[];
 
+    const recipientName = recipient.name || recipient.company || "Valued Customer";
+    const recipientCompany = recipient.company || recipient.name;
+
     return (
       <div
         ref={ref}
@@ -59,9 +64,9 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
         <div className="border-b-4 border-[#1e3a5f] pb-6">
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1 flex items-start gap-4">
-              {/* Logo */}
+              {/* Logo - Doubled size */}
               {logoUrl ? (
-                <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+                <div className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden">
                   <img 
                     src={logoUrl} 
                     alt={companyName}
@@ -69,10 +74,10 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
                   />
                 </div>
               ) : (
-                <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-[#1e3a5f] to-[#4a90e2] rounded-lg flex items-center justify-center">
+                <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-[#1e3a5f] to-[#4a90e2] rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <Network className="w-8 h-8 text-white mx-auto mb-0.5" />
-                    <div className="text-[8px] font-bold text-white tracking-wider">FIBRE</div>
+                    <Network className="w-16 h-16 text-white mx-auto mb-1" />
+                    <div className="text-base font-bold text-white tracking-wider">FIBRE</div>
                   </div>
                 </div>
               )}
@@ -84,14 +89,14 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
             </div>
             <div className="text-right text-sm text-gray-600 flex-shrink-0">
               <p className="font-semibold whitespace-nowrap">Professional Solutions For</p>
-              <p className="text-xl font-bold text-[#1e3a5f] mt-1 break-words max-w-[300px]">{lead.company || lead.name}</p>
+              <p className="text-xl font-bold text-[#1e3a5f] mt-1 break-words max-w-[300px]">{recipientCompany}</p>
             </div>
           </div>
         </div>
 
         {/* Personalized Introduction */}
         <div className="bg-gradient-to-r from-[#1e3a5f] to-[#4a90e2] text-white p-6 rounded-lg">
-          <h2 className="text-2xl font-bold mb-2">Dear {lead.name},</h2>
+          <h2 className="text-2xl font-bold mb-2">Dear {recipientName},</h2>
           <p className="text-base leading-relaxed">
             Thank you for your interest in our security solutions. We're excited to present our professional services
             tailored to meet your specific needs. Our team of certified technicians is ready to enhance your security infrastructure.
@@ -179,11 +184,34 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
             </div>
             <div className="text-right flex-shrink-0 max-w-[300px]">
               <p className="text-xs text-gray-500 mb-2">Prepared for:</p>
-              <p className="font-semibold text-[#1e3a5f] break-words">{lead.name}</p>
-              {lead.email && <p className="text-sm text-gray-600 break-all">{lead.email}</p>}
-              {lead.phone && <p className="text-sm text-gray-600 whitespace-nowrap">{lead.phone}</p>}
+              <p className="font-semibold text-[#1e3a5f] break-words">{recipientName}</p>
+              {recipient.email && <p className="text-sm text-gray-600 break-all">{recipient.email}</p>}
+              {recipient.phone && <p className="text-sm text-gray-600 whitespace-nowrap">{recipient.phone}</p>}
             </div>
           </div>
+
+          {/* Sales Contact Person */}
+          {salesPerson && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-[#1e3a5f] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 mb-1">Your Sales Contact:</p>
+                    <p className="font-semibold text-[#1e3a5f]">
+                      {salesPerson.firstName} {salesPerson.lastName}
+                    </p>
+                    {salesPerson.email && (
+                      <p className="text-sm text-gray-600">{salesPerson.email}</p>
+                    )}
+                    {salesPerson.phone && (
+                      <p className="text-sm text-gray-600">{salesPerson.phone}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
