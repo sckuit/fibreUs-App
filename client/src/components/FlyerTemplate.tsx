@@ -1,4 +1,19 @@
 import { forwardRef } from "react";
+import { 
+  Video, 
+  Bell, 
+  Lock, 
+  Phone, 
+  Cloud, 
+  Eye, 
+  Network, 
+  Wrench,
+  Shield,
+  CheckCircle,
+  Mail,
+  Phone as PhoneIcon,
+  Globe
+} from "lucide-react";
 import { type Lead } from "@shared/schema";
 
 interface FlyerTemplateProps {
@@ -6,46 +21,46 @@ interface FlyerTemplateProps {
   selectedServices: string[];
 }
 
-const serviceDetails: Record<string, { name: string; description: string; icon: string }> = {
+const serviceDetails: Record<string, { name: string; description: string; IconComponent: any }> = {
   cctv: {
     name: "CCTV Surveillance Systems",
     description: "Advanced video monitoring solutions with HD cameras, night vision, and remote viewing capabilities for comprehensive security coverage.",
-    icon: "📹"
+    IconComponent: Video
   },
   alarm: {
     name: "Alarm Systems",
     description: "State-of-the-art intrusion detection systems with 24/7 monitoring, instant alerts, and rapid response integration.",
-    icon: "🚨"
+    IconComponent: Bell
   },
   access_control: {
     name: "Access Control Systems",
     description: "Secure entry management with biometric scanners, key cards, and digital access logs for enhanced facility protection.",
-    icon: "🔐"
+    IconComponent: Lock
   },
   intercom: {
     name: "Intercom Systems",
     description: "Modern communication solutions for seamless visitor management and internal communications.",
-    icon: "📞"
+    IconComponent: Phone
   },
   cloud_storage: {
     name: "Cloud Storage Solutions",
     description: "Secure cloud-based video storage with easy access, backup redundancy, and scalable capacity.",
-    icon: "☁️"
+    IconComponent: Cloud
   },
   monitoring: {
     name: "24/7 Monitoring Services",
     description: "Professional monitoring center support with trained security personnel watching your property around the clock.",
-    icon: "👁️"
+    IconComponent: Eye
   },
   fiber_installation: {
     name: "Fiber Optic Installation",
     description: "High-speed fiber optic network installation for reliable, fast connectivity and future-proof infrastructure.",
-    icon: "🌐"
+    IconComponent: Network
   },
   maintenance: {
     name: "Maintenance & Support",
     description: "Comprehensive maintenance packages ensuring your security systems operate at peak performance year-round.",
-    icon: "🔧"
+    IconComponent: Wrench
   }
 };
 
@@ -83,18 +98,19 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
         {/* Services Offered */}
         <div>
           <h2 className="text-2xl font-bold text-[#1e3a5f] mb-4 flex items-center gap-2">
-            <span className="text-3xl">🛡️</span>
+            <Shield className="w-8 h-8 text-[#4a90e2]" />
             Recommended Services for Your Business
           </h2>
           <div className="space-y-4">
             {selectedServices.map((serviceKey) => {
               const service = serviceDetails[serviceKey];
               if (!service) return null;
+              const ServiceIcon = service.IconComponent;
               
               return (
                 <div key={serviceKey} className="border-l-4 border-[#4a90e2] pl-4 py-2">
                   <h3 className="text-lg font-bold text-[#1e3a5f] flex items-center gap-2">
-                    <span className="text-2xl">{service.icon}</span>
+                    <ServiceIcon className="w-6 h-6 text-[#4a90e2]" />
                     {service.name}
                   </h3>
                   <p className="text-sm text-gray-700 mt-1">{service.description}</p>
@@ -109,28 +125,28 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
           <h2 className="text-xl font-bold text-[#1e3a5f] mb-4">Why Partner With FibreUS?</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-start gap-2">
-              <span className="text-green-600 text-lg">✓</span>
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
               <div>
                 <p className="font-semibold">Certified Professionals</p>
                 <p className="text-gray-600">Licensed & insured technicians</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 text-lg">✓</span>
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
               <div>
                 <p className="font-semibold">24/7 Support</p>
                 <p className="text-gray-600">Round-the-clock assistance</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 text-lg">✓</span>
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
               <div>
                 <p className="font-semibold">Latest Technology</p>
                 <p className="text-gray-600">Cutting-edge equipment</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <span className="text-green-600 text-lg">✓</span>
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
               <div>
                 <p className="font-semibold">Custom Solutions</p>
                 <p className="text-gray-600">Tailored to your needs</p>
@@ -145,15 +161,18 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
           <div className="flex justify-between items-end">
             <div className="space-y-2 text-sm">
               <p className="flex items-center gap-2">
-                <span className="font-semibold">📧 Email:</span>
+                <Mail className="w-4 h-4 text-[#1e3a5f]" />
+                <span className="font-semibold">Email:</span>
                 <span className="text-[#4a90e2]">info@fibreus.com</span>
               </p>
               <p className="flex items-center gap-2">
-                <span className="font-semibold">📞 Phone:</span>
+                <PhoneIcon className="w-4 h-4 text-[#1e3a5f]" />
+                <span className="font-semibold">Phone:</span>
                 <span className="text-[#4a90e2]">1-800-FIBREUS</span>
               </p>
               <p className="flex items-center gap-2">
-                <span className="font-semibold">🌐 Web:</span>
+                <Globe className="w-4 h-4 text-[#1e3a5f]" />
+                <span className="font-semibold">Web:</span>
                 <span className="text-[#4a90e2]">www.fibreus.com</span>
               </p>
             </div>

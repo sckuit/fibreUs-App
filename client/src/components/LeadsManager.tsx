@@ -41,10 +41,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Mail, Phone, Building, MapPin, TrendingUp, AlertCircle } from "lucide-react";
+import { UserPlus, Mail, Phone, Building, MapPin, TrendingUp, AlertCircle, Send } from "lucide-react";
 import { insertLeadSchema, type Lead, type Inquiry, type InsertLeadType } from "@shared/schema";
 import { LeadDialog } from "@/components/LeadDialog";
 import { apiRequest } from "@/lib/queryClient";
+import FlyerBuilder from "./FlyerBuilder";
 
 export default function LeadsManager() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -226,6 +227,10 @@ export default function LeadsManager() {
                 {suggestedLeads.length}
               </Badge>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="reachout" data-testid="tab-reach-out">
+            <Send className="w-4 h-4 mr-2" />
+            Reach Out
           </TabsTrigger>
         </TabsList>
 
@@ -437,6 +442,10 @@ export default function LeadsManager() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="reachout" className="space-y-4">
+          <FlyerBuilder />
         </TabsContent>
       </Tabs>
 
