@@ -791,6 +791,7 @@ export type InsertActivityType = z.infer<typeof insertActivitySchema>;
 // System Configuration table
 export const systemConfig = pgTable("system_config", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyName: varchar("company_name"),
   website: varchar("website"),
   contactEmail: varchar("contact_email"),
   infoEmail: varchar("info_email"),

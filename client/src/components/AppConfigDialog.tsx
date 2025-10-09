@@ -29,6 +29,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
   const form = useForm<UpdateSystemConfigType>({
     resolver: zodResolver(updateSystemConfigSchema),
     defaultValues: {
+      companyName: '',
       website: '',
       contactEmail: '',
       infoEmail: '',
@@ -44,6 +45,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
   useEffect(() => {
     if (config && open) {
       form.reset({
+        companyName: config.companyName || '',
         website: config.website || '',
         contactEmail: config.contactEmail || '',
         infoEmail: config.infoEmail || '',
@@ -96,10 +98,28 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-              {/* Contact Information */}
+              {/* Company Information */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm">Contact Information</h3>
+                <h3 className="font-semibold text-sm">Company Information</h3>
                 
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="FibreUS"
+                          data-testid="input-company-name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="website"
