@@ -788,6 +788,68 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivityType = z.infer<typeof insertActivitySchema>;
 
+// System Configuration table
+export const systemConfig = pgTable("system_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  website: varchar("website"),
+  contactEmail: varchar("contact_email"),
+  infoEmail: varchar("info_email"),
+  address: text("address"),
+  phoneNumber: varchar("phone_number"),
+  mission: text("mission"),
+  aboutUs: text("about_us"),
+  headerTagline: varchar("header_tagline"),
+  footerTagline: varchar("footer_tagline"),
+  logoUrl: varchar("logo_url"), // Main logo
+  darkLogoUrl: varchar("dark_logo_url"), // Dark mode logo
+  iconUrl: varchar("icon_url"), // Favicon/icon
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Service Types table (configurable service offerings)
+export const serviceTypes = pgTable("service_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  displayName: varchar("display_name").notNull(),
+  description: text("description"),
+  minServiceFee: decimal("min_service_fee", { precision: 10, scale: 2 }).notNull().default('0'),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateSystemConfigSchema = createInsertSchema(systemConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateServiceTypeSchema = createInsertSchema(serviceTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type SystemConfig = typeof systemConfig.$inferSelect;
+export type InsertSystemConfigType = z.infer<typeof insertSystemConfigSchema>;
+export type UpdateSystemConfigType = z.infer<typeof updateSystemConfigSchema>;
+export type ServiceType = typeof serviceTypes.$inferSelect;
+export type InsertServiceTypeType = z.infer<typeof insertServiceTypeSchema>;
+export type UpdateServiceTypeType = z.infer<typeof updateServiceTypeSchema>;
+
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
 export type LoginType = z.infer<typeof loginSchema>;
