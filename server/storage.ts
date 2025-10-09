@@ -16,6 +16,8 @@ import {
   clients,
   suppliers,
   activities,
+  systemConfig,
+  serviceTypes,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -55,6 +57,12 @@ import {
   type UpdateSupplierType,
   type Activity,
   type InsertActivityType,
+  type SystemConfig,
+  type InsertSystemConfigType,
+  type UpdateSystemConfigType,
+  type ServiceType,
+  type InsertServiceTypeType,
+  type UpdateServiceTypeType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -193,6 +201,17 @@ export interface IStorage {
   getSupplier(id: string): Promise<Supplier | undefined>;
   updateSupplier(id: string, updates: UpdateSupplierType): Promise<Supplier | undefined>;
   deleteSupplier(id: string): Promise<void>;
+
+  // System Configuration operations
+  getSystemConfig(): Promise<SystemConfig | undefined>;
+  updateSystemConfig(updates: UpdateSystemConfigType): Promise<SystemConfig>;
+
+  // Service Type operations
+  createServiceType(data: InsertServiceTypeType): Promise<ServiceType>;
+  getServiceTypes(includeInactive?: boolean): Promise<ServiceType[]>;
+  getServiceType(id: string): Promise<ServiceType | undefined>;
+  updateServiceType(id: string, updates: UpdateServiceTypeType): Promise<ServiceType | undefined>;
+  deleteServiceType(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1210,6 +1229,67 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupplier(id: string): Promise<void> {
     await db.delete(suppliers).where(eq(suppliers.id, id));
+  }
+
+  // System Configuration operations
+  async getSystemConfig(): Promise<SystemConfig | undefined> {
+    const [config] = await db.select().from(systemConfig).limit(1);
+    return config;
+  }
+
+  async updateSystemConfig(updates: UpdateSystemConfigType): Promise<SystemConfig> {
+    // Check if config exists
+    const existing = await this.getSystemConfig();
+    
+    if (existing) {
+      const [result] = await db
+        .update(systemConfig)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(systemConfig.id, existing.id))
+        .returning();
+      return result;
+    } else {
+      // Create new config if it doesn't exist
+      const [result] = await db
+        .insert(systemConfig)
+        .values(updates)
+        .returning();
+      return result;
+    }
+  }
+
+  // Service Type operations
+  async createServiceType(data: InsertServiceTypeType): Promise<ServiceType> {
+    const [result] = await db.insert(serviceTypes).values(data).returning();
+    return result;
+  }
+
+  async getServiceTypes(includeInactive = false): Promise<ServiceType[]> {
+    let query = db.select().from(serviceTypes);
+    
+    if (!includeInactive) {
+      query = query.where(eq(serviceTypes.isActive, true));
+    }
+    
+    return query.orderBy(desc(serviceTypes.createdAt));
+  }
+
+  async getServiceType(id: string): Promise<ServiceType | undefined> {
+    const [result] = await db.select().from(serviceTypes).where(eq(serviceTypes.id, id));
+    return result;
+  }
+
+  async updateServiceType(id: string, updates: UpdateServiceTypeType): Promise<ServiceType | undefined> {
+    const [result] = await db
+      .update(serviceTypes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(serviceTypes.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteServiceType(id: string): Promise<void> {
+    await db.delete(serviceTypes).where(eq(serviceTypes.id, id));
   }
 }
 

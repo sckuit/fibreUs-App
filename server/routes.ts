@@ -32,6 +32,10 @@ import {
   updateClientSchema,
   insertSupplierSchema,
   updateSupplierSchema,
+  insertSystemConfigSchema,
+  updateSystemConfigSchema,
+  insertServiceTypeSchema,
+  updateServiceTypeSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -2234,6 +2238,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting supplier:", error);
         res.status(500).json({ message: "Failed to delete supplier" });
+      }
+    }
+  );
+
+  // System Configuration routes
+  app.get("/api/system-config",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const config = await storage.getSystemConfig();
+        res.json(config || {});
+      } catch (error) {
+        console.error("Error getting system config:", error);
+        res.status(500).json({ message: "Failed to get system configuration" });
+      }
+    }
+  );
+
+  app.put("/api/system-config",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateSystemConfigSchema.parse(req.body);
+        const config = await storage.updateSystemConfig(validatedData);
+        res.json(config);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid configuration data", errors: error.errors });
+        }
+        console.error("Error updating system config:", error);
+        res.status(500).json({ message: "Failed to update system configuration" });
+      }
+    }
+  );
+
+  // Service Types routes
+  app.post("/api/service-types",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertServiceTypeSchema.parse(req.body);
+        const serviceType = await storage.createServiceType(validatedData);
+        res.status(201).json(serviceType);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid service type data", errors: error.errors });
+        }
+        console.error("Error creating service type:", error);
+        res.status(500).json({ message: "Failed to create service type" });
+      }
+    }
+  );
+
+  app.get("/api/service-types",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const includeInactive = req.query.includeInactive === 'true';
+        const serviceTypes = await storage.getServiceTypes(includeInactive);
+        res.json(serviceTypes);
+      } catch (error) {
+        console.error("Error getting service types:", error);
+        res.status(500).json({ message: "Failed to get service types" });
+      }
+    }
+  );
+
+  app.get("/api/service-types/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const serviceType = await storage.getServiceType(req.params.id);
+        if (!serviceType) {
+          return res.status(404).json({ message: "Service type not found" });
+        }
+        res.json(serviceType);
+      } catch (error) {
+        console.error("Error getting service type:", error);
+        res.status(500).json({ message: "Failed to get service type" });
+      }
+    }
+  );
+
+  app.patch("/api/service-types/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateServiceTypeSchema.parse(req.body);
+        const serviceType = await storage.updateServiceType(req.params.id, validatedData);
+        if (!serviceType) {
+          return res.status(404).json({ message: "Service type not found" });
+        }
+        res.json(serviceType);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating service type:", error);
+        res.status(500).json({ message: "Failed to update service type" });
+      }
+    }
+  );
+
+  app.delete("/api/service-types/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteServiceType(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting service type:", error);
+        res.status(500).json({ message: "Failed to delete service type" });
       }
     }
   );
