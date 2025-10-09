@@ -77,7 +77,8 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
       setUploading(true);
 
       // Step 1: Get presigned URL
-      const uploadParams = await apiRequest('/api/objects/upload', 'POST', {}) as unknown as { uploadURL: string };
+      const response = await apiRequest('POST', '/api/objects/upload', {});
+      const uploadParams = await response.json() as { uploadURL: string };
 
       // Step 2: Upload to object storage using presigned URL
       const uploadResponse = await fetch(uploadParams.uploadURL, {
@@ -93,9 +94,10 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
       }
 
       // Step 3: Set ACL and get final path
-      const aclResponse = await apiRequest('/api/logos/upload', 'POST', {
+      const aclResponseRaw = await apiRequest('POST', '/api/logos/upload', {
         logoURL: uploadParams.uploadURL,
-      }) as unknown as { objectPath: string };
+      });
+      const aclResponse = await aclResponseRaw.json() as { objectPath: string };
 
       // Step 4: Update form field
       form.setValue(fieldName, aclResponse.objectPath);
