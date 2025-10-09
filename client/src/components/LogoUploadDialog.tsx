@@ -70,7 +70,7 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
     updateMutation.mutate(values);
   };
 
-  const handleGetUploadParameters = async () => {
+  const handleGetUploadParameters = async (file: any) => {
     const response = await apiRequest('/api/objects/upload', 'POST', {}) as unknown as { uploadURL: string };
     return {
       method: 'PUT' as const,

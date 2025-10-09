@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
-  onGetUploadParameters: () => Promise<{
+  onGetUploadParameters: (file: any) => Promise<{
     method: "PUT";
     url: string;
   }>;
@@ -17,7 +17,7 @@ interface ObjectUploaderProps {
     result: UploadResult<Record<string, unknown>, Record<string, unknown>>
   ) => void;
   buttonClassName?: string;
-  buttonVariant?: "default" | "outline" | "ghost" | "secondary" | "destructive" | "link";
+  buttonVariant?: "default" | "outline" | "ghost" | "secondary" | "destructive";
   buttonSize?: "default" | "sm" | "lg" | "icon";
   children: ReactNode;
   disabled?: boolean;
