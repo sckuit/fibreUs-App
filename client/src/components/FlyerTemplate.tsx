@@ -92,6 +92,9 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
             <div className="text-right text-sm text-gray-600 flex-shrink-0">
               <p className="font-semibold whitespace-nowrap">Professional Solutions For</p>
               <p className="text-xl font-bold text-[#1e3a5f] mt-1 break-words max-w-[300px]">{recipientCompany}</p>
+              {recipient.address && (
+                <p className="text-sm text-gray-600 mt-1 max-w-[300px] break-words">{recipient.address}</p>
+              )}
             </div>
           </div>
         </div>

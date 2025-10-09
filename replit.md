@@ -16,6 +16,7 @@ The application follows a modern full-stack architecture with a React frontend, 
 - **Contact Section Redesign**: Merged company and sales contact into unified "Let's Get Started" section with separate client/lead "Prepared for" panel
 - **Pricing Visualization**: Services display original price (strikethrough), discounted price (green), and discount percentage when applicable
 - **Form Null Handling**: Fixed TypeScript errors by converting null form values to empty strings in AppConfigDialog
+- **Header Address Display**: Added client/lead address display below recipient name in flyer header for better context
 
 ### October 2025 - Task/Report Editing & Schema Fixes
 - **Task Editing**: Updated PUT /api/tasks/:id to allow users with manageOwnTasks to edit their assigned tasks
