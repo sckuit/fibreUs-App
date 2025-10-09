@@ -23,6 +23,8 @@ interface FlyerTemplateProps {
   systemConfig?: SystemConfig;
   serviceTypes: ServiceType[];
   salesPerson?: UserType;
+  personalizedMessage?: string;
+  showPricing?: boolean;
 }
 
 // Map service names to icons
@@ -38,7 +40,7 @@ const iconMap: Record<string, any> = {
 };
 
 export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
-  ({ recipient, selectedServices, systemConfig, serviceTypes, salesPerson }, ref) => {
+  ({ recipient, selectedServices, systemConfig, serviceTypes, salesPerson, personalizedMessage, showPricing }, ref) => {
     const companyName = systemConfig?.companyName || "FibreUS";
     const headerTagline = systemConfig?.headerTagline || "Electronic Security & Fiber Optic Services";
     const footerTagline = systemConfig?.footerTagline || "Your Trusted Security Partner | Licensed, Bonded & Insured";
@@ -96,11 +98,17 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
 
         {/* Personalized Introduction */}
         <div className="bg-gradient-to-r from-[#1e3a5f] to-[#4a90e2] text-white p-6 rounded-lg">
-          <h2 className="text-2xl font-bold mb-2">Dear {recipientName},</h2>
-          <p className="text-base leading-relaxed">
-            Thank you for your interest in our security solutions. We're excited to present our professional services
-            tailored to meet your specific needs. Our team of certified technicians is ready to enhance your security infrastructure.
-          </p>
+          {personalizedMessage ? (
+            <p className="text-base leading-relaxed whitespace-pre-wrap">{personalizedMessage}</p>
+          ) : (
+            <>
+              <h2 className="text-2xl font-bold mb-2">Dear {recipientName},</h2>
+              <p className="text-base leading-relaxed">
+                Thank you for your interest in our security solutions. We're excited to present our professional services
+                tailored to meet your specific needs. Our team of certified technicians is ready to enhance your security infrastructure.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Services Offered */}
@@ -112,14 +120,35 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
           <div className="space-y-4">
             {selectedServiceDetails.map((service) => {
               const IconComponent = iconMap[service.name] || Shield;
+              const price = parseFloat(service.minServiceFee || '0');
+              const discount = parseFloat(service.discountPercent || '0');
+              const discountedPrice = price - (price * discount / 100);
               
               return (
                 <div key={service.id} className="border-l-4 border-[#4a90e2] pl-4 py-2">
-                  <h3 className="text-lg font-bold text-[#1e3a5f] flex items-start gap-2 mb-1">
-                    <IconComponent className="w-6 h-6 text-[#4a90e2] flex-shrink-0 mt-0.5" />
-                    <span className="leading-tight">{service.displayName}</span>
-                  </h3>
-                  <p className="text-sm text-gray-700 leading-relaxed">{service.description}</p>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-[#1e3a5f] flex items-start gap-2 mb-1">
+                        <IconComponent className="w-6 h-6 text-[#4a90e2] flex-shrink-0 mt-0.5" />
+                        <span className="leading-tight">{service.displayName}</span>
+                      </h3>
+                      <p className="text-sm text-gray-700 leading-relaxed">{service.description}</p>
+                    </div>
+                    {showPricing && price > 0 && (
+                      <div className="text-right flex-shrink-0">
+                        {discount > 0 ? (
+                          <>
+                            <p className="text-xs text-gray-500 line-through">${price.toFixed(2)}</p>
+                            <p className="text-lg font-bold text-green-600">${discountedPrice.toFixed(2)}</p>
+                            <p className="text-xs text-green-600">{discount}% OFF</p>
+                          </>
+                        ) : (
+                          <p className="text-lg font-bold text-[#1e3a5f]">${price.toFixed(2)}</p>
+                        )}
+                        <p className="text-xs text-gray-500">Starting at</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -161,57 +190,68 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
           </div>
         </div>
 
-        {/* Contact Information */}
+        {/* Contact Information - Merged with Sales Contact */}
         <div className="border-t-2 border-gray-300 pt-6">
           <h2 className="text-xl font-bold text-[#1e3a5f] mb-4">Let's Get Started</h2>
-          <div className="flex justify-between items-start gap-6">
-            <div className="space-y-2 text-sm flex-1">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
-                <span className="font-semibold whitespace-nowrap">Email:</span>
-                <span className="text-[#4a90e2]">{contactEmail}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <PhoneIcon className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
-                <span className="font-semibold whitespace-nowrap">Phone:</span>
-                <span className="text-[#4a90e2]">{phoneNumber}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
-                <span className="font-semibold whitespace-nowrap">Web:</span>
-                <span className="text-[#4a90e2]">{website}</span>
-              </div>
-            </div>
-            <div className="text-right flex-shrink-0 max-w-[300px]">
-              <p className="text-xs text-gray-500 mb-2">Prepared for:</p>
-              <p className="font-semibold text-[#1e3a5f] break-words">{recipientName}</p>
-              {recipient.email && <p className="text-sm text-gray-600 break-all">{recipient.email}</p>}
-              {recipient.phone && <p className="text-sm text-gray-600 whitespace-nowrap">{recipient.phone}</p>}
-            </div>
-          </div>
-
-          {/* Sales Contact Person */}
-          {salesPerson && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <User className="w-5 h-5 text-[#1e3a5f] flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-500 mb-1">Your Sales Contact:</p>
-                    <p className="font-semibold text-[#1e3a5f]">
-                      {salesPerson.firstName} {salesPerson.lastName}
-                    </p>
-                    {salesPerson.email && (
-                      <p className="text-sm text-gray-600">{salesPerson.email}</p>
-                    )}
-                    {salesPerson.phone && (
-                      <p className="text-sm text-gray-600">{salesPerson.phone}</p>
-                    )}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Company Contact Info */}
+            <div>
+              <p className="text-sm font-semibold text-gray-600 mb-3">Company Contact</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                  <span className="font-semibold whitespace-nowrap">Email:</span>
+                  <span className="text-[#4a90e2]">{contactEmail}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <PhoneIcon className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                  <span className="font-semibold whitespace-nowrap">Phone:</span>
+                  <span className="text-[#4a90e2]">{phoneNumber}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                  <span className="font-semibold whitespace-nowrap">Web:</span>
+                  <span className="text-[#4a90e2]">{website}</span>
                 </div>
               </div>
             </div>
-          )}
+
+            {/* Sales Contact or Recipient Info */}
+            <div>
+              {salesPerson ? (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <User className="w-5 h-5 text-[#1e3a5f] flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-600 mb-1">Your Dedicated Sales Contact:</p>
+                      <p className="font-bold text-[#1e3a5f] text-base">
+                        {salesPerson.firstName} {salesPerson.lastName}
+                      </p>
+                      {salesPerson.email && (
+                        <p className="text-sm text-gray-700 mt-1 flex items-center gap-1">
+                          <Mail className="w-3 h-3" />
+                          {salesPerson.email}
+                        </p>
+                      )}
+                      {salesPerson.phone && (
+                        <p className="text-sm text-gray-700 flex items-center gap-1">
+                          <PhoneIcon className="w-3 h-3" />
+                          {salesPerson.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-xs text-gray-500 mb-2">Prepared for:</p>
+                  <p className="font-semibold text-[#1e3a5f] break-words">{recipientName}</p>
+                  {recipient.email && <p className="text-sm text-gray-600 break-all mt-1">{recipient.email}</p>}
+                  {recipient.phone && <p className="text-sm text-gray-600 whitespace-nowrap">{recipient.phone}</p>}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Footer */}

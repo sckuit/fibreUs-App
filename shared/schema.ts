@@ -815,6 +815,7 @@ export const serviceTypes = pgTable("service_types", {
   displayName: varchar("display_name").notNull(),
   description: text("description"),
   minServiceFee: decimal("min_service_fee", { precision: 10, scale: 2 }).notNull().default('0'),
+  discountPercent: decimal("discount_percent", { precision: 5, scale: 2 }).default('0'),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

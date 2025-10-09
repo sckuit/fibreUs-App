@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -25,6 +27,8 @@ export default function FlyerBuilder() {
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [selectedSalesPersonId, setSelectedSalesPersonId] = useState<string>("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [personalizedMessage, setPersonalizedMessage] = useState<string>("");
+  const [showPricing, setShowPricing] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const flyerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -166,6 +170,8 @@ export default function FlyerBuilder() {
             systemConfig={systemConfig}
             serviceTypes={serviceTypes}
             salesPerson={selectedSalesPerson}
+            personalizedMessage={personalizedMessage}
+            showPricing={showPricing}
           />
         </div>
       )}
@@ -270,6 +276,32 @@ export default function FlyerBuilder() {
                 </Select>
               </div>
 
+              {/* Personalized Message */}
+              <div className="space-y-2">
+                <Label>Personalized Message (Optional)</Label>
+                <Textarea
+                  value={personalizedMessage}
+                  onChange={(e) => setPersonalizedMessage(e.target.value)}
+                  placeholder="Dear [Name], We're excited to present..."
+                  rows={3}
+                  data-testid="textarea-personalized-message"
+                />
+                <p className="text-xs text-muted-foreground">Add a personal touch to your flyer</p>
+              </div>
+
+              {/* Show Pricing Toggle */}
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <Label>Include Pricing</Label>
+                  <p className="text-xs text-muted-foreground">Display service prices on the flyer</p>
+                </div>
+                <Switch
+                  checked={showPricing}
+                  onCheckedChange={setShowPricing}
+                  data-testid="switch-show-pricing"
+                />
+              </div>
+
               {/* Services Selection */}
               <div className="space-y-3">
                 <Label>Select Services to Propose</Label>
@@ -352,6 +384,8 @@ export default function FlyerBuilder() {
                       systemConfig={systemConfig}
                       serviceTypes={serviceTypes}
                       salesPerson={selectedSalesPerson}
+                      personalizedMessage={personalizedMessage}
+                      showPricing={showPricing}
                     />
                   </div>
                 </div>
