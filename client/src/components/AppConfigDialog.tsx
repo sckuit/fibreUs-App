@@ -59,7 +59,7 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateSystemConfigType) =>
-      apiRequest('/api/system-config', 'PUT', data),
+      apiRequest('PUT', '/api/system-config', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({ title: "App configuration updated successfully" });

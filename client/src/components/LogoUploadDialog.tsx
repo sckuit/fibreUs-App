@@ -49,7 +49,7 @@ export function LogoUploadDialog({ open, onOpenChange }: LogoUploadDialogProps) 
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateSystemConfigType) =>
-      apiRequest('/api/system-config', 'PUT', data),
+      apiRequest('PUT', '/api/system-config', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/system-config'] });
       toast({ title: "Logos updated successfully" });
