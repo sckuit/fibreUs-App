@@ -75,9 +75,19 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
         {/* Header */}
         <div className="border-b-4 border-[#1e3a5f] pb-6">
           <div className="flex items-start justify-between gap-6">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-[#1e3a5f] mb-2">FibreUS</h1>
-              <p className="text-lg text-[#4a90e2]">Electronic Security & Fiber Optic Services</p>
+            <div className="flex-1 flex items-start gap-4">
+              {/* Logo */}
+              <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-[#1e3a5f] to-[#4a90e2] rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                  <Network className="w-8 h-8 text-white mx-auto mb-0.5" />
+                  <div className="text-[8px] font-bold text-white tracking-wider">FIBRE</div>
+                </div>
+              </div>
+              {/* Company Info */}
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold text-[#1e3a5f] mb-2">FibreUS</h1>
+                <p className="text-lg text-[#4a90e2]">Electronic Security & Fiber Optic Services</p>
+              </div>
             </div>
             <div className="text-right text-sm text-gray-600 flex-shrink-0">
               <p className="font-semibold whitespace-nowrap">Professional Solutions For</p>
