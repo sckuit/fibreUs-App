@@ -190,40 +190,42 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
           </div>
         </div>
 
-        {/* Contact Information - Merged with Sales Contact */}
+        {/* Contact Information */}
         <div className="border-t-2 border-gray-300 pt-6">
           <h2 className="text-xl font-bold text-[#1e3a5f] mb-4">Let's Get Started</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Company Contact Info */}
-            <div>
-              <p className="text-sm font-semibold text-gray-600 mb-3">Company Contact</p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
-                  <span className="font-semibold whitespace-nowrap">Email:</span>
-                  <span className="text-[#4a90e2]">{contactEmail}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <PhoneIcon className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
-                  <span className="font-semibold whitespace-nowrap">Phone:</span>
-                  <span className="text-[#4a90e2]">{phoneNumber}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
-                  <span className="font-semibold whitespace-nowrap">Web:</span>
-                  <span className="text-[#4a90e2]">{website}</span>
+          
+          {/* Company Contact & Sales Contact Merged */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Company Contact */}
+              <div>
+                <p className="text-sm font-semibold text-[#1e3a5f] mb-3">Company Contact</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                    <span className="font-semibold whitespace-nowrap">Email:</span>
+                    <span className="text-[#4a90e2]">{contactEmail}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <PhoneIcon className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                    <span className="font-semibold whitespace-nowrap">Phone:</span>
+                    <span className="text-[#4a90e2]">{phoneNumber}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
+                    <span className="font-semibold whitespace-nowrap">Web:</span>
+                    <span className="text-[#4a90e2]">{website}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Sales Contact or Recipient Info */}
-            <div>
-              {salesPerson ? (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+              {/* Sales Contact */}
+              {salesPerson && (
+                <div className="border-l-2 border-blue-300 pl-6">
                   <div className="flex items-start gap-3">
                     <User className="w-5 h-5 text-[#1e3a5f] flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-xs text-gray-600 mb-1">Your Dedicated Sales Contact:</p>
+                      <p className="text-sm font-semibold text-[#1e3a5f] mb-2">Your Dedicated Sales Contact</p>
                       <p className="font-bold text-[#1e3a5f] text-base">
                         {salesPerson.firstName} {salesPerson.lastName}
                       </p>
@@ -242,15 +244,19 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-xs text-gray-500 mb-2">Prepared for:</p>
-                  <p className="font-semibold text-[#1e3a5f] break-words">{recipientName}</p>
-                  {recipient.email && <p className="text-sm text-gray-600 break-all mt-1">{recipient.email}</p>}
-                  {recipient.phone && <p className="text-sm text-gray-600 whitespace-nowrap">{recipient.phone}</p>}
-                </div>
               )}
             </div>
+          </div>
+
+          {/* Client/Lead Contact Section */}
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p className="text-xs font-semibold text-gray-600 mb-2">Prepared for:</p>
+            <p className="font-bold text-[#1e3a5f] text-lg break-words">{recipientName}</p>
+            {recipient.company && recipient.name !== recipient.company && (
+              <p className="text-sm text-gray-600 mt-1">{recipient.company}</p>
+            )}
+            {recipient.email && <p className="text-sm text-gray-600 break-all mt-1">{recipient.email}</p>}
+            {recipient.phone && <p className="text-sm text-gray-600 whitespace-nowrap">{recipient.phone}</p>}
           </div>
         </div>
 
