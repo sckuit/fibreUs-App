@@ -12,22 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Download, FileText, Image as ImageIcon } from "lucide-react";
-import { type Lead } from "@shared/schema";
+import { type Lead, type SystemConfig, type ServiceType } from "@shared/schema";
 import { FlyerTemplate } from "./FlyerTemplate";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-
-const serviceOptions = [
-  { value: "cctv", label: "CCTV Surveillance Systems" },
-  { value: "alarm", label: "Alarm Systems" },
-  { value: "access_control", label: "Access Control Systems" },
-  { value: "intercom", label: "Intercom Systems" },
-  { value: "cloud_storage", label: "Cloud Storage Solutions" },
-  { value: "monitoring", label: "24/7 Monitoring Services" },
-  { value: "fiber_installation", label: "Fiber Optic Installation" },
-  { value: "maintenance", label: "Maintenance & Support" }
-];
 
 export default function FlyerBuilder() {
   const [selectedLeadId, setSelectedLeadId] = useState<string>("");
@@ -36,8 +25,16 @@ export default function FlyerBuilder() {
   const flyerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const { data: leads = [], isLoading } = useQuery<Lead[]>({
+  const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
     queryKey: ["/api/leads"],
+  });
+
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ["/api/system-config"],
+  });
+
+  const { data: serviceTypes = [], isLoading: servicesLoading } = useQuery<ServiceType[]>({
+    queryKey: ["/api/service-types"],
   });
 
   const selectedLead = leads.find(lead => lead.id === selectedLeadId);
@@ -135,6 +132,8 @@ export default function FlyerBuilder() {
     }
   };
 
+  const activeServiceTypes = serviceTypes.filter(st => st.isActive);
+
   return (
     <div className="space-y-6">
       {/* Hidden flyer for PDF/PNG generation (not scaled) */}
@@ -144,6 +143,8 @@ export default function FlyerBuilder() {
             ref={flyerRef}
             lead={selectedLead}
             selectedServices={selectedServices}
+            systemConfig={systemConfig}
+            serviceTypes={serviceTypes}
           />
         </div>
       )}
@@ -167,7 +168,7 @@ export default function FlyerBuilder() {
                     <SelectValue placeholder="Choose a lead..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {isLoading ? (
+                    {leadsLoading ? (
                       <SelectItem value="loading" disabled>Loading leads...</SelectItem>
                     ) : leads.length === 0 ? (
                       <SelectItem value="empty" disabled>No leads available</SelectItem>
@@ -186,22 +187,28 @@ export default function FlyerBuilder() {
               <div className="space-y-3">
                 <Label>Select Services to Propose</Label>
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-                  {serviceOptions.map((service) => (
-                    <div key={service.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={service.value}
-                        checked={selectedServices.includes(service.value)}
-                        onCheckedChange={() => handleServiceToggle(service.value)}
-                        data-testid={`checkbox-service-${service.value}`}
-                      />
-                      <Label
-                        htmlFor={service.value}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {service.label}
-                      </Label>
-                    </div>
-                  ))}
+                  {servicesLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading services...</p>
+                  ) : activeServiceTypes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No active services available</p>
+                  ) : (
+                    activeServiceTypes.map((service) => (
+                      <div key={service.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={service.name}
+                          checked={selectedServices.includes(service.name)}
+                          onCheckedChange={() => handleServiceToggle(service.name)}
+                          data-testid={`checkbox-service-${service.name}`}
+                        />
+                        <Label
+                          htmlFor={service.name}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {service.displayName}
+                        </Label>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -255,6 +262,8 @@ export default function FlyerBuilder() {
                     <FlyerTemplate
                       lead={selectedLead}
                       selectedServices={selectedServices}
+                      systemConfig={systemConfig}
+                      serviceTypes={serviceTypes}
                     />
                   </div>
                 </div>

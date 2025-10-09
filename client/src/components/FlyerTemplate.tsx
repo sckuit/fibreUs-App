@@ -14,58 +14,41 @@ import {
   Phone as PhoneIcon,
   Globe
 } from "lucide-react";
-import { type Lead } from "@shared/schema";
+import { type Lead, type SystemConfig, type ServiceType } from "@shared/schema";
 
 interface FlyerTemplateProps {
   lead: Lead;
   selectedServices: string[];
+  systemConfig?: SystemConfig;
+  serviceTypes: ServiceType[];
 }
 
-const serviceDetails: Record<string, { name: string; description: string; IconComponent: any }> = {
-  cctv: {
-    name: "CCTV Surveillance Systems",
-    description: "Advanced video monitoring solutions with HD cameras, night vision, and remote viewing capabilities for comprehensive security coverage.",
-    IconComponent: Video
-  },
-  alarm: {
-    name: "Alarm Systems",
-    description: "State-of-the-art intrusion detection systems with 24/7 monitoring, instant alerts, and rapid response integration.",
-    IconComponent: Bell
-  },
-  access_control: {
-    name: "Access Control Systems",
-    description: "Secure entry management with biometric scanners, key cards, and digital access logs for enhanced facility protection.",
-    IconComponent: Lock
-  },
-  intercom: {
-    name: "Intercom Systems",
-    description: "Modern communication solutions for seamless visitor management and internal communications.",
-    IconComponent: Phone
-  },
-  cloud_storage: {
-    name: "Cloud Storage Solutions",
-    description: "Secure cloud-based video storage with easy access, backup redundancy, and scalable capacity.",
-    IconComponent: Cloud
-  },
-  monitoring: {
-    name: "24/7 Monitoring Services",
-    description: "Professional monitoring center support with trained security personnel watching your property around the clock.",
-    IconComponent: Eye
-  },
-  fiber_installation: {
-    name: "Fiber Optic Installation",
-    description: "High-speed fiber optic network installation for reliable, fast connectivity and future-proof infrastructure.",
-    IconComponent: Network
-  },
-  maintenance: {
-    name: "Maintenance & Support",
-    description: "Comprehensive maintenance packages ensuring your security systems operate at peak performance year-round.",
-    IconComponent: Wrench
-  }
+// Map service names to icons
+const iconMap: Record<string, any> = {
+  cctv: Video,
+  alarm: Bell,
+  access_control: Lock,
+  intercom: Phone,
+  cloud_storage: Cloud,
+  monitoring: Eye,
+  fiber_installation: Network,
+  maintenance: Wrench,
 };
 
 export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
-  ({ lead, selectedServices }, ref) => {
+  ({ lead, selectedServices, systemConfig, serviceTypes }, ref) => {
+    const companyName = "FibreUS"; // Static for now as schema doesn't have companyName
+    const headerTagline = systemConfig?.headerTagline || "Electronic Security & Fiber Optic Services";
+    const footerTagline = systemConfig?.footerTagline || "Your Trusted Security Partner | Licensed, Bonded & Insured";
+    const contactEmail = systemConfig?.contactEmail || "info@fibreus.com";
+    const phoneNumber = systemConfig?.phoneNumber || "1-800-FIBREUS";
+    const website = systemConfig?.website || "www.fibreus.com";
+    const logoUrl = systemConfig?.logoUrl;
+
+    const selectedServiceDetails = selectedServices
+      .map(serviceName => serviceTypes?.find(st => st.name === serviceName))
+      .filter(Boolean) as ServiceType[];
+
     return (
       <div
         ref={ref}
@@ -77,16 +60,26 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1 flex items-start gap-4">
               {/* Logo */}
-              <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-[#1e3a5f] to-[#4a90e2] rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <Network className="w-8 h-8 text-white mx-auto mb-0.5" />
-                  <div className="text-[8px] font-bold text-white tracking-wider">FIBRE</div>
+              {logoUrl ? (
+                <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+                  <img 
+                    src={logoUrl} 
+                    alt={companyName}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-              </div>
+              ) : (
+                <div className="flex-shrink-0 w-16 h-16 bg-gradient-to-br from-[#1e3a5f] to-[#4a90e2] rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <Network className="w-8 h-8 text-white mx-auto mb-0.5" />
+                    <div className="text-[8px] font-bold text-white tracking-wider">FIBRE</div>
+                  </div>
+                </div>
+              )}
               {/* Company Info */}
               <div className="flex-1">
-                <h1 className="text-4xl font-bold text-[#1e3a5f] mb-2">FibreUS</h1>
-                <p className="text-lg text-[#4a90e2]">Electronic Security & Fiber Optic Services</p>
+                <h1 className="text-4xl font-bold text-[#1e3a5f] mb-2">{companyName}</h1>
+                <p className="text-lg text-[#4a90e2]">{headerTagline}</p>
               </div>
             </div>
             <div className="text-right text-sm text-gray-600 flex-shrink-0">
@@ -112,16 +105,14 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
             <span>Recommended Services for Your Business</span>
           </h2>
           <div className="space-y-4">
-            {selectedServices.map((serviceKey) => {
-              const service = serviceDetails[serviceKey];
-              if (!service) return null;
-              const ServiceIcon = service.IconComponent;
+            {selectedServiceDetails.map((service) => {
+              const IconComponent = iconMap[service.name] || Shield;
               
               return (
-                <div key={serviceKey} className="border-l-4 border-[#4a90e2] pl-4 py-2">
+                <div key={service.id} className="border-l-4 border-[#4a90e2] pl-4 py-2">
                   <h3 className="text-lg font-bold text-[#1e3a5f] flex items-start gap-2 mb-1">
-                    <ServiceIcon className="w-6 h-6 text-[#4a90e2] flex-shrink-0 mt-0.5" />
-                    <span className="leading-tight">{service.name}</span>
+                    <IconComponent className="w-6 h-6 text-[#4a90e2] flex-shrink-0 mt-0.5" />
+                    <span className="leading-tight">{service.displayName}</span>
                   </h3>
                   <p className="text-sm text-gray-700 leading-relaxed">{service.description}</p>
                 </div>
@@ -132,7 +123,7 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
 
         {/* Why Choose Us */}
         <div className="bg-gray-50 p-6 rounded-lg">
-          <h2 className="text-xl font-bold text-[#1e3a5f] mb-4">Why Partner With FibreUS?</h2>
+          <h2 className="text-xl font-bold text-[#1e3a5f] mb-4">Why Partner With {companyName}?</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="flex items-start gap-2">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -173,17 +164,17 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
                 <span className="font-semibold whitespace-nowrap">Email:</span>
-                <span className="text-[#4a90e2]">info@fibreus.com</span>
+                <span className="text-[#4a90e2]">{contactEmail}</span>
               </div>
               <div className="flex items-center gap-2">
                 <PhoneIcon className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
                 <span className="font-semibold whitespace-nowrap">Phone:</span>
-                <span className="text-[#4a90e2]">1-800-FIBREUS</span>
+                <span className="text-[#4a90e2]">{phoneNumber}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Globe className="w-4 h-4 text-[#1e3a5f] flex-shrink-0" />
                 <span className="font-semibold whitespace-nowrap">Web:</span>
-                <span className="text-[#4a90e2]">www.fibreus.com</span>
+                <span className="text-[#4a90e2]">{website}</span>
               </div>
             </div>
             <div className="text-right flex-shrink-0 max-w-[300px]">
@@ -197,8 +188,8 @@ export const FlyerTemplate = forwardRef<HTMLDivElement, FlyerTemplateProps>(
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-200">
-          <p>FibreUS - Your Trusted Security Partner | Licensed, Bonded & Insured</p>
-          <p className="mt-1">© 2025 FibreUS. All rights reserved.</p>
+          <p>{footerTagline}</p>
+          <p className="mt-1">© 2025 {companyName}. All rights reserved.</p>
         </div>
       </div>
     );
