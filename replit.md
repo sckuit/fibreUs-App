@@ -8,6 +8,15 @@ The application follows a modern full-stack architecture with a React frontend, 
 
 ## Recent Changes
 
+### October 2025 - Flyer Redesign & Enhanced Features
+- **Service Discounts**: Added discountPercent field to service_types table for promotional pricing
+- **Personalized Messages**: Flyer builder now supports custom personalized messages (e.g., "Dear [Name]...")
+- **Pricing Display Toggle**: Option to show/hide service pricing on flyers with automatic discount calculations
+- **Logo Sizing**: Reduced flyer logo height to 3/4 (96px) for better visual balance
+- **Contact Section Redesign**: Merged company and sales contact into unified "Let's Get Started" section with separate client/lead "Prepared for" panel
+- **Pricing Visualization**: Services display original price (strikethrough), discounted price (green), and discount percentage when applicable
+- **Form Null Handling**: Fixed TypeScript errors by converting null form values to empty strings in AppConfigDialog
+
 ### October 2025 - Task/Report Editing & Schema Fixes
 - **Task Editing**: Updated PUT /api/tasks/:id to allow users with manageOwnTasks to edit their assigned tasks
 - **Report Editing**: Updated PUT /api/reports/:id to allow users with manageOwnReports to edit their submitted reports
