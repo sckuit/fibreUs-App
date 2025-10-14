@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import TopNavigation from "@/components/TopNavigation";
+import Footer from "@/components/Footer";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
@@ -51,11 +52,12 @@ import WarrantyInformation from "@/pages/legal/WarrantyInformation";
 // Main application layout with navigation
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <TopNavigation />
-      <main className="pt-20">
+      <main className="pt-20 flex-1">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }
