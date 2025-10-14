@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, CheckCircle, Star, Award } from "lucide-react";
@@ -6,6 +8,12 @@ import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
 
 export default function Hero() {
+  const { data: config } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
+
+  const companyName = config?.companyName || "FibreUS";
+  const emergencyPhone = config?.emergencyPhone || "5559114357";
   const stats = [
     { label: "Years Experience", value: "15+" },
     { label: "Clients Protected", value: "500+" },
@@ -38,6 +46,10 @@ export default function Hero() {
           {/* Trust indicators */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <Badge variant="secondary" className="bg-white/20 text-white border-white/20">
+              <Shield className="h-3 w-3 mr-1" />
+              {companyName}
+            </Badge>
+            <Badge variant="secondary" className="bg-white/20 text-white border-white/20">
               <Award className="h-3 w-3 mr-1" />
               Industry Leader
             </Badge>
@@ -52,14 +64,16 @@ export default function Hero() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Professional 
-            <span className="text-blue-400"> Security & Fiber</span> Solutions
+            {config?.headerTagline || (
+              <>
+                Professional 
+                <span className="text-blue-400"> Security & Fiber</span> Solutions
+              </>
+            )}
           </h1>
           
           <p className="text-xl md:text-2xl mb-8 text-gray-200 leading-relaxed">
-            Protecting your business and home with cutting-edge CCTV, alarm systems, 
-            access control, fiber optic installations, and surveillance technology. Expert installation, maintenance, 
-            and 24/7 monitoring services.
+            {config?.aboutUs || "Protecting your business and home with cutting-edge CCTV, alarm systems, access control, fiber optic installations, and surveillance technology. Expert installation, maintenance, and 24/7 monitoring services."}
           </p>
 
           {/* Certifications */}
@@ -98,7 +112,7 @@ export default function Hero() {
               variant="outline" 
               className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
               data-testid="button-emergency-service"
-              onClick={() => window.location.href = 'tel:5559114357'}
+              onClick={() => window.location.href = `tel:${emergencyPhone.replace(/\D/g, '')}`}
             >
               Emergency Service
             </Button>

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +20,11 @@ import {
 
 export default function AboutSection() {
   const [showAboutDialog, setShowAboutDialog] = useState(false);
+  const { data: config } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
+
+  const companyName = config?.companyName || "FibreUS";
   const achievements = [
     {
       icon: Award,
@@ -78,14 +85,13 @@ export default function AboutSection() {
         {/* Header */}
         <div className="text-center mb-12">
           <Badge variant="outline" className="mb-4">
-            About FibreUS
+            About {companyName}
           </Badge>
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Your Trusted Security & Fiber Partner
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            From our founding in 2008 as an independent security contractor to becoming 
-            a leading provider of comprehensive security solutions, we've been protecting what matters most.
+            {config?.aboutUs || "From our founding in 2008 as an independent security contractor to becoming a leading provider of comprehensive security solutions, we've been protecting what matters most."}
           </p>
         </div>
 
@@ -95,13 +101,10 @@ export default function AboutSection() {
             <h3 className="text-2xl font-bold mb-6">Our Story</h3>
             <div className="space-y-6">
               <p className="text-muted-foreground leading-relaxed">
-                Since 2008, we've evolved from a small independent security contractor into a 
-                comprehensive electronic security solutions provider. Our journey began 
-                with a commitment to delivering reliable, cutting-edge security services 
-                for homes and businesses across the region.
+                {config?.aboutUs || "Since 2008, we've evolved from a small independent security contractor into a comprehensive electronic security solutions provider. Our journey began with a commitment to delivering reliable, cutting-edge security services for homes and businesses across the region."}
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                Today, FibreUS Tech Services combines decades of experience with 
+                Today, {companyName} combines decades of experience with 
                 cutting-edge technology to deliver reliable, future-proof security 
                 and fiber optic systems that protect your most valuable assets.
               </p>
@@ -192,7 +195,7 @@ export default function AboutSection() {
       <Dialog open={showAboutDialog} onOpenChange={setShowAboutDialog}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">About FibreUS Tech Services</DialogTitle>
+            <DialogTitle className="text-2xl">About {companyName}</DialogTitle>
             <DialogDescription>
               Your trusted partner in electronic security and fiber optic solutions
             </DialogDescription>
@@ -206,9 +209,7 @@ export default function AboutSection() {
                 <h3 className="text-lg font-semibold">Our Mission</h3>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                To protect what matters most by delivering reliable, cutting-edge security and fiber optic solutions 
-                with exceptional service and technical expertise. We believe that every home and business deserves 
-                enterprise-grade security that's accessible, affordable, and backed by a team that genuinely cares.
+                {config?.mission || "To protect what matters most by delivering reliable, cutting-edge security and fiber optic solutions with exceptional service and technical expertise. We believe that every home and business deserves enterprise-grade security that's accessible, affordable, and backed by a team that genuinely cares."}
               </p>
             </div>
 
