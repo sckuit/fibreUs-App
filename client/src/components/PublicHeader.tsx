@@ -12,7 +12,6 @@ export default function PublicHeader() {
     queryKey: ['/api/system-config'],
   });
   const { user } = useAuth();
-  const [location] = useLocation();
 
   const companyName = config?.companyName || "FibreUS";
   const phoneNumber = config?.phoneNumber || "(555) 123-4567";
