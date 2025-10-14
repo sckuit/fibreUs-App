@@ -23,24 +23,23 @@ export default function PublicHeader() {
       {/* Top Bar */}
       <div className="bg-[#1a2332] text-white">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-10 text-xs md:text-sm">
-            <div className="flex items-center gap-3 md:gap-6">
-              <a href={`tel:${phoneNumber.replace(/\D/g, '')}`} className="flex items-center gap-1 md:gap-2 hover:text-primary transition-colors" data-testid="link-header-phone">
-                <Phone className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                <span className="hidden sm:inline">{phoneNumber}</span>
+          <div className="flex items-center justify-between h-10 text-sm">
+            <div className="flex items-center gap-6">
+              <a href={`tel:${phoneNumber.replace(/\D/g, '')}`} className="flex items-center gap-2 hover:text-primary transition-colors" data-testid="link-header-phone">
+                <Phone className="h-3.5 w-3.5" />
+                <span>{phoneNumber}</span>
               </a>
-              <a href={`mailto:${contactEmail}`} className="hidden md:flex items-center gap-2 hover:text-primary transition-colors" data-testid="link-header-email">
+              <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-primary transition-colors" data-testid="link-header-email">
                 <Mail className="h-3.5 w-3.5" />
                 <span>{contactEmail}</span>
               </a>
             </div>
-            <div className="flex items-center gap-2 md:gap-3">
-              <span className="flex items-center gap-1 md:gap-2 text-xs" data-testid="text-emergency-service">
-                <Phone className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                <span className="hidden sm:inline">{emergencyPhone}</span>
-                <span className="sm:hidden">24/7</span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-2" data-testid="text-emergency-service">
+                <Phone className="h-3.5 w-3.5" />
+                {emergencyPhone}
               </span>
-              <Badge variant="secondary" className="bg-orange-500 hover:bg-orange-600 text-white border-0 text-xs" data-testid="badge-certified">
+              <Badge variant="secondary" className="bg-orange-500 hover:bg-orange-600 text-white border-0" data-testid="badge-certified">
                 CERTIFIED
               </Badge>
             </div>
@@ -51,46 +50,43 @@ export default function PublicHeader() {
       {/* Main Header */}
       <div className="bg-background border-b">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-14 md:h-16">
+          <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-home-logo">
-              <Shield className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+              <Shield className="h-8 w-8 text-primary" />
               <div className="flex flex-col">
-                <span className="text-lg md:text-xl font-bold leading-tight">{companyName}</span>
+                <span className="text-xl font-bold leading-tight">{companyName}</span>
                 {config?.headerTagline && (
-                  <span className="hidden md:block text-xs text-muted-foreground leading-tight">{config.headerTagline}</span>
+                  <span className="text-xs text-muted-foreground leading-tight">{config.headerTagline}</span>
                 )}
               </div>
             </Link>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex items-center gap-2">
               <GetQuoteDialog>
-                <Button variant="outline" size="sm" className="gap-1 md:gap-2 text-xs md:text-sm" data-testid="button-get-quote-header">
-                  <FileText className="h-3 w-3 md:h-4 md:w-4" />
-                  <span className="hidden sm:inline">Get Quote</span>
-                  <span className="sm:hidden">Quote</span>
+                <Button variant="outline" size="sm" className="gap-2" data-testid="button-get-quote-header">
+                  <FileText className="h-4 w-4" />
+                  Get Quote
                 </Button>
               </GetQuoteDialog>
               
-              <Button variant="outline" size="sm" className="hidden md:flex gap-2" data-testid="button-schedule-header">
+              <Button variant="outline" size="sm" className="gap-2" data-testid="button-schedule-header">
                 <Calendar className="h-4 w-4" />
                 Schedule
               </Button>
 
               {user ? (
                 <Link href="/dashboard">
-                  <Button size="sm" className="gap-1 md:gap-2 text-xs md:text-sm" data-testid="button-dashboard-header">
-                    <span className="hidden sm:inline">Dashboard</span>
-                    <span className="sm:hidden">Portal</span>
+                  <Button size="sm" className="gap-2" data-testid="button-dashboard-header">
+                    Dashboard
                   </Button>
                 </Link>
               ) : (
                 <Link href="/login">
-                  <Button size="sm" className="gap-1 md:gap-2 text-xs md:text-sm" data-testid="button-sign-in-header">
-                    <LogIn className="h-3 w-3 md:h-4 md:w-4" />
-                    <span className="hidden sm:inline">Sign In</span>
-                    <span className="sm:hidden">Login</span>
+                  <Button size="sm" className="gap-2" data-testid="button-sign-in-header">
+                    <LogIn className="h-4 w-4" />
+                    Sign In
                   </Button>
                 </Link>
               )}
