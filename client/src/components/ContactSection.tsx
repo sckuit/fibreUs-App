@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,10 @@ export default function ContactSection() {
 
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const { data: config } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Quote request submitted:", formData);
@@ -53,19 +59,25 @@ export default function ContactSection() {
     {
       icon: Phone,
       title: "Call Us",
-      details: ["(555) 123-4567", "Emergency: (555) 911-HELP"],
+      details: [
+        config?.phoneNumber || "(555) 123-4567",
+        config?.emergencyPhone ? `Emergency: ${config.emergencyPhone}` : "Emergency: (555) 911-HELP"
+      ],
       action: "Call Now"
     },
     {
       icon: Mail,
       title: "Email Us", 
-      details: ["info@fibreus.co", "support@fibreus.co"],
+      details: [
+        config?.contactEmail || "info@fibreus.co",
+        config?.infoEmail || "support@fibreus.co"
+      ],
       action: "Send Email"
     },
     {
       icon: MapPin,
       title: "Visit Us",
-      details: ["123 Security Blvd", "Dallas, TX 75201"],
+      details: config?.address ? [config.address.split(',')[0], config.address.split(',').slice(1).join(',').trim()] : ["123 Security Blvd", "Dallas, TX 75201"],
       action: "Get Directions"
     },
     {

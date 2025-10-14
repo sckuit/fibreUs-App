@@ -19,6 +19,35 @@ import ManagerPortal from "@/pages/ManagerPortal";
 import AdminPortal from "@/pages/AdminPortal";
 import SalesPortal from "@/pages/SalesPortal";
 
+// Services pages
+import CCTVInstallation from "@/pages/services/CCTVInstallation";
+import AlarmSystems from "@/pages/services/AlarmSystems";
+import AccessControl from "@/pages/services/AccessControl";
+import IntercomSystems from "@/pages/services/IntercomSystems";
+import CloudStorage from "@/pages/services/CloudStorage";
+import RemoteMonitoring from "@/pages/services/RemoteMonitoring";
+
+// Company pages
+import AboutUs from "@/pages/company/AboutUs";
+import OurTeam from "@/pages/company/OurTeam";
+import Certifications from "@/pages/company/Certifications";
+import CaseStudies from "@/pages/company/CaseStudies";
+import Careers from "@/pages/company/Careers";
+import NewsUpdates from "@/pages/company/NewsUpdates";
+
+// Support pages
+import SystemStatus from "@/pages/support/SystemStatus";
+import TechnicalSupport from "@/pages/support/TechnicalSupport";
+import EmergencyService from "@/pages/support/EmergencyService";
+import Maintenance from "@/pages/support/Maintenance";
+import Training from "@/pages/support/Training";
+
+// Legal pages
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
+import TermsOfService from "@/pages/legal/TermsOfService";
+import ServiceAgreement from "@/pages/legal/ServiceAgreement";
+import WarrantyInformation from "@/pages/legal/WarrantyInformation";
+
 // Main application layout with navigation
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -113,11 +142,126 @@ function Router() {
   // Public routes that don't require authentication
   return (
     <Switch>
+      {/* Public pages */}
       <Route path="/logos" component={() => (
         <AppLayout>
           <LogoShowcase />
         </AppLayout>
       )} />
+      
+      {/* Services routes */}
+      <Route path="/services/cctv-installation" component={() => (
+        <AppLayout>
+          <CCTVInstallation />
+        </AppLayout>
+      )} />
+      <Route path="/services/alarm-systems" component={() => (
+        <AppLayout>
+          <AlarmSystems />
+        </AppLayout>
+      )} />
+      <Route path="/services/access-control" component={() => (
+        <AppLayout>
+          <AccessControl />
+        </AppLayout>
+      )} />
+      <Route path="/services/intercom-systems" component={() => (
+        <AppLayout>
+          <IntercomSystems />
+        </AppLayout>
+      )} />
+      <Route path="/services/cloud-storage" component={() => (
+        <AppLayout>
+          <CloudStorage />
+        </AppLayout>
+      )} />
+      <Route path="/services/remote-monitoring" component={() => (
+        <AppLayout>
+          <RemoteMonitoring />
+        </AppLayout>
+      )} />
+      
+      {/* Company routes */}
+      <Route path="/company/about-us" component={() => (
+        <AppLayout>
+          <AboutUs />
+        </AppLayout>
+      )} />
+      <Route path="/company/our-team" component={() => (
+        <AppLayout>
+          <OurTeam />
+        </AppLayout>
+      )} />
+      <Route path="/company/certifications" component={() => (
+        <AppLayout>
+          <Certifications />
+        </AppLayout>
+      )} />
+      <Route path="/company/case-studies" component={() => (
+        <AppLayout>
+          <CaseStudies />
+        </AppLayout>
+      )} />
+      <Route path="/company/careers" component={() => (
+        <AppLayout>
+          <Careers />
+        </AppLayout>
+      )} />
+      <Route path="/company/news-updates" component={() => (
+        <AppLayout>
+          <NewsUpdates />
+        </AppLayout>
+      )} />
+      
+      {/* Support routes */}
+      <Route path="/support/system-status" component={() => (
+        <AppLayout>
+          <SystemStatus />
+        </AppLayout>
+      )} />
+      <Route path="/support/technical-support" component={() => (
+        <AppLayout>
+          <TechnicalSupport />
+        </AppLayout>
+      )} />
+      <Route path="/support/emergency-service" component={() => (
+        <AppLayout>
+          <EmergencyService />
+        </AppLayout>
+      )} />
+      <Route path="/support/maintenance" component={() => (
+        <AppLayout>
+          <Maintenance />
+        </AppLayout>
+      )} />
+      <Route path="/support/training" component={() => (
+        <AppLayout>
+          <Training />
+        </AppLayout>
+      )} />
+      
+      {/* Legal routes */}
+      <Route path="/legal/privacy-policy" component={() => (
+        <AppLayout>
+          <PrivacyPolicy />
+        </AppLayout>
+      )} />
+      <Route path="/legal/terms-of-service" component={() => (
+        <AppLayout>
+          <TermsOfService />
+        </AppLayout>
+      )} />
+      <Route path="/legal/service-agreement" component={() => (
+        <AppLayout>
+          <ServiceAgreement />
+        </AppLayout>
+      )} />
+      <Route path="/legal/warranty-information" component={() => (
+        <AppLayout>
+          <WarrantyInformation />
+        </AppLayout>
+      )} />
+      
       <Route>
         {isAuthenticated ? <AuthenticatedRouter /> : <LandingPage />}
       </Route>

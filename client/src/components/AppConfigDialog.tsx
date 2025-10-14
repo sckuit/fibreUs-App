@@ -1,12 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { SystemConfig, UpdateSystemConfigType } from "@shared/schema";
+import type { SystemConfig, UpdateSystemConfigType, ServiceType } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,9 +21,15 @@ interface AppConfigDialogProps {
 
 export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
   const { toast } = useToast();
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   const { data: config, isLoading } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
+    enabled: open,
+  });
+
+  const { data: serviceTypes } = useQuery<ServiceType[]>({
+    queryKey: ['/api/service-types'],
     enabled: open,
   });
 
@@ -39,6 +46,16 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
       aboutUs: '',
       headerTagline: '',
       footerTagline: '',
+      facebookUrl: '',
+      twitterUrl: '',
+      linkedinUrl: '',
+      instagramUrl: '',
+      emergencyPhone: '',
+      emergencyEmail: '',
+      termsOfServiceUrl: '',
+      serviceAgreementUrl: '',
+      warrantyInfoUrl: '',
+      privacyPolicyUrl: '',
     },
   });
 
@@ -55,7 +72,18 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
         aboutUs: config.aboutUs || '',
         headerTagline: config.headerTagline || '',
         footerTagline: config.footerTagline || '',
+        facebookUrl: config.facebookUrl || '',
+        twitterUrl: config.twitterUrl || '',
+        linkedinUrl: config.linkedinUrl || '',
+        instagramUrl: config.instagramUrl || '',
+        emergencyPhone: config.emergencyPhone || '',
+        emergencyEmail: config.emergencyEmail || '',
+        termsOfServiceUrl: config.termsOfServiceUrl || '',
+        serviceAgreementUrl: config.serviceAgreementUrl || '',
+        warrantyInfoUrl: config.warrantyInfoUrl || '',
+        privacyPolicyUrl: config.privacyPolicyUrl || '',
       });
+      setSelectedServices(config.selectedFrontpageServices || []);
     }
   }, [config, open, form]);
 
@@ -77,7 +105,18 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
   });
 
   const handleSubmit = async (values: UpdateSystemConfigType) => {
-    updateMutation.mutate(values);
+    updateMutation.mutate({
+      ...values,
+      selectedFrontpageServices: selectedServices,
+    });
+  };
+
+  const toggleService = (serviceName: string) => {
+    setSelectedServices(prev => 
+      prev.includes(serviceName)
+        ? prev.filter(s => s !== serviceName)
+        : [...prev, serviceName]
+    );
   };
 
   return (
@@ -310,6 +349,247 @@ export function AppConfigDialog({ open, onOpenChange }: AppConfigDialogProps) {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* Social Media Links */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Social Media Links</h3>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="facebookUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Facebook URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="https://facebook.com/yourpage"
+                            data-testid="input-facebook"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="twitterUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Twitter URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="https://twitter.com/yourhandle"
+                            data-testid="input-twitter"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="linkedinUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>LinkedIn URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="https://linkedin.com/company/yourcompany"
+                            data-testid="input-linkedin"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="instagramUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instagram URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="https://instagram.com/yourhandle"
+                            data-testid="input-instagram"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Emergency Contacts */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Emergency Contacts</h3>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="emergencyPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Emergency Phone</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="+1 (555) 911-HELP"
+                            data-testid="input-emergency-phone"
+                          />
+                        </FormControl>
+                        <FormDescription>24/7 emergency line</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emergencyEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Emergency Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            type="email"
+                            placeholder="emergency@fibreus.com"
+                            data-testid="input-emergency-email"
+                          />
+                        </FormControl>
+                        <FormDescription>For urgent requests</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Legal Document URLs */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Legal Document URLs</h3>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="privacyPolicyUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Privacy Policy URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="/privacy-policy"
+                            data-testid="input-privacy-policy"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="termsOfServiceUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Terms of Service URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="/terms-of-service"
+                            data-testid="input-terms-of-service"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="serviceAgreementUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Service Agreement URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="/service-agreement"
+                            data-testid="input-service-agreement"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="warrantyInfoUrl"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Warranty Information URL</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value || ''}
+                            placeholder="/warranty-information"
+                            data-testid="input-warranty-info"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Frontpage Service Selection */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm">Frontpage Services Display</h3>
+                <FormDescription>
+                  Select which services to display on the homepage
+                </FormDescription>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {serviceTypes?.map((service) => (
+                    <div key={service.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`service-${service.id}`}
+                        checked={selectedServices.includes(service.name)}
+                        onCheckedChange={() => toggleService(service.name)}
+                        data-testid={`checkbox-service-${service.name}`}
+                      />
+                      <label
+                        htmlFor={`service-${service.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {service.displayName}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <DialogFooter>

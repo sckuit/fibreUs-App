@@ -804,6 +804,21 @@ export const systemConfig = pgTable("system_config", {
   logoUrl: varchar("logo_url"), // Main logo
   darkLogoUrl: varchar("dark_logo_url"), // Dark mode logo
   iconUrl: varchar("icon_url"), // Favicon/icon
+  // Social Media Links
+  facebookUrl: varchar("facebook_url"),
+  twitterUrl: varchar("twitter_url"),
+  linkedinUrl: varchar("linkedin_url"),
+  instagramUrl: varchar("instagram_url"),
+  // Emergency Contacts
+  emergencyPhone: varchar("emergency_phone"),
+  emergencyEmail: varchar("emergency_email"),
+  // Legal Document URLs
+  termsOfServiceUrl: varchar("terms_of_service_url"),
+  serviceAgreementUrl: varchar("service_agreement_url"),
+  warrantyInfoUrl: varchar("warranty_info_url"),
+  privacyPolicyUrl: varchar("privacy_policy_url"),
+  // Frontpage Service Selection
+  selectedFrontpageServices: text("selected_frontpage_services").array(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
