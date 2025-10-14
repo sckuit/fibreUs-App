@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import TopNavigation from "@/components/TopNavigation";
+import PublicHeader from "@/components/PublicHeader";
 import Footer from "@/components/Footer";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
@@ -49,8 +50,21 @@ import TermsOfService from "@/pages/legal/TermsOfService";
 import ServiceAgreement from "@/pages/legal/ServiceAgreement";
 import WarrantyInformation from "@/pages/legal/WarrantyInformation";
 
-// Main application layout with navigation
-function AppLayout({ children }: { children: React.ReactNode }) {
+// Public layout with PublicHeader for non-authenticated pages
+function PublicLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <PublicHeader />
+      <main className="pt-[106px] flex-1">
+        {children}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+// Authenticated layout with TopNavigation for portal pages
+function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopNavigation />
@@ -65,9 +79,9 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 // Landing page for non-authenticated users
 function LandingPage() {
   return (
-    <AppLayout>
+    <PublicLayout>
       <Home />
-    </AppLayout>
+    </PublicLayout>
   );
 }
 
@@ -92,7 +106,7 @@ function AuthenticatedRouter() {
   const defaultRoute = (user?.role && roleRoutes[user.role]) || "/portal/client";
 
   return (
-    <AppLayout>
+    <AuthenticatedLayout>
       <Switch>
         {/* Root redirects to role-specific portal */}
         <Route path="/">
@@ -123,7 +137,7 @@ function AuthenticatedRouter() {
         
         <Route component={NotFound} />
       </Switch>
-    </AppLayout>
+    </AuthenticatedLayout>
   );
 }
 
@@ -146,122 +160,122 @@ function Router() {
     <Switch>
       {/* Public pages */}
       <Route path="/logos" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <LogoShowcase />
-        </AppLayout>
+        </PublicLayout>
       )} />
       
       {/* Services routes */}
       <Route path="/services/cctv-installation" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <CCTVInstallation />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/services/alarm-systems" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <AlarmSystems />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/services/access-control" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <AccessControl />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/services/intercom-systems" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <IntercomSystems />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/services/cloud-storage" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <CloudStorage />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/services/remote-monitoring" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <RemoteMonitoring />
-        </AppLayout>
+        </PublicLayout>
       )} />
       
       {/* Company routes */}
       <Route path="/company/about-us" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <AboutUs />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/company/our-team" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <OurTeam />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/company/certifications" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <Certifications />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/company/case-studies" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <CaseStudies />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/company/careers" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <Careers />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/company/news-updates" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <NewsUpdates />
-        </AppLayout>
+        </PublicLayout>
       )} />
       
       {/* Support routes */}
       <Route path="/support/system-status" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <SystemStatus />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/support/technical-support" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <TechnicalSupport />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/support/emergency-service" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <EmergencyService />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/support/maintenance" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <Maintenance />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/support/training" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <Training />
-        </AppLayout>
+        </PublicLayout>
       )} />
       
       {/* Legal routes */}
       <Route path="/legal/privacy-policy" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <PrivacyPolicy />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/legal/terms-of-service" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <TermsOfService />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/legal/service-agreement" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <ServiceAgreement />
-        </AppLayout>
+        </PublicLayout>
       )} />
       <Route path="/legal/warranty-information" component={() => (
-        <AppLayout>
+        <PublicLayout>
           <WarrantyInformation />
-        </AppLayout>
+        </PublicLayout>
       )} />
       
       <Route>
