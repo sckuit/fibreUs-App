@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { TeamMember, InsertTeamMemberType, UpdateTeamMemberType } from "@shared/schema";
+import type { TeamMember, InsertTeamMemberType, UpdateTeamMemberType, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,9 +29,14 @@ export function TeamMembersManager() {
     queryFn: () => fetch(`/api/team-members?includeInactive=${includeInactive}`).then(res => res.json()),
   });
 
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['/api/users'],
+  });
+
   const form = useForm<InsertTeamMemberType>({
     resolver: zodResolver(editingTeamMember ? updateTeamMemberSchema : insertTeamMemberSchema),
     defaultValues: {
+      userId: '',
       name: '',
       role: '',
       bio: '',
@@ -97,6 +103,7 @@ export function TeamMembersManager() {
     if (teamMember) {
       setEditingTeamMember(teamMember);
       form.reset({
+        userId: teamMember.userId || '',
         name: teamMember.name,
         role: teamMember.role,
         bio: teamMember.bio || '',
@@ -108,6 +115,7 @@ export function TeamMembersManager() {
     } else {
       setEditingTeamMember(null);
       form.reset({
+        userId: '',
         name: '',
         role: '',
         bio: '',
@@ -118,6 +126,28 @@ export function TeamMembersManager() {
       });
     }
     setIsDialogOpen(true);
+  };
+
+  const handleUserSelect = (userId: string) => {
+    if (userId === 'none') {
+      form.setValue('userId', '');
+      return;
+    }
+    
+    const selectedUser = users.find(u => u.id === userId);
+    if (selectedUser) {
+      form.setValue('userId', userId);
+      // Auto-populate name from user's first and last name
+      form.setValue('name', `${selectedUser.firstName} ${selectedUser.lastName}`);
+      // Auto-populate role if not already set
+      if (!form.getValues('role')) {
+        form.setValue('role', selectedUser.role === 'admin' ? 'Administrator' : 
+                               selectedUser.role === 'manager' ? 'Manager' :
+                               selectedUser.role === 'employee' ? 'Technician' : 
+                               selectedUser.role === 'sales' ? 'Sales Representative' :
+                               selectedUser.role === 'project_manager' ? 'Project Manager' : 'Team Member');
+      }
+    }
   };
 
   const handleSubmit = (values: InsertTeamMemberType) => {
@@ -245,6 +275,38 @@ export function TeamMembersManager() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="userId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Link to User (Optional)</FormLabel>
+                    <Select 
+                      onValueChange={handleUserSelect}
+                      value={field.value || 'none'}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-user">
+                          <SelectValue placeholder="Select a user (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None (Manual Entry)</SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.firstName} {user.lastName} ({user.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Optionally link this team member to an existing user account
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="name"

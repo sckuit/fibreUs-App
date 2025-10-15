@@ -852,6 +852,7 @@ export const companyCertifications = pgTable("company_certifications", {
 // Team Members table (for public display)
 export const teamMembers = pgTable("team_members", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
   name: varchar("name").notNull(),
   role: varchar("role").notNull(),
   bio: text("bio"),
