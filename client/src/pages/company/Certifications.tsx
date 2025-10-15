@@ -4,30 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Award, Shield, CheckCircle, FileCheck } from "lucide-react";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import LoginDialog from "@/components/LoginDialog";
+import { useQuery } from "@tanstack/react-query";
+import type { CompanyCertification } from "@shared/schema";
+import * as LucideIcons from "lucide-react";
 
 export default function Certifications() {
-  const certifications = [
-    { 
-      name: "UL Listed Equipment", 
-      description: "All our equipment meets Underwriters Laboratories safety standards",
-      icon: Award
-    },
-    { 
-      name: "FCC Certified", 
-      description: "Federal Communications Commission compliance for all wireless systems",
-      icon: Shield
-    },
-    { 
-      name: "NFPA Compliant", 
-      description: "National Fire Protection Association standards for fire alarm systems",
-      icon: FileCheck
-    },
-    { 
-      name: "NICET Certified", 
-      description: "National Institute for Certification in Engineering Technologies",
-      icon: Award
-    },
-  ];
+  const { data: certifications = [], isLoading } = useQuery<CompanyCertification[]>({
+    queryKey: ['/api/certifications'],
+  });
+
+  const getIconComponent = (iconName: string) => {
+    const IconComponent = (LucideIcons as any)[iconName];
+    return IconComponent || Award;
+  };
 
   const licenses = [
     "State Contractor License #123456",
@@ -60,19 +49,28 @@ export default function Certifications() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold mb-12 text-center">Industry Certifications</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            {certifications.map((cert) => (
-              <Card key={cert.name} data-testid={`card-cert-${cert.name.toLowerCase().replace(/\s/g, '-')}`}>
-                <CardHeader>
-                  <cert.icon className="h-12 w-12 text-primary mb-4" />
-                  <CardTitle>{cert.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{cert.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading certifications...</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+              {certifications.map((cert) => {
+                const IconComponent = getIconComponent(cert.iconName || 'Award');
+                return (
+                  <Card key={cert.id} data-testid={`card-cert-${cert.name.toLowerCase().replace(/\s/g, '-')}`}>
+                    <CardHeader>
+                      <IconComponent className="h-12 w-12 text-primary mb-4" />
+                      <CardTitle>{cert.name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground">{cert.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 gap-8 mb-16">
             <Card data-testid="card-licenses">

@@ -4,34 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Award, Wrench, Shield } from "lucide-react";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import LoginDialog from "@/components/LoginDialog";
+import { useQuery } from "@tanstack/react-query";
+import type { TeamMember } from "@shared/schema";
 
 export default function OurTeam() {
-  const team = [
-    { 
-      name: "Michael Rodriguez", 
-      role: "Chief Executive Officer", 
-      bio: "With 20+ years in the security industry, Michael leads our team with vision and expertise.",
-      certifications: ["MBA", "NICET Level III", "PSP"]
-    },
-    { 
-      name: "Sarah Chen", 
-      role: "Director of Operations", 
-      bio: "Sarah ensures every project is executed flawlessly, from planning to final installation.",
-      certifications: ["PMP", "NICET Level II", "CPP"]
-    },
-    { 
-      name: "James Thompson", 
-      role: "Lead Security Engineer", 
-      bio: "James designs custom security solutions tailored to each client's unique needs.",
-      certifications: ["NICET Level IV", "CTS", "RCDD"]
-    },
-    { 
-      name: "Maria Garcia", 
-      role: "Customer Success Manager", 
-      bio: "Maria ensures our clients receive exceptional service and support at every step.",
-      certifications: ["CSP", "ITIL", "Six Sigma"]
-    },
-  ];
+  const { data: team = [], isLoading } = useQuery<TeamMember[]>({
+    queryKey: ['/api/team-members'],
+  });
 
   const departments = [
     { icon: Shield, title: "Security Specialists", count: "12+", description: "Certified security professionals" },
@@ -55,27 +34,25 @@ export default function OurTeam() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold mb-12 text-center">Leadership Team</h2>
-          <div className="grid md:grid-cols-2 gap-8 mb-16 max-w-6xl mx-auto">
-            {team.map((member) => (
-              <Card key={member.name} data-testid={`card-team-${member.name.toLowerCase().replace(/\s/g, '-')}`}>
-                <CardHeader>
-                  <CardTitle>{member.name}</CardTitle>
-                  <p className="text-primary font-semibold">{member.role}</p>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">{member.bio}</p>
-                  <div>
-                    <p className="text-sm font-semibold mb-2">Certifications:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {member.certifications.map((cert) => (
-                        <Badge key={cert} variant="secondary">{cert}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading team members...</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-8 mb-16 max-w-6xl mx-auto">
+              {team.map((member) => (
+                <Card key={member.id} data-testid={`card-team-${member.name.toLowerCase().replace(/\s/g, '-')}`}>
+                  <CardHeader>
+                    <CardTitle>{member.name}</CardTitle>
+                    <p className="text-primary font-semibold">{member.role}</p>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{member.bio}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           <h2 className="text-3xl font-bold mb-12 text-center">Our Departments</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
