@@ -2,8 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KeyRound, Fingerprint, Smartphone, UserCheck, CheckCircle } from "lucide-react";
-import { Link } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
+import LoginDialog from "@/components/LoginDialog";
 import accessImage from "@assets/generated_images/Access_control_system_146c8a85.png";
 
 export default function AccessControl() {
@@ -106,11 +106,11 @@ export default function AccessControl() {
                   Discuss Requirements
                 </Button>
               </GetQuoteDialog>
-              <Link href="/login">
+              <LoginDialog>
                 <Button variant="outline" size="lg" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-client-portal">
                   Client Portal
                 </Button>
-              </Link>
+              </LoginDialog>
             </div>
           </div>
         </div>
