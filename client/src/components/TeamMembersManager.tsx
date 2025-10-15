@@ -43,7 +43,7 @@ export function TeamMembersManager() {
 
   const createMutation = useMutation({
     mutationFn: (data: InsertTeamMemberType) =>
-      apiRequest('/api/team-members', 'POST', data),
+      apiRequest('POST', '/api/team-members', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       toast({ title: "Team member created successfully" });
@@ -61,7 +61,7 @@ export function TeamMembersManager() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateTeamMemberType }) =>
-      apiRequest(`/api/team-members/${id}`, 'PATCH', data),
+      apiRequest('PATCH', `/api/team-members/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       toast({ title: "Team member updated successfully" });
@@ -79,7 +79,7 @@ export function TeamMembersManager() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/team-members/${id}`, 'DELETE'),
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/team-members/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-members'] });
       toast({ title: "Team member deleted successfully" });

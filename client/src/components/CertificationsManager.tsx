@@ -43,7 +43,7 @@ export function CertificationsManager() {
 
   const createMutation = useMutation({
     mutationFn: (data: InsertCompanyCertificationType) =>
-      apiRequest('/api/certifications', 'POST', data),
+      apiRequest('POST', '/api/certifications', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/certifications'] });
       toast({ title: "Certification created successfully" });
@@ -61,7 +61,7 @@ export function CertificationsManager() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateCompanyCertificationType }) =>
-      apiRequest(`/api/certifications/${id}`, 'PATCH', data),
+      apiRequest('PATCH', `/api/certifications/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/certifications'] });
       toast({ title: "Certification updated successfully" });
@@ -79,7 +79,7 @@ export function CertificationsManager() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/certifications/${id}`, 'DELETE'),
+    mutationFn: (id: string) => apiRequest('DELETE', `/api/certifications/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/certifications'] });
       toast({ title: "Certification deleted successfully" });
