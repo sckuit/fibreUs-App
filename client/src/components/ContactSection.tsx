@@ -77,7 +77,7 @@ export default function ContactSection() {
     {
       icon: MapPin,
       title: "Visit Us",
-      details: config?.address ? [config.address.split(',')[0], config.address.split(',').slice(1).join(',').trim()] : ["123 Security Blvd", "Dallas, TX 75201"],
+      details: config?.address ? [config.address.split(',')[0], config.address.split(',').slice(1).join(',').trim()] : ["123 Security Blvd", "Washington, DC 20001"],
       action: "Get Directions"
     },
     {

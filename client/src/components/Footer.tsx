@@ -57,7 +57,7 @@ export default function Footer() {
   const companyName = config?.companyName || "FibreUS";
   const phoneNumber = config?.phoneNumber || "(555) 123-4567";
   const contactEmail = config?.contactEmail || "info@fibreus.co";
-  const address = config?.address || "123 Security Blvd, Dallas, TX 75201";
+  const address = config?.address || "123 Security Blvd, Washington, DC 20001";
 
   return (
     <footer className="bg-card border-t">
@@ -75,7 +75,7 @@ export default function Footer() {
             </Link>
             
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              {config?.aboutUs || "Professional electronic security and fiber optic solutions serving Dallas and surrounding areas since 2008. Licensed, insured, and committed to protecting what matters most."}
+              {config?.aboutUs || "Professional electronic security and fiber optic solutions serving the DMV area (DC, Maryland, Virginia) since 2008. Licensed, insured, and committed to protecting what matters most."}
             </p>
 
             <div className="space-y-3 mb-6">
