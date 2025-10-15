@@ -36,6 +36,10 @@ import {
   updateSystemConfigSchema,
   insertServiceTypeSchema,
   updateServiceTypeSchema,
+  insertCompanyCertificationSchema,
+  updateCompanyCertificationSchema,
+  insertTeamMemberSchema,
+  updateTeamMemberSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -2378,6 +2382,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting service type:", error);
         res.status(500).json({ message: "Failed to delete service type" });
+      }
+    }
+  );
+
+  // Company Certifications routes
+  app.get("/api/certifications", async (req: any, res) => {
+    try {
+      const includeInactive = req.query.includeInactive === 'true';
+      const certifications = await storage.getCompanyCertifications(includeInactive);
+      res.json(certifications);
+    } catch (error) {
+      console.error("Error getting certifications:", error);
+      res.status(500).json({ message: "Failed to get certifications" });
+    }
+  });
+
+  app.post("/api/certifications",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertCompanyCertificationSchema.parse(req.body);
+        const certification = await storage.createCompanyCertification(validatedData);
+        res.status(201).json(certification);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid certification data", errors: error.errors });
+        }
+        console.error("Error creating certification:", error);
+        res.status(500).json({ message: "Failed to create certification" });
+      }
+    }
+  );
+
+  app.patch("/api/certifications/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateCompanyCertificationSchema.parse(req.body);
+        const certification = await storage.updateCompanyCertification(req.params.id, validatedData);
+        if (!certification) {
+          return res.status(404).json({ message: "Certification not found" });
+        }
+        res.json(certification);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating certification:", error);
+        res.status(500).json({ message: "Failed to update certification" });
+      }
+    }
+  );
+
+  app.delete("/api/certifications/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteCompanyCertification(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting certification:", error);
+        res.status(500).json({ message: "Failed to delete certification" });
+      }
+    }
+  );
+
+  // Team Members routes
+  app.get("/api/team-members", async (req: any, res) => {
+    try {
+      const includeInactive = req.query.includeInactive === 'true';
+      const teamMembers = await storage.getTeamMembers(includeInactive);
+      res.json(teamMembers);
+    } catch (error) {
+      console.error("Error getting team members:", error);
+      res.status(500).json({ message: "Failed to get team members" });
+    }
+  });
+
+  app.post("/api/team-members",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertTeamMemberSchema.parse(req.body);
+        const teamMember = await storage.createTeamMember(validatedData);
+        res.status(201).json(teamMember);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid team member data", errors: error.errors });
+        }
+        console.error("Error creating team member:", error);
+        res.status(500).json({ message: "Failed to create team member" });
+      }
+    }
+  );
+
+  app.patch("/api/team-members/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateTeamMemberSchema.parse(req.body);
+        const teamMember = await storage.updateTeamMember(req.params.id, validatedData);
+        if (!teamMember) {
+          return res.status(404).json({ message: "Team member not found" });
+        }
+        res.json(teamMember);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating team member:", error);
+        res.status(500).json({ message: "Failed to update team member" });
+      }
+    }
+  );
+
+  app.delete("/api/team-members/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteTeamMember(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting team member:", error);
+        res.status(500).json({ message: "Failed to delete team member" });
       }
     }
   );

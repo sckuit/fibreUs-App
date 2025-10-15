@@ -18,6 +18,8 @@ import {
   activities,
   systemConfig,
   serviceTypes,
+  companyCertifications,
+  teamMembers,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -63,9 +65,15 @@ import {
   type ServiceType,
   type InsertServiceTypeType,
   type UpdateServiceTypeType,
+  type CompanyCertification,
+  type InsertCompanyCertificationType,
+  type UpdateCompanyCertificationType,
+  type TeamMember,
+  type InsertTeamMemberType,
+  type UpdateTeamMemberType,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -212,6 +220,18 @@ export interface IStorage {
   getServiceType(id: string): Promise<ServiceType | undefined>;
   updateServiceType(id: string, updates: UpdateServiceTypeType): Promise<ServiceType | undefined>;
   deleteServiceType(id: string): Promise<void>;
+
+  // Company Certification operations
+  createCompanyCertification(data: InsertCompanyCertificationType): Promise<CompanyCertification>;
+  getCompanyCertifications(includeInactive?: boolean): Promise<CompanyCertification[]>;
+  updateCompanyCertification(id: string, updates: UpdateCompanyCertificationType): Promise<CompanyCertification | undefined>;
+  deleteCompanyCertification(id: string): Promise<void>;
+
+  // Team Member operations
+  createTeamMember(data: InsertTeamMemberType): Promise<TeamMember>;
+  getTeamMembers(includeInactive?: boolean): Promise<TeamMember[]>;
+  updateTeamMember(id: string, updates: UpdateTeamMemberType): Promise<TeamMember | undefined>;
+  deleteTeamMember(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1290,6 +1310,64 @@ export class DatabaseStorage implements IStorage {
 
   async deleteServiceType(id: string): Promise<void> {
     await db.delete(serviceTypes).where(eq(serviceTypes.id, id));
+  }
+
+  // Company Certification operations
+  async createCompanyCertification(data: InsertCompanyCertificationType): Promise<CompanyCertification> {
+    const [result] = await db.insert(companyCertifications).values(data).returning();
+    return result;
+  }
+
+  async getCompanyCertifications(includeInactive = false): Promise<CompanyCertification[]> {
+    let query = db.select().from(companyCertifications);
+    
+    if (!includeInactive) {
+      query = query.where(eq(companyCertifications.isActive, true));
+    }
+    
+    return query.orderBy(asc(companyCertifications.displayOrder), desc(companyCertifications.createdAt));
+  }
+
+  async updateCompanyCertification(id: string, updates: UpdateCompanyCertificationType): Promise<CompanyCertification | undefined> {
+    const [result] = await db
+      .update(companyCertifications)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(companyCertifications.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteCompanyCertification(id: string): Promise<void> {
+    await db.delete(companyCertifications).where(eq(companyCertifications.id, id));
+  }
+
+  // Team Member operations
+  async createTeamMember(data: InsertTeamMemberType): Promise<TeamMember> {
+    const [result] = await db.insert(teamMembers).values(data).returning();
+    return result;
+  }
+
+  async getTeamMembers(includeInactive = false): Promise<TeamMember[]> {
+    let query = db.select().from(teamMembers);
+    
+    if (!includeInactive) {
+      query = query.where(eq(teamMembers.isActive, true));
+    }
+    
+    return query.orderBy(asc(teamMembers.displayOrder), desc(teamMembers.createdAt));
+  }
+
+  async updateTeamMember(id: string, updates: UpdateTeamMemberType): Promise<TeamMember | undefined> {
+    const [result] = await db
+      .update(teamMembers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(teamMembers.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteTeamMember(id: string): Promise<void> {
+    await db.delete(teamMembers).where(eq(teamMembers.id, id));
   }
 }
 
