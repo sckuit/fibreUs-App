@@ -2243,8 +2243,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // System Configuration routes
+  // Public endpoint - no authentication required for viewing company config
   app.get("/api/system-config",
-    isSessionAuthenticated,
     async (req: any, res) => {
       try {
         const config = await storage.getSystemConfig();
