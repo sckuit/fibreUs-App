@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Phone, Mail, Calendar, FileText, LogIn } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
+import LoginDialog from "@/components/LoginDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function PublicHeader() {
@@ -87,15 +88,16 @@ export default function PublicHeader() {
                   Dashboard
                 </Button>
               ) : (
-                <Button 
-                  size="sm" 
-                  className="gap-2" 
-                  onClick={() => setLocation('/login')}
-                  data-testid="button-sign-in-header"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Sign In
-                </Button>
+                <LoginDialog>
+                  <Button 
+                    size="sm" 
+                    className="gap-2"
+                    data-testid="button-sign-in-header"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Sign In
+                  </Button>
+                </LoginDialog>
               )}
             </div>
           </div>
