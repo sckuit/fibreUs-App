@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Menu, Shield, Phone, Mail, Clock } from "lucide-react";
 import { Link } from "wouter";
+import LoginDialog from "@/components/LoginDialog";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -68,14 +69,16 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="hidden sm:inline-flex"
-              data-testid="button-client-portal"
-            >
-              Client Portal
-            </Button>
+            <LoginDialog>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="hidden sm:inline-flex"
+                data-testid="button-client-portal"
+              >
+                Client Portal
+              </Button>
+            </LoginDialog>
             <Button 
               size="sm"
               data-testid="button-get-quote"
@@ -103,9 +106,11 @@ export default function Header() {
                     </Link>
                   ))}
                   <div className="border-t pt-4 space-y-2">
-                    <Button variant="outline" className="w-full" data-testid="button-client-portal-mobile">
-                      Client Portal
-                    </Button>
+                    <LoginDialog>
+                      <Button variant="outline" className="w-full" data-testid="button-client-portal-mobile">
+                        Client Portal
+                      </Button>
+                    </LoginDialog>
                     <Button className="w-full" data-testid="button-get-quote-mobile">
                       Get Free Quote
                     </Button>

@@ -14,6 +14,7 @@ import {
   Instagram
 } from "lucide-react";
 import { Link } from "wouter";
+import LoginDialog from "@/components/LoginDialog";
 
 export default function Footer() {
   const { data: config } = useQuery<SystemConfig>({
@@ -39,7 +40,6 @@ export default function Footer() {
   ];
 
   const support = [
-    { name: "Client Portal", url: "/login" },
     { name: "System Status", url: "/support/system-status" },
     { name: "Technical Support", url: "/support/technical-support" },
     { name: "Emergency Service", url: "/support/emergency-service" },
@@ -158,6 +158,13 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Support</h3>
             <ul className="space-y-2">
+              <li>
+                <LoginDialog>
+                  <button className="text-sm text-muted-foreground hover:text-primary transition-colors text-left" data-testid="link-client-portal-footer">
+                    Client Portal
+                  </button>
+                </LoginDialog>
+              </li>
               {support.map((item) => (
                 <li key={item.name}>
                   <Link href={item.url} className="text-sm text-muted-foreground hover:text-primary transition-colors">
