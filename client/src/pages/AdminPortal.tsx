@@ -25,6 +25,8 @@ import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
 import SuppliersManager from "@/components/SuppliersManager";
+import { CertificationsManager } from "@/components/CertificationsManager";
+import { TeamMembersManager } from "@/components/TeamMembersManager";
 import type { User, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
 
 export default function AdminPortal() {
@@ -394,6 +396,12 @@ export default function AdminPortal() {
               <TabsTrigger value="leads" data-testid="tab-leads">
                 Leads
               </TabsTrigger>
+              <TabsTrigger value="certifications" data-testid="tab-certifications">
+                Certifications
+              </TabsTrigger>
+              <TabsTrigger value="team" data-testid="tab-team">
+                Team
+              </TabsTrigger>
               <TabsTrigger value="visitors" data-testid="tab-visitors">
                 Visitors
               </TabsTrigger>
@@ -502,6 +510,14 @@ export default function AdminPortal() {
 
           <TabsContent value="suppliers" className="space-y-4">
             <SuppliersManager />
+          </TabsContent>
+
+          <TabsContent value="certifications" className="space-y-4">
+            <CertificationsManager />
+          </TabsContent>
+
+          <TabsContent value="team" className="space-y-4">
+            <TeamMembersManager />
           </TabsContent>
 
           <TabsContent value="inventory" className="space-y-4">
