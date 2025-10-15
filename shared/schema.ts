@@ -836,6 +836,33 @@ export const serviceTypes = pgTable("service_types", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Company Certifications table (for public display)
+export const companyCertifications = pgTable("company_certifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  category: varchar("category").notNull().default('certification'), // certification, license, standard
+  iconName: varchar("icon_name"), // lucide-react icon name
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Team Members table (for public display)
+export const teamMembers = pgTable("team_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  role: varchar("role").notNull(),
+  bio: text("bio"),
+  photoUrl: varchar("photo_url"),
+  certifications: text("certifications").array(),
+  displayOrder: integer("display_order").default(0),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
   id: true,
   createdAt: true,
@@ -860,12 +887,42 @@ export const updateServiceTypeSchema = createInsertSchema(serviceTypes).omit({
   updatedAt: true,
 }).partial();
 
+export const insertCompanyCertificationSchema = createInsertSchema(companyCertifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateCompanyCertificationSchema = createInsertSchema(companyCertifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
 export type SystemConfig = typeof systemConfig.$inferSelect;
 export type InsertSystemConfigType = z.infer<typeof insertSystemConfigSchema>;
 export type UpdateSystemConfigType = z.infer<typeof updateSystemConfigSchema>;
 export type ServiceType = typeof serviceTypes.$inferSelect;
 export type InsertServiceTypeType = z.infer<typeof insertServiceTypeSchema>;
 export type UpdateServiceTypeType = z.infer<typeof updateServiceTypeSchema>;
+export type CompanyCertification = typeof companyCertifications.$inferSelect;
+export type InsertCompanyCertificationType = z.infer<typeof insertCompanyCertificationSchema>;
+export type UpdateCompanyCertificationType = z.infer<typeof updateCompanyCertificationSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMemberType = z.infer<typeof insertTeamMemberSchema>;
+export type UpdateTeamMemberType = z.infer<typeof updateTeamMemberSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
