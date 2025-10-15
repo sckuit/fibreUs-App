@@ -8,6 +8,15 @@ The application follows a modern full-stack architecture with a React frontend, 
 
 ## Recent Changes
 
+### October 2025 - Frontpage Database Integration
+- **Public System Config API**: Made /api/system-config endpoint publicly accessible (removed authentication) to enable frontpage data loading
+- **PublicHeader Integration**: Header now displays company name, phone, email, and emergency contact from database with proper fallbacks
+- **Hero Section Integration**: Hero component pulls company name, header tagline, about text, and emergency phone from systemConfig
+- **About Section Integration**: About section uses database-driven company name, mission, and aboutUs text
+- **Services Filtering**: ServicesSection filters displayed services based on selectedFrontpageServices array from database with Array.isArray validation
+- **Login Dialog Fix**: Sign In button now uses LoginDialog component (popup) instead of navigating to non-existent /login page
+- **Type Safety**: All frontpage components use proper SystemConfig type with defensive fallback values
+
 ### October 2025 - Flyer Redesign & Enhanced Features
 - **Service Discounts**: Added discountPercent field to service_types table for promotional pricing
 - **Personalized Messages**: Flyer builder now supports custom personalized messages (e.g., "Dear [Name]...")
