@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Phone, Mail, MessageCircle, Book } from "lucide-react";
-import { Link } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
+import LoginDialog from "@/components/LoginDialog";
 
 export default function TechnicalSupport() {
   const contactMethods = [
@@ -133,11 +133,11 @@ export default function TechnicalSupport() {
                   Submit Support Ticket
                 </Button>
               </GetQuoteDialog>
-              <Link href="/login">
+              <LoginDialog>
                 <Button variant="outline" size="lg" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-client-portal">
                   Client Portal
                 </Button>
-              </Link>
+              </LoginDialog>
             </div>
           </div>
         </div>

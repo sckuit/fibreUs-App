@@ -2,8 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Users, Award, TrendingUp } from "lucide-react";
-import { Link } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
+import LoginDialog from "@/components/LoginDialog";
 import { useQuery } from "@tanstack/react-query";
 
 type SystemConfig = {
@@ -116,11 +116,11 @@ export default function AboutUs() {
                   Get Free Consultation
                 </Button>
               </GetQuoteDialog>
-              <Link href="/login">
+              <LoginDialog>
                 <Button variant="outline" size="lg" data-testid="button-client-portal">
                   Client Portal
                 </Button>
-              </Link>
+              </LoginDialog>
             </div>
           </div>
         </div>

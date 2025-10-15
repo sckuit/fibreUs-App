@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Lock, Eye, FileText } from "lucide-react";
-import { Link } from "wouter";
+import LoginDialog from "@/components/LoginDialog";
 
 export default function PrivacyPolicy() {
   const sections = [
@@ -103,11 +103,11 @@ export default function PrivacyPolicy() {
             <p className="text-muted-foreground mb-6">
               Contact our privacy team or visit your client portal to manage your data preferences.
             </p>
-            <Link href="/login">
+            <LoginDialog>
               <Button size="lg" data-testid="button-client-portal">
                 Access Client Portal
               </Button>
-            </Link>
+            </LoginDialog>
           </div>
         </div>
       </section>

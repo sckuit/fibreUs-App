@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Shield, Clock, CheckCircle } from "lucide-react";
-import { Link } from "wouter";
+import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 
 export default function ServiceAgreement() {
@@ -164,11 +164,11 @@ export default function ServiceAgreement() {
                   Get Service Agreement
                 </Button>
               </GetQuoteDialog>
-              <Link href="/login">
+              <LoginDialog>
                 <Button variant="outline" size="lg" className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-client-portal">
                   Client Portal
                 </Button>
-              </Link>
+              </LoginDialog>
             </div>
           </div>
         </div>

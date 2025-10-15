@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, CheckCircle, AlertCircle, Scale } from "lucide-react";
-import { Link } from "wouter";
+import LoginDialog from "@/components/LoginDialog";
 
 export default function TermsOfService() {
   const sections = [
@@ -112,11 +112,11 @@ export default function TermsOfService() {
               <Button variant="outline" size="lg" data-testid="button-contact-legal">
                 Contact Legal Team
               </Button>
-              <Link href="/login">
+              <LoginDialog>
                 <Button size="lg" data-testid="button-client-portal">
                   Client Portal
                 </Button>
-              </Link>
+              </LoginDialog>
             </div>
           </div>
         </div>

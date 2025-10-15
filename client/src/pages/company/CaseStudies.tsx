@@ -2,8 +2,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, Store, Home, Factory } from "lucide-react";
-import { Link } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
+import LoginDialog from "@/components/LoginDialog";
 
 export default function CaseStudies() {
   const caseStudies = [
@@ -129,11 +129,11 @@ export default function CaseStudies() {
                   Start Your Project
                 </Button>
               </GetQuoteDialog>
-              <Link href="/login">
+              <LoginDialog>
                 <Button variant="outline" size="lg" data-testid="button-client-portal">
                   Client Portal
                 </Button>
-              </Link>
+              </LoginDialog>
             </div>
           </div>
         </div>
