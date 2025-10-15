@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,9 +25,13 @@ import intercomImage from "@assets/generated_images/Intercom_system_22f24182.png
 
 export default function ServicesSection() {
   const [selectedService, setSelectedService] = useState<number | null>(null);
+  const { data: config } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
 
-  const services = [
+  const allServices = [
     {
+      serviceType: 'cctv',
       icon: Camera,
       title: "CCTV Surveillance",
       description: "Professional IP camera installation and monitoring systems",
@@ -54,6 +60,7 @@ export default function ServicesSection() {
       }
     },
     {
+      serviceType: 'alarm',
       icon: Shield,
       title: "Alarm Systems", 
       description: "Advanced intrusion detection and alert systems",
@@ -82,6 +89,7 @@ export default function ServicesSection() {
       }
     },
     {
+      serviceType: 'access_control',
       icon: Key,
       title: "Access Control",
       description: "Secure entry systems with keycard and biometric access",
@@ -110,6 +118,7 @@ export default function ServicesSection() {
       }
     },
     {
+      serviceType: 'intercom',
       icon: Phone,
       title: "Intercom Systems",
       description: "Video and audio communication for secure building entry",
@@ -138,6 +147,7 @@ export default function ServicesSection() {
       }
     },
     {
+      serviceType: 'cloud_storage',
       icon: Cloud,
       title: "Cloud Storage",
       description: "Secure cloud-based surveillance data storage and backup",
@@ -166,6 +176,7 @@ export default function ServicesSection() {
       }
     },
     {
+      serviceType: 'monitoring',
       icon: Monitor,
       title: "Remote Monitoring",
       description: "Professional 24/7 monitoring and rapid response services",
@@ -194,6 +205,16 @@ export default function ServicesSection() {
       }
     }
   ];
+
+  // Filter services based on selectedFrontpageServices from database
+  const selectedServiceTypes = Array.isArray(config?.selectedFrontpageServices) 
+    ? config.selectedFrontpageServices 
+    : [];
+  
+  // Show filtered services if selection exists, otherwise show all services
+  const services = selectedServiceTypes.length > 0
+    ? allServices.filter(service => selectedServiceTypes.includes(service.serviceType))
+    : allServices;
 
   return (
     <section className="py-16 bg-background">
