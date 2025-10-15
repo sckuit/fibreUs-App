@@ -185,7 +185,7 @@ export default function Footer() {
       <Separator />
 
       {/* Bottom Footer */}
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 bg-primary/5">
         <div className="flex flex-col md:flex-row justify-center items-center gap-4">
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             {legal.map((item, index) => (
