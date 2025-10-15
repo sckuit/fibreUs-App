@@ -3,7 +3,7 @@ import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Phone, Mail, Calendar, FileText, LogIn } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -12,6 +12,7 @@ export default function PublicHeader() {
     queryKey: ['/api/system-config'],
   });
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
 
   const companyName = config?.companyName || "FibreUS";
   const phoneNumber = config?.phoneNumber || "(555) 123-4567";
@@ -77,18 +78,24 @@ export default function PublicHeader() {
               </Button>
 
               {user ? (
-                <Link href="/dashboard">
-                  <Button size="sm" className="gap-2" data-testid="button-dashboard-header">
-                    Dashboard
-                  </Button>
-                </Link>
+                <Button 
+                  size="sm" 
+                  className="gap-2" 
+                  onClick={() => setLocation('/dashboard')}
+                  data-testid="button-dashboard-header"
+                >
+                  Dashboard
+                </Button>
               ) : (
-                <Link href="/login">
-                  <Button size="sm" className="gap-2" data-testid="button-sign-in-header">
-                    <LogIn className="h-4 w-4" />
-                    Sign In
-                  </Button>
-                </Link>
+                <Button 
+                  size="sm" 
+                  className="gap-2" 
+                  onClick={() => setLocation('/login')}
+                  data-testid="button-sign-in-header"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </Button>
               )}
             </div>
           </div>
