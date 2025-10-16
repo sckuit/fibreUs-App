@@ -29,9 +29,9 @@ export default function PublicHeader() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
+    <header className="fixed top-0 left-0 right-0 z-[100]">
       {/* Top Bar - Desktop Only */}
-      <div className="hidden md:block bg-[#1a2332] text-white">
+      <div className="hidden md:block bg-[#1a2332] text-white shadow-md">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-10 text-sm">
             <div className="flex items-center gap-6">
@@ -58,7 +58,7 @@ export default function PublicHeader() {
       </div>
 
       {/* Main Header */}
-      <div className="bg-white dark:bg-gray-950 border-b">
+      <div className="bg-white dark:bg-gray-950 border-b shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
