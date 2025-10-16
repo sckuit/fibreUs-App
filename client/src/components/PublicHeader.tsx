@@ -1,17 +1,14 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Shield, Phone, Mail, Calendar, FileText, LogIn, Menu } from "lucide-react";
+import { Shield, Phone, Mail, Calendar, FileText, LogIn } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import LoginDialog from "@/components/LoginDialog";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function PublicHeader() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: config } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
   });
@@ -23,23 +20,18 @@ export default function PublicHeader() {
   const contactEmail = config?.contactEmail || "info@fibreus.co";
   const emergencyPhone = config?.emergencyPhone || "24/7 Emergency Service";
 
-  const handleDashboardClick = () => {
-    setLocation('/dashboard');
-    setMobileMenuOpen(false);
-  };
-
   return (
-    <header className="fixed top-0 left-0 right-0 z-[100] bg-white dark:bg-gray-950 shadow-md">
-      {/* Top Bar - Desktop Only */}
-      <div className="hidden lg:block bg-[#1a2332] text-white">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background">
+      {/* Top Bar */}
+      <div className="bg-[#1a2332] text-white">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-10 text-sm">
             <div className="flex items-center gap-6">
-              <a href={`tel:${phoneNumber.replace(/\D/g, '')}`} className="flex items-center gap-2 hover:text-blue-400 transition-colors" data-testid="link-header-phone">
+              <a href={`tel:${phoneNumber.replace(/\D/g, '')}`} className="flex items-center gap-2 hover:text-primary transition-colors" data-testid="link-header-phone">
                 <Phone className="h-3.5 w-3.5" />
                 <span>{phoneNumber}</span>
               </a>
-              <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-blue-400 transition-colors" data-testid="link-header-email">
+              <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-primary transition-colors" data-testid="link-header-email">
                 <Mail className="h-3.5 w-3.5" />
                 <span>{contactEmail}</span>
               </a>
@@ -58,22 +50,22 @@ export default function PublicHeader() {
       </div>
 
       {/* Main Header */}
-      <div className="border-b bg-white dark:bg-gray-950">
+      <div className="bg-background border-b">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0" data-testid="link-home-logo">
-              <Shield className="h-8 w-8 text-blue-600" />
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-home-logo">
+              <Shield className="h-8 w-8 text-primary" />
               <div className="flex flex-col">
-                <span className="text-lg lg:text-xl font-bold leading-tight text-gray-900 dark:text-white">{companyName}</span>
+                <span className="text-xl font-bold leading-tight">{companyName}</span>
                 {config?.headerTagline && (
-                  <span className="hidden sm:block text-xs text-gray-600 dark:text-gray-400 leading-tight">{config.headerTagline}</span>
+                  <span className="text-xs text-muted-foreground leading-tight">{config.headerTagline}</span>
                 )}
               </div>
             </Link>
 
-            {/* Desktop Action Buttons */}
-            <div className="hidden lg:flex items-center gap-2 shrink-0">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
               <GetQuoteDialog>
                 <Button variant="outline" size="sm" className="gap-2" data-testid="button-get-quote-header">
                   <FileText className="h-4 w-4" />
@@ -90,7 +82,7 @@ export default function PublicHeader() {
                 <Button 
                   size="sm" 
                   className="gap-2" 
-                  onClick={handleDashboardClick}
+                  onClick={() => setLocation('/dashboard')}
                   data-testid="button-dashboard-header"
                 >
                   Dashboard
@@ -108,95 +100,6 @@ export default function PublicHeader() {
                 </LoginDialog>
               )}
             </div>
-
-            {/* Mobile Menu Button */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild className="lg:hidden shrink-0">
-                <Button variant="ghost" size="icon" data-testid="button-mobile-menu">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-                <div className="flex flex-col gap-6 mt-8">
-                  {/* Contact Info */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-sm text-muted-foreground uppercase">Contact</h3>
-                    <a 
-                      href={`tel:${phoneNumber.replace(/\D/g, '')}`} 
-                      className="flex items-center gap-3 p-2 rounded-md hover-elevate active-elevate-2"
-                      onClick={() => setMobileMenuOpen(false)}
-                      data-testid="link-mobile-phone"
-                    >
-                      <Phone className="h-4 w-4 text-primary" />
-                      <span className="text-sm">{phoneNumber}</span>
-                    </a>
-                    <a 
-                      href={`mailto:${contactEmail}`} 
-                      className="flex items-center gap-3 p-2 rounded-md hover-elevate active-elevate-2"
-                      onClick={() => setMobileMenuOpen(false)}
-                      data-testid="link-mobile-email"
-                    >
-                      <Mail className="h-4 w-4 text-primary" />
-                      <span className="text-sm">{contactEmail}</span>
-                    </a>
-                    <div className="flex items-center gap-3 p-2">
-                      <Phone className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm">{emergencyPhone}</span>
-                    </div>
-                    <Badge variant="secondary" className="bg-orange-500 hover:bg-orange-600 text-white border-0 w-fit">
-                      CERTIFIED
-                    </Badge>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-sm text-muted-foreground uppercase">Actions</h3>
-                    
-                    <GetQuoteDialog>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start gap-3" 
-                        onClick={() => setMobileMenuOpen(false)}
-                        data-testid="button-mobile-get-quote"
-                      >
-                        <FileText className="h-4 w-4" />
-                        Get Quote
-                      </Button>
-                    </GetQuoteDialog>
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start gap-3"
-                      onClick={() => setMobileMenuOpen(false)}
-                      data-testid="button-mobile-schedule"
-                    >
-                      <Calendar className="h-4 w-4" />
-                      Schedule Service
-                    </Button>
-
-                    {user ? (
-                      <Button 
-                        className="w-full justify-start gap-3" 
-                        onClick={handleDashboardClick}
-                        data-testid="button-mobile-dashboard"
-                      >
-                        Dashboard
-                      </Button>
-                    ) : (
-                      <LoginDialog>
-                        <Button 
-                          className="w-full justify-start gap-3"
-                          data-testid="button-mobile-sign-in"
-                        >
-                          <LogIn className="h-4 w-4" />
-                          Sign In
-                        </Button>
-                      </LoginDialog>
-                    )}
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
           </div>
         </div>
       </div>

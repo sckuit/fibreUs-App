@@ -55,7 +55,7 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <PublicHeader />
-      <main className="pt-16 md:pt-[106px] flex-1">
+      <main className="pt-[106px] flex-1">
         {children}
       </main>
       <Footer />
