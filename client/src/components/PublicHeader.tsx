@@ -51,7 +51,11 @@ export default function PublicHeader() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-home-logo">
-              <Shield className="h-8 w-8 text-primary" />
+              {config?.logoUrl ? (
+                <img src={config.logoUrl} alt={`${companyName} Logo`} className="h-8 w-8 object-contain" />
+              ) : (
+                <Shield className="h-8 w-8 text-primary" />
+              )}
               <div className="flex flex-col">
                 <span className="text-xl font-bold leading-tight">{companyName}</span>
                 {config?.headerTagline && (
