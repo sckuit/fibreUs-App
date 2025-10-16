@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Phone, Mail, Calendar, FileText, LogIn } from "lucide-react";
+import { Shield, Phone, Mail, FileText, LogIn } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import LoginDialog from "@/components/LoginDialog";
@@ -72,11 +72,6 @@ export default function PublicHeader() {
                   Get Quote
                 </Button>
               </GetQuoteDialog>
-              
-              <Button variant="outline" size="sm" className="gap-2" data-testid="button-schedule-header">
-                <Calendar className="h-4 w-4" />
-                Schedule
-              </Button>
 
               {user ? (
                 <Button 
