@@ -2627,6 +2627,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Favicon route - serves the logo from system config
+  app.get("/favicon.ico", async (req, res) => {
+    try {
+      const config = await storage.getSystemConfig();
+      
+      if (config?.logoUrl) {
+        // Redirect to the logo URL
+        return res.redirect(config.logoUrl);
+      }
+      
+      // If no logo configured, return 404
+      return res.sendStatus(404);
+    } catch (error) {
+      console.error("Error serving favicon:", error);
+      return res.sendStatus(500);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
