@@ -4,7 +4,7 @@ import type { SystemConfig } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Shield, Phone, Mail, Calendar, FileText, LogIn, Menu, X } from "lucide-react";
+import { Shield, Phone, Mail, Calendar, FileText, LogIn, Menu } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import LoginDialog from "@/components/LoginDialog";
@@ -29,8 +29,8 @@ export default function PublicHeader() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 border-b shadow-sm">
-      {/* Top Bar - Hidden on mobile, visible on md and up */}
+    <header className="fixed top-0 left-0 right-0 z-50">
+      {/* Top Bar - Desktop Only */}
       <div className="hidden md:block bg-[#1a2332] text-white">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-10 text-sm">
@@ -58,14 +58,14 @@ export default function PublicHeader() {
       </div>
 
       {/* Main Header */}
-      <div className="bg-background border-b">
+      <div className="bg-white dark:bg-gray-950 border-b">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-home-logo">
               <Shield className="h-7 w-7 md:h-8 md:w-8 text-primary" />
               <div className="flex flex-col">
-                <span className="text-base md:text-xl font-bold leading-tight">{companyName}</span>
+                <span className="text-base md:text-xl font-bold leading-tight text-foreground">{companyName}</span>
                 {config?.headerTagline && (
                   <span className="hidden sm:block text-xs text-muted-foreground leading-tight">{config.headerTagline}</span>
                 )}
