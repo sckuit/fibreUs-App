@@ -37,10 +37,6 @@ export default function PublicHeader() {
               </a>
             </div>
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-2" data-testid="text-emergency-service">
-                <Phone className="h-3.5 w-3.5" />
-                {emergencyPhone}
-              </span>
               <Badge variant="secondary" className="bg-orange-500 hover:bg-orange-600 text-white border-0" data-testid="badge-certified">
                 CERTIFIED
               </Badge>
