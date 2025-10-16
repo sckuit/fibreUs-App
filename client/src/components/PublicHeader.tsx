@@ -29,17 +29,17 @@ export default function PublicHeader() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[100]">
+    <header className="fixed top-0 left-0 right-0 z-[100] bg-white dark:bg-gray-950 shadow-md">
       {/* Top Bar - Desktop Only */}
-      <div className="hidden md:block bg-[#1a2332] text-white shadow-md">
+      <div className="hidden lg:block bg-[#1a2332] text-white">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-10 text-sm">
             <div className="flex items-center gap-6">
-              <a href={`tel:${phoneNumber.replace(/\D/g, '')}`} className="flex items-center gap-2 hover:text-primary transition-colors" data-testid="link-header-phone">
+              <a href={`tel:${phoneNumber.replace(/\D/g, '')}`} className="flex items-center gap-2 hover:text-blue-400 transition-colors" data-testid="link-header-phone">
                 <Phone className="h-3.5 w-3.5" />
                 <span>{phoneNumber}</span>
               </a>
-              <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-primary transition-colors" data-testid="link-header-email">
+              <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 hover:text-blue-400 transition-colors" data-testid="link-header-email">
                 <Mail className="h-3.5 w-3.5" />
                 <span>{contactEmail}</span>
               </a>
@@ -58,22 +58,22 @@ export default function PublicHeader() {
       </div>
 
       {/* Main Header */}
-      <div className="bg-white dark:bg-gray-950 border-b shadow-sm">
+      <div className="border-b bg-white dark:bg-gray-950">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-testid="link-home-logo">
-              <Shield className="h-7 w-7 md:h-8 md:w-8 text-primary" />
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0" data-testid="link-home-logo">
+              <Shield className="h-8 w-8 text-blue-600" />
               <div className="flex flex-col">
-                <span className="text-base md:text-xl font-bold leading-tight text-foreground">{companyName}</span>
+                <span className="text-lg lg:text-xl font-bold leading-tight text-gray-900 dark:text-white">{companyName}</span>
                 {config?.headerTagline && (
-                  <span className="hidden sm:block text-xs text-muted-foreground leading-tight">{config.headerTagline}</span>
+                  <span className="hidden sm:block text-xs text-gray-600 dark:text-gray-400 leading-tight">{config.headerTagline}</span>
                 )}
               </div>
             </Link>
 
             {/* Desktop Action Buttons */}
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2 shrink-0">
               <GetQuoteDialog>
                 <Button variant="outline" size="sm" className="gap-2" data-testid="button-get-quote-header">
                   <FileText className="h-4 w-4" />
@@ -111,7 +111,7 @@ export default function PublicHeader() {
 
             {/* Mobile Menu Button */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild className="md:hidden">
+              <SheetTrigger asChild className="lg:hidden shrink-0">
                 <Button variant="ghost" size="icon" data-testid="button-mobile-menu">
                   <Menu className="h-6 w-6" />
                 </Button>
