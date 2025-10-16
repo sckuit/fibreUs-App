@@ -190,17 +190,7 @@ export default function Footer() {
 
       {/* Bottom Footer */}
       <div className="container mx-auto px-4 py-6 bg-primary/5">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            {config?.logoUrl ? (
-              <img src={config.logoUrl} alt={`${companyName} Logo`} className="h-6 w-6 object-contain" />
-            ) : (
-              <Shield className="h-6 w-6 text-primary" />
-            )}
-          </div>
-
-          {/* Legal Links */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-4">
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             {legal.map((item, index) => (
               <span key={item.name} className="flex items-center gap-1">
