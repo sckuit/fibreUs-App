@@ -86,12 +86,10 @@ export default function PublicHeader() {
               ) : (
                 <LoginDialog>
                   <Button 
-                    size="sm" 
-                    className="gap-2"
+                    size="icon"
                     data-testid="button-sign-in-header"
                   >
                     <LogIn className="h-4 w-4" />
-                    Sign In
                   </Button>
                 </LoginDialog>
               )}
