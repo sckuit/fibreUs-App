@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +10,7 @@ import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
 import { Menu, X, Shield, Phone, FileText, Calendar, Clock, Mail, LayoutDashboard } from "lucide-react";
-import type { User } from "@shared/schema";
+import type { User, SystemConfig } from "@shared/schema";
 
 export default function TopNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,6 +18,11 @@ export default function TopNavigation() {
   const [location, setLocation] = useLocation();
   const typedUser = user as User | undefined;
   const { toast } = useToast();
+
+  // Fetch system config for logo
+  const { data: config } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
 
   // Logout mutation
   const logoutMutation = useMutation({
@@ -77,8 +82,12 @@ export default function TopNavigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2" data-testid="link-home">
-            <Shield className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-primary">FibreUS</span>
+            {config?.logoUrl ? (
+              <img src={config.logoUrl} alt={`${config.companyName || 'FibreUS'} Logo`} className="h-8 w-8 object-contain" />
+            ) : (
+              <Shield className="h-8 w-8 text-primary" />
+            )}
+            <span className="text-2xl font-bold text-primary">{config?.companyName || 'FibreUS'}</span>
           </Link>
 
           {/* Dashboard Link for Authenticated Users */}
