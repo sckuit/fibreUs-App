@@ -29,7 +29,7 @@ export default function PublicHeader() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-950 border-b shadow-sm">
       {/* Top Bar - Hidden on mobile, visible on md and up */}
       <div className="hidden md:block bg-[#1a2332] text-white">
         <div className="container mx-auto px-4">
