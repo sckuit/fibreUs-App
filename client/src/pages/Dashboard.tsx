@@ -39,6 +39,7 @@ import SuppliersManager from "@/components/SuppliersManager";
 import { ServiceTypesManager } from "@/components/ServiceTypesManager";
 import { AppConfigDialog } from "@/components/AppConfigDialog";
 import { LogoUploadDialog } from "@/components/LogoUploadDialog";
+import { LogoUploadManager } from "@/components/LogoUploadManager";
 import { CertificationsManager } from "@/components/CertificationsManager";
 import { TeamMembersManager } from "@/components/TeamMembersManager";
 import { PriceMatrixManager } from "@/components/PriceMatrixManager";
@@ -996,6 +997,9 @@ export default function Dashboard() {
                     <TabsTrigger value="pricing" data-testid="subtab-pricing">
                       Price Matrix
                     </TabsTrigger>
+                    <TabsTrigger value="logos" data-testid="subtab-logos">
+                      Logos
+                    </TabsTrigger>
                     <TabsTrigger value="certifications" data-testid="subtab-certifications">
                       Certifications
                     </TabsTrigger>
@@ -1106,6 +1110,13 @@ export default function Dashboard() {
               {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
                 <TabsContent value="pricing" className="space-y-4">
                   <PriceMatrixManager />
+                </TabsContent>
+              )}
+
+              {/* Logos Tab */}
+              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                <TabsContent value="logos" className="space-y-4">
+                  <LogoUploadManager />
                 </TabsContent>
               )}
 
