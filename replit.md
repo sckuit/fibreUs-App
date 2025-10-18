@@ -22,10 +22,15 @@ The application follows a modern full-stack architecture with a React frontend, 
 - **LegalManager UI**: Redesigned with three sections: Legal Documents, Service Rates table (editable grid), and Support Plans management
 - **Decimal Handling**: Proper empty string to undefined conversion in Zod schemas, with undefined to null conversion in storage layer
 
-### October 2025 - Quote System Enhancements & Database Population
+### October 2025 - QuotePreview Redesign & PDF Generation Overhaul
+- **Professional Header Design**: Redesigned QuotePreview with dark blue (#1e3a5f) full-width header featuring company logo (left), stacked company name/tagline (center-left), and right-aligned white contact information
+- **Metadata Repositioning**: Moved quote metadata (Quote #, Date, Valid Until) below header as separate bordered section with left/right alignment for cleaner visual hierarchy
+- **Bill To Section Enhancement**: Updated customer information section with cleaner typography and professional formatting
+- **html2canvas Integration**: Complete PDF generation rewrite using html2canvas to capture QuotePreview component directly for pixel-perfect PDF copies
+- **forwardRef Implementation**: Converted QuotePreview to forwardRef component exposing DOM element reference for html2canvas capture
+- **Multi-page PDF Slicing**: Implemented robust page-break handling with proper slice height clamping (Math.ceil for ideal height, Math.min for actual height) to eliminate gaps and content duplication across pages
+- **Edge Case Handling**: Added sourceHeight calculation to prevent reading past canvas end on final page, ensuring clean multi-page exports for long quotes
 - **Quote Save Fix**: Made quoteNumber optional in insertQuoteSchema - backend auto-generates in format Q-YYYY-00001
-- **Professional PDF Quotes**: Enhanced PDF generation with company logo, dark blue header bar, company name/tagline, and full contact details (phone, email, website, address)
-- **QuotesManager PDF**: Applied same professional PDF header to quote downloads from QuotesManager
 - **Price Matrix Updates**: Fixed update functionality by changing PATCH to PUT to match backend API route
 - **Schema Type Safety**: Extended updateQuoteSchema with explicit string type for validUntil field to match form handling
 - **Supplier Database Expansion**: Added 5 major security industry vendors (Avigilon, Schneider Electric Security, Bosch Security Systems, Hikvision USA, Pelco)
