@@ -82,7 +82,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   const validUntilDate = validUntil ? new Date(validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
   return (
-    <Card className="mt-6 flex flex-col min-h-[1100px]" ref={ref}>
+    <Card className="mt-6" ref={ref}>
       {/* Professional Header - Dark Blue Background */}
       <div className="bg-[#1e3a5f] text-white p-6">
         <div className="flex items-start justify-between">
@@ -104,7 +104,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
         </div>
       </div>
 
-      <CardContent className="p-6 space-y-6 flex-1">
+      <CardContent className="p-6 space-y-6">
         {/* Quote Metadata Section */}
         <div className="flex justify-between items-start pb-4 border-b">
           <div>

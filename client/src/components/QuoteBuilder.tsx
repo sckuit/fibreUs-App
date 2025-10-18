@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments } from "@shared/schema";
+import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments, User } from "@shared/schema";
 import { insertQuoteSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,10 @@ export default function QuoteBuilder() {
 
   const { data: legalDocs } = useQuery<LegalDocuments>({
     queryKey: ['/api/legal-documents'],
+  });
+
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ['/api/auth/user'],
   });
 
   const form = useForm({
@@ -188,8 +192,18 @@ export default function QuoteBuilder() {
     const taxAmount = calculateTax();
     const total = calculateTotal();
 
+    if (!currentUser?.id) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create quotes",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Build quote data - send only non-empty values
     const quoteData: any = {
+      createdById: currentUser.id,
       items: selectedItems.map(item => ({
         priceMatrixId: item.priceMatrixId,
         itemName: item.itemName,
