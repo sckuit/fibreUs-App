@@ -213,7 +213,6 @@ export default function QuoteBuilder() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
                         {leads.map((lead) => (
                           <SelectItem key={lead.id} value={lead.id}>
                             {lead.name} - {lead.company || 'No Company'}
@@ -248,7 +247,6 @@ export default function QuoteBuilder() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.name} - {client.company || 'No Company'}
