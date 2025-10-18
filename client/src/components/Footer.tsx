@@ -94,7 +94,6 @@ export default function Footer() {
             </div>
 
             <div className="flex flex-wrap gap-2 mb-6">
-              <Badge variant="outline">UL Listed</Badge>
               <Badge variant="outline">24/7 Support</Badge>
             </div>
 
