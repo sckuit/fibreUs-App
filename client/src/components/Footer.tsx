@@ -34,7 +34,6 @@ export default function Footer() {
     { name: "About Us", url: "/company/about-us" },
     { name: "Our Team", url: "/company/our-team" },
     { name: "Certifications", url: "/company/certifications" },
-    { name: "Case Studies", url: "/company/case-studies" },
     { name: "Careers", url: "/company/careers" }
   ];
 
