@@ -148,8 +148,8 @@ export default function InvoiceBuilder() {
       const selectedQuote = quotes.find(q => q.id === quoteId);
       if (selectedQuote) {
         // Auto-populate from quote
-        form.setValue('leadId', selectedQuote.leadId ?? '');
-        form.setValue('clientId', selectedQuote.clientId ?? '');
+        form.setValue('leadId', selectedQuote.leadId || '');
+        form.setValue('clientId', selectedQuote.clientId || '');
         form.setValue('taxRate', selectedQuote.taxRate);
         
         // Handle percentage of quote if specified
@@ -395,7 +395,6 @@ export default function InvoiceBuilder() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No quote</SelectItem>
                           {quotes.map(quote => (
                             <SelectItem key={quote.id} value={quote.id}>
                               {quote.quoteNumber} - {formatCurrency(parseFloat(quote.total))}
@@ -460,7 +459,6 @@ export default function InvoiceBuilder() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No lead</SelectItem>
                           {leads.map(lead => (
                             <SelectItem key={lead.id} value={lead.id}>
                               {lead.name} - {lead.email}
@@ -494,7 +492,6 @@ export default function InvoiceBuilder() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No client</SelectItem>
                           {clients.map(client => (
                             <SelectItem key={client.id} value={client.id}>
                               {client.name} - {client.email}

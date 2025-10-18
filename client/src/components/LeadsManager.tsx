@@ -249,13 +249,13 @@ export default function LeadsManager() {
             <FolderKanban className="w-4 h-4 mr-2" />
             Manage Quotes
           </TabsTrigger>
-          {user && hasPermission(user.role, 'manageFinancial') && (
+          {user && user.role && hasPermission(user.role, 'manageFinancial') && (
             <TabsTrigger value="create-invoice" data-testid="tab-create-invoice">
               <FileText className="w-4 h-4 mr-2" />
               Create Invoice
             </TabsTrigger>
           )}
-          {user && hasPermission(user.role, 'viewFinancial') && (
+          {user && user.role && hasPermission(user.role, 'viewFinancial') && (
             <TabsTrigger value="manage-invoices" data-testid="tab-manage-invoices">
               <FolderKanban className="w-4 h-4 mr-2" />
               Manage Invoices
@@ -485,13 +485,13 @@ export default function LeadsManager() {
           <QuotesManager />
         </TabsContent>
 
-        {user && hasPermission(user.role, 'manageFinancial') && (
+        {user && user.role && hasPermission(user.role, 'manageFinancial') && (
           <TabsContent value="create-invoice" className="space-y-4">
             <InvoiceBuilder />
           </TabsContent>
         )}
 
-        {user && hasPermission(user.role, 'viewFinancial') && (
+        {user && user.role && hasPermission(user.role, 'viewFinancial') && (
           <TabsContent value="manage-invoices" className="space-y-4">
             <InvoicesManager />
           </TabsContent>
