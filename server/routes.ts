@@ -3011,7 +3011,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'manageSettings')) {
+        // Sales users need to view price matrix for quotes/invoices, admins for settings
+        if (!user || !(hasPermission(user.role, 'manageFinancial') || hasPermission(user.role, 'manageSettings'))) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
