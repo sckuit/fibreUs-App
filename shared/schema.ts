@@ -1034,6 +1034,7 @@ export type UpdatePriceMatrixType = z.infer<typeof updatePriceMatrixSchema>;
 
 export const insertQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
+  createdById: true,
   createdAt: true,
   updatedAt: true,
 }).extend({

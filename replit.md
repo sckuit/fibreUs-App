@@ -31,8 +31,9 @@ The application follows a modern full-stack architecture with a React frontend, 
 - **Multi-page PDF Slicing**: Implemented robust page-break handling with proper slice height clamping (Math.ceil for ideal height, Math.min for actual height) to eliminate gaps and content duplication across pages
 - **Edge Case Handling**: Added sourceHeight calculation to prevent reading past canvas end on final page, ensuring clean multi-page exports for long quotes
 - **Services Footer**: Added dynamic services section at bottom of quotes with blue background matching header, displaying all active services in 2-column grid with readable 12px+ typography
-- **Flex Layout Structure**: Implemented flex column layout with min-h-[1100px] on Card and flex-1 on CardContent to properly position services footer at page bottom and prevent PDF overflow
-- **Quote Save Fix**: Made quoteNumber optional in insertQuoteSchema - backend auto-generates in format Q-YYYY-00001
+- **Layout Fix**: Removed min-h-[1100px] and flex-1 from QuotePreview to allow natural content flow and proper PDF pagination
+- **Quote Save Fix**: Fixed Save Quote button by omitting createdById from insertQuoteSchema (set programmatically from authenticated user)
+- **Authentication Integration**: Added currentUser query and authentication check in QuoteBuilder to properly set createdById field
 - **Price Matrix Updates**: Fixed update functionality by changing PATCH to PUT to match backend API route
 - **Schema Type Safety**: Extended updateQuoteSchema with explicit string type for validUntil field to match form handling
 - **Supplier Database Expansion**: Added 5 major security industry vendors (Avigilon, Schneider Electric Security, Bosch Security Systems, Hikvision USA, Pelco)
