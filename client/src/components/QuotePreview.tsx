@@ -57,6 +57,7 @@ export function QuotePreview({
   const customer = selectedClient || selectedLead;
 
   const companyName = systemConfig?.companyName || 'FibreUS';
+  const headerTagline = systemConfig?.headerTagline || 'Professional Quote';
   const companyPhone = systemConfig?.phoneNumber || '';
   const companyEmail = systemConfig?.contactEmail || '';
   const companyWebsite = systemConfig?.website || '';
@@ -70,7 +71,7 @@ export function QuotePreview({
             <FileText className="h-8 w-8" />
             <div>
               <h1 className="text-2xl font-bold">{companyName}</h1>
-              <p className="text-sm opacity-90">Professional Quote</p>
+              <p className="text-sm opacity-90">{headerTagline}</p>
             </div>
           </div>
           <div className="text-right text-sm">
