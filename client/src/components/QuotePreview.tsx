@@ -82,7 +82,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   const validUntilDate = validUntil ? new Date(validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
   return (
-    <Card className="mt-6" ref={ref}>
+    <Card className="mt-6 flex flex-col min-h-[1100px]" ref={ref}>
       {/* Professional Header - Dark Blue Background */}
       <div className="bg-[#1e3a5f] text-white p-6">
         <div className="flex items-start justify-between">
@@ -104,7 +104,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
         </div>
       </div>
 
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="p-6 space-y-6 flex-1">
         {/* Quote Metadata Section */}
         <div className="flex justify-between items-start pb-4 border-b">
           <div>
@@ -235,18 +235,18 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
         )}
       </CardContent>
 
-      {/* Services Section - Blue Background */}
+      {/* Services Section - Blue Background Footer */}
       {serviceTypes.filter(s => s.isActive).length > 0 && (
-        <div className="bg-[#1e3a5f] text-white p-6 rounded-b-lg">
-          <h3 className="font-bold text-lg mb-4">OUR SERVICES</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-[#1e3a5f] text-white p-4 rounded-b-lg">
+          <h3 className="font-semibold text-sm mb-3">OUR SERVICES</h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {serviceTypes
               .filter(service => service.isActive)
               .map(service => (
-                <div key={service.id} className="space-y-1">
-                  <h4 className="font-semibold">{service.displayName}</h4>
+                <div key={service.id}>
+                  <h4 className="font-medium text-xs">{service.displayName}</h4>
                   {service.description && (
-                    <p className="text-sm opacity-90">{service.description}</p>
+                    <p className="text-xs opacity-90">{service.description}</p>
                   )}
                 </div>
               ))}
