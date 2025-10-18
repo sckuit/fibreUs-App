@@ -177,11 +177,6 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-            <div className="mt-4 pt-4 border-t">
-              <Button size="sm" variant="destructive" className="w-full" data-testid="button-emergency-footer">
-                Emergency: {config?.emergencyPhone || "(555) 911-HELP"}
-              </Button>
-            </div>
           </div>
         </div>
       </div>
