@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,7 @@ import { Plus, Trash2, FileText, DollarSign, Save, Download, Search } from "luci
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
+import { QuotePreview } from "./QuotePreview";
 
 interface QuoteItem {
   priceMatrixId: string;
@@ -85,6 +86,18 @@ export default function QuoteBuilder() {
       });
     },
   });
+
+  // Update form values when items or tax rate changes
+  useEffect(() => {
+    const subtotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+    const taxRate = parseFloat(form.watch('taxRate') || '0');
+    const taxAmount = (subtotal * taxRate) / 100;
+    const total = subtotal + taxAmount;
+
+    form.setValue('subtotal', subtotal.toFixed(2));
+    form.setValue('taxAmount', taxAmount.toFixed(2));
+    form.setValue('total', total.toFixed(2));
+  }, [selectedItems, form.watch('taxRate')]);
 
   const filteredPriceMatrixItems = priceMatrixItems.filter(item => {
     const query = searchQuery.toLowerCase();
@@ -444,6 +457,7 @@ export default function QuoteBuilder() {
   };
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -812,5 +826,18 @@ export default function QuoteBuilder() {
         </Dialog>
       </CardContent>
     </Card>
+
+      <QuotePreview
+        items={selectedItems}
+        subtotal={form.watch('subtotal') || '0.00'}
+        taxRate={form.watch('taxRate') || '0.00'}
+        taxAmount={form.watch('taxAmount') || '0.00'}
+        total={form.watch('total') || '0.00'}
+        validUntil={form.watch('validUntil')}
+        notes={form.watch('notes')}
+        leadId={form.watch('leadId')}
+        clientId={form.watch('clientId')}
+      />
+    </>
   );
 }
