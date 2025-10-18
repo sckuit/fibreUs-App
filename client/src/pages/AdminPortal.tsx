@@ -30,6 +30,8 @@ import { TeamMembersManager } from "@/components/TeamMembersManager";
 import { ServiceTypesManager } from "@/components/ServiceTypesManager";
 import { PriceMatrixManager } from "@/components/PriceMatrixManager";
 import { AppConfigDialog } from "@/components/AppConfigDialog";
+import InvoiceBuilder from "@/components/InvoiceBuilder";
+import InvoicesManager from "@/components/InvoicesManager";
 import type { User, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
 
 export default function AdminPortal() {
@@ -402,6 +404,12 @@ export default function AdminPortal() {
               </TabsTrigger>
               <TabsTrigger value="visitors" data-testid="tab-visitors">
                 Visitors
+              </TabsTrigger>
+              <TabsTrigger value="create-invoice" data-testid="tab-create-invoice">
+                Create Invoice
+              </TabsTrigger>
+              <TabsTrigger value="invoices" data-testid="tab-invoices">
+                Invoices
               </TabsTrigger>
               <TabsTrigger value="financial" data-testid="tab-financial">
                 Financial
@@ -825,6 +833,14 @@ export default function AdminPortal() {
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="create-invoice" className="space-y-4">
+            <InvoiceBuilder />
+          </TabsContent>
+
+          <TabsContent value="invoices" className="space-y-4">
+            <InvoicesManager />
           </TabsContent>
 
           <TabsContent value="financial" className="space-y-4">
