@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig } from "@shared/schema";
+import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments } from "@shared/schema";
 import { insertQuoteSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,10 @@ export default function QuoteBuilder() {
 
   const { data: systemConfig } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
+  });
+
+  const { data: legalDocs } = useQuery<LegalDocuments>({
+    queryKey: ['/api/legal-documents'],
   });
 
   const form = useForm({
@@ -417,7 +421,67 @@ export default function QuoteBuilder() {
         pdf.setFont('helvetica', 'normal');
         const noteLines = pdf.splitTextToSize(notes, pageWidth - 2 * margin);
         pdf.text(noteLines, margin, yPos);
-        yPos += noteLines.length * 5;
+        yPos += noteLines.length * 5 + 10;
+      }
+
+      // Check if we need a new page for signature and terms
+      if (yPos > 200) {
+        pdf.addPage();
+        yPos = margin;
+      } else {
+        yPos += 10;
+      }
+
+      // Signature Section
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Customer Acceptance', margin, yPos);
+      yPos += 10;
+
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('By signing below, you acknowledge that you have read and agree to the terms and conditions.', margin, yPos);
+      yPos += 10;
+
+      // Signature Line
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPos, pageWidth / 2 - 10, yPos);
+      yPos += 5;
+      pdf.setFontSize(9);
+      pdf.text('Customer Signature', margin, yPos);
+      yPos += 10;
+
+      pdf.line(margin, yPos, pageWidth / 2 - 10, yPos);
+      yPos += 5;
+      pdf.text('Date', margin, yPos);
+      yPos += 15;
+
+      // Terms and Conditions Section
+      if (legalDocs?.termsAndConditions) {
+        // Check if we need a new page for terms
+        if (yPos > 180) {
+          pdf.addPage();
+          yPos = margin;
+        }
+
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Terms and Conditions', margin, yPos);
+        yPos += 8;
+
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        const termsLines = pdf.splitTextToSize(legalDocs.termsAndConditions, pageWidth - 2 * margin);
+        
+        // Handle multi-page terms
+        termsLines.forEach((line: string) => {
+          if (yPos > pageHeight - 30) {
+            pdf.addPage();
+            yPos = margin;
+          }
+          pdf.text(line, margin, yPos);
+          yPos += 4;
+        });
       }
 
       // Footer
