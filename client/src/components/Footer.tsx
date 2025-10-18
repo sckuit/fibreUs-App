@@ -35,8 +35,7 @@ export default function Footer() {
     { name: "Our Team", url: "/company/our-team" },
     { name: "Certifications", url: "/company/certifications" },
     { name: "Case Studies", url: "/company/case-studies" },
-    { name: "Careers", url: "/company/careers" },
-    { name: "News & Updates", url: "/company/news-updates" }
+    { name: "Careers", url: "/company/careers" }
   ];
 
   const support = [
