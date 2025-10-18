@@ -62,7 +62,7 @@ export function PriceMatrixManager() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdatePriceMatrixType }) =>
-      apiRequest('PATCH', `/api/price-matrix/${id}`, data),
+      apiRequest('PUT', `/api/price-matrix/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/price-matrix'] });
       toast({ title: "Price matrix item updated successfully" });

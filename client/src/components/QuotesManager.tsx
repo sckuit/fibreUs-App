@@ -138,7 +138,7 @@ export default function QuotesManager() {
       taxRate: quote.taxRate || '0',
       taxAmount: quote.taxAmount || '0',
       total: quote.total,
-      validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString().split('T')[0] : undefined,
+      validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString().split('T')[0] : '',
       notes: quote.notes || '',
       status: quote.status,
     });
