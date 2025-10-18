@@ -23,6 +23,9 @@ import {
   priceMatrix,
   quotes,
   legalDocuments,
+  rateTypes,
+  serviceRates,
+  supportPlans,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -83,6 +86,15 @@ import {
   type LegalDocuments,
   type InsertLegalDocumentsType,
   type UpdateLegalDocumentsType,
+  type RateType,
+  type InsertRateTypeType,
+  type UpdateRateTypeType,
+  type ServiceRate,
+  type InsertServiceRateType,
+  type UpdateServiceRateType,
+  type SupportPlan,
+  type InsertSupportPlanType,
+  type UpdateSupportPlanType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, asc } from "drizzle-orm";
@@ -262,6 +274,25 @@ export interface IStorage {
   // Legal Documents operations
   getLegalDocuments(): Promise<LegalDocuments | undefined>;
   updateLegalDocuments(updates: UpdateLegalDocumentsType): Promise<LegalDocuments>;
+
+  // Rate Type operations
+  createRateType(data: InsertRateTypeType): Promise<RateType>;
+  getRateTypes(): Promise<RateType[]>;
+  updateRateType(id: string, updates: UpdateRateTypeType): Promise<RateType | undefined>;
+  deleteRateType(id: string): Promise<void>;
+
+  // Service Rate operations
+  createServiceRate(data: InsertServiceRateType): Promise<ServiceRate>;
+  getServiceRates(): Promise<ServiceRate[]>;
+  getServiceRateByRateTypeId(rateTypeId: string): Promise<ServiceRate | undefined>;
+  updateServiceRate(id: string, updates: UpdateServiceRateType): Promise<ServiceRate | undefined>;
+  deleteServiceRate(id: string): Promise<void>;
+
+  // Support Plan operations
+  createSupportPlan(data: InsertSupportPlanType): Promise<SupportPlan>;
+  getSupportPlans(): Promise<SupportPlan[]>;
+  updateSupportPlan(id: string, updates: UpdateSupportPlanType): Promise<SupportPlan | undefined>;
+  deleteSupportPlan(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1510,33 +1541,131 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateLegalDocuments(updates: UpdateLegalDocumentsType): Promise<LegalDocuments> {
-    // Check if legal documents exist
     const existing = await this.getLegalDocuments();
-    
-    // Clean up undefined decimal fields - convert to null for DB
-    const cleanedUpdates = {
-      ...updates,
-      regularHourlyRate: updates.regularHourlyRate === undefined ? null : updates.regularHourlyRate,
-      afterHoursRate: updates.afterHoursRate === undefined ? null : updates.afterHoursRate,
-      holidayRate: updates.holidayRate === undefined ? null : updates.holidayRate,
-      updatedAt: new Date()
-    };
     
     if (existing) {
       const [result] = await db
         .update(legalDocuments)
-        .set(cleanedUpdates)
+        .set({ ...updates, updatedAt: new Date() })
         .where(eq(legalDocuments.id, existing.id))
         .returning();
       return result;
     } else {
-      // Create new legal documents record if it doesn't exist
       const [result] = await db
         .insert(legalDocuments)
-        .values(cleanedUpdates)
+        .values({ ...updates, updatedAt: new Date() })
         .returning();
       return result;
     }
+  }
+
+  // Rate Type operations
+  async createRateType(data: InsertRateTypeType): Promise<RateType> {
+    const [result] = await db.insert(rateTypes).values(data).returning();
+    
+    // Automatically create a service_rate record for this rate type
+    await db.insert(serviceRates).values({
+      rateTypeId: result.id,
+      regularRate: null,
+      afterHoursRate: null,
+      holidayRate: null,
+      notes: null,
+    });
+    
+    return result;
+  }
+
+  async getRateTypes(): Promise<RateType[]> {
+    return db.select().from(rateTypes).orderBy(asc(rateTypes.displayOrder));
+  }
+
+  async updateRateType(id: string, updates: UpdateRateTypeType): Promise<RateType | undefined> {
+    const [result] = await db
+      .update(rateTypes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(rateTypes.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteRateType(id: string): Promise<void> {
+    await db.delete(rateTypes).where(eq(rateTypes.id, id));
+  }
+
+  // Service Rate operations
+  async createServiceRate(data: InsertServiceRateType): Promise<ServiceRate> {
+    const cleanedData = {
+      ...data,
+      regularRate: data.regularRate === undefined ? null : data.regularRate,
+      afterHoursRate: data.afterHoursRate === undefined ? null : data.afterHoursRate,
+      holidayRate: data.holidayRate === undefined ? null : data.holidayRate,
+    };
+    const [result] = await db.insert(serviceRates).values(cleanedData).returning();
+    return result;
+  }
+
+  async getServiceRates(): Promise<ServiceRate[]> {
+    return db.select().from(serviceRates);
+  }
+
+  async getServiceRateByRateTypeId(rateTypeId: string): Promise<ServiceRate | undefined> {
+    const [result] = await db
+      .select()
+      .from(serviceRates)
+      .where(eq(serviceRates.rateTypeId, rateTypeId));
+    return result;
+  }
+
+  async updateServiceRate(id: string, updates: UpdateServiceRateType): Promise<ServiceRate | undefined> {
+    const cleanedUpdates = {
+      ...updates,
+      regularRate: updates.regularRate === undefined ? null : updates.regularRate,
+      afterHoursRate: updates.afterHoursRate === undefined ? null : updates.afterHoursRate,
+      holidayRate: updates.holidayRate === undefined ? null : updates.holidayRate,
+      updatedAt: new Date()
+    };
+    const [result] = await db
+      .update(serviceRates)
+      .set(cleanedUpdates)
+      .where(eq(serviceRates.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteServiceRate(id: string): Promise<void> {
+    await db.delete(serviceRates).where(eq(serviceRates.id, id));
+  }
+
+  // Support Plan operations
+  async createSupportPlan(data: InsertSupportPlanType): Promise<SupportPlan> {
+    const cleanedData = {
+      ...data,
+      rate: data.rate === undefined ? null : data.rate,
+    };
+    const [result] = await db.insert(supportPlans).values(cleanedData).returning();
+    return result;
+  }
+
+  async getSupportPlans(): Promise<SupportPlan[]> {
+    return db.select().from(supportPlans).orderBy(desc(supportPlans.createdAt));
+  }
+
+  async updateSupportPlan(id: string, updates: UpdateSupportPlanType): Promise<SupportPlan | undefined> {
+    const cleanedUpdates = {
+      ...updates,
+      rate: updates.rate === undefined ? null : updates.rate,
+      updatedAt: new Date()
+    };
+    const [result] = await db
+      .update(supportPlans)
+      .set(cleanedUpdates)
+      .where(eq(supportPlans.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteSupportPlan(id: string): Promise<void> {
+    await db.delete(supportPlans).where(eq(supportPlans.id, id));
   }
 }
 

@@ -900,17 +900,47 @@ export const quotes = pgTable("quotes", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Legal Documents table (stores legal content and hourly rates)
+// Legal Documents table (stores legal content)
 export const legalDocuments = pgTable("legal_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   privacyPolicy: text("privacy_policy"),
   termsOfService: text("terms_of_service"),
   serviceAgreement: text("service_agreement"),
   warrantyInfo: text("warranty_info"),
-  regularHourlyRate: decimal("regular_hourly_rate", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Rate Types table (stores rate type names like Phone/Remote, Trip, Onsite, Bench Time)
+export const rateTypes = pgTable("rate_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  isCustom: boolean("is_custom").default(false).notNull(),
+  displayOrder: integer("display_order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Service Rates table (stores rates for each rate type across time periods)
+export const serviceRates = pgTable("service_rates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  rateTypeId: varchar("rate_type_id").notNull().references(() => rateTypes.id, { onDelete: 'cascade' }),
+  regularRate: decimal("regular_rate", { precision: 10, scale: 2 }),
   afterHoursRate: decimal("after_hours_rate", { precision: 10, scale: 2 }),
   holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }),
-  hoursRatesNotes: text("hours_rates_notes"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Support Plans table (stores support plan offerings)
+export const supportPlans = pgTable("support_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  rate: decimal("rate", { precision: 10, scale: 2 }),
+  billingPeriod: varchar("billing_period", { length: 50 }), // e.g., "monthly", "annual", "one-time"
+  description: text("description"),
+  isCustom: boolean("is_custom").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1024,8 +1054,34 @@ export const updateLegalDocumentsSchema = createInsertSchema(legalDocuments).omi
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial().extend({
-  regularHourlyRate: z.union([
+}).partial();
+
+export type LegalDocuments = typeof legalDocuments.$inferSelect;
+export type InsertLegalDocumentsType = z.infer<typeof insertLegalDocumentsSchema>;
+export type UpdateLegalDocumentsType = z.infer<typeof updateLegalDocumentsSchema>;
+
+export const insertRateTypeSchema = createInsertSchema(rateTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateRateTypeSchema = createInsertSchema(rateTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type RateType = typeof rateTypes.$inferSelect;
+export type InsertRateTypeType = z.infer<typeof insertRateTypeSchema>;
+export type UpdateRateTypeType = z.infer<typeof updateRateTypeSchema>;
+
+export const insertServiceRateSchema = createInsertSchema(serviceRates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  regularRate: z.union([
     z.string().transform(val => val === '' ? undefined : val),
     z.number().transform(val => val.toString()),
     z.undefined()
@@ -1042,9 +1098,59 @@ export const updateLegalDocumentsSchema = createInsertSchema(legalDocuments).omi
   ]).optional(),
 });
 
-export type LegalDocuments = typeof legalDocuments.$inferSelect;
-export type InsertLegalDocumentsType = z.infer<typeof insertLegalDocumentsSchema>;
-export type UpdateLegalDocumentsType = z.infer<typeof updateLegalDocumentsSchema>;
+export const updateServiceRateSchema = createInsertSchema(serviceRates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial().extend({
+  regularRate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+  afterHoursRate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+  holidayRate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+});
+
+export type ServiceRate = typeof serviceRates.$inferSelect;
+export type InsertServiceRateType = z.infer<typeof insertServiceRateSchema>;
+export type UpdateServiceRateType = z.infer<typeof updateServiceRateSchema>;
+
+export const insertSupportPlanSchema = createInsertSchema(supportPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  rate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+});
+
+export const updateSupportPlanSchema = createInsertSchema(supportPlans).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial().extend({
+  rate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+});
+
+export type SupportPlan = typeof supportPlans.$inferSelect;
+export type InsertSupportPlanType = z.infer<typeof insertSupportPlanSchema>;
+export type UpdateSupportPlanType = z.infer<typeof updateSupportPlanSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;

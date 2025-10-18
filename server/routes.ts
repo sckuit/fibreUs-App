@@ -45,6 +45,12 @@ import {
   insertQuoteSchema,
   updateQuoteSchema,
   updateLegalDocumentsSchema,
+  insertRateTypeSchema,
+  updateRateTypeSchema,
+  insertServiceRateSchema,
+  updateServiceRateSchema,
+  insertSupportPlanSchema,
+  updateSupportPlanSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -2330,6 +2336,282 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         console.error("Error updating legal documents:", error);
         res.status(500).json({ message: "Failed to update legal documents" });
+      }
+    }
+  );
+
+  // Rate Types routes
+  app.post("/api/rate-types",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertRateTypeSchema.parse(req.body);
+        const rateType = await storage.createRateType(validatedData);
+        res.status(201).json(rateType);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid rate type data", errors: error.errors });
+        }
+        console.error("Error creating rate type:", error);
+        res.status(500).json({ message: "Failed to create rate type" });
+      }
+    }
+  );
+
+  app.get("/api/rate-types",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const rateTypes = await storage.getRateTypes();
+        res.json(rateTypes);
+      } catch (error) {
+        console.error("Error getting rate types:", error);
+        res.status(500).json({ message: "Failed to get rate types" });
+      }
+    }
+  );
+
+  app.put("/api/rate-types/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateRateTypeSchema.parse(req.body);
+        const rateType = await storage.updateRateType(req.params.id, validatedData);
+        if (!rateType) {
+          return res.status(404).json({ message: "Rate type not found" });
+        }
+        res.json(rateType);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid rate type data", errors: error.errors });
+        }
+        console.error("Error updating rate type:", error);
+        res.status(500).json({ message: "Failed to update rate type" });
+      }
+    }
+  );
+
+  app.delete("/api/rate-types/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteRateType(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting rate type:", error);
+        res.status(500).json({ message: "Failed to delete rate type" });
+      }
+    }
+  );
+
+  // Service Rates routes
+  app.post("/api/service-rates",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertServiceRateSchema.parse(req.body);
+        const serviceRate = await storage.createServiceRate(validatedData);
+        res.status(201).json(serviceRate);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid service rate data", errors: error.errors });
+        }
+        console.error("Error creating service rate:", error);
+        res.status(500).json({ message: "Failed to create service rate" });
+      }
+    }
+  );
+
+  app.get("/api/service-rates",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const serviceRates = await storage.getServiceRates();
+        res.json(serviceRates);
+      } catch (error) {
+        console.error("Error getting service rates:", error);
+        res.status(500).json({ message: "Failed to get service rates" });
+      }
+    }
+  );
+
+  app.put("/api/service-rates/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateServiceRateSchema.parse(req.body);
+        const serviceRate = await storage.updateServiceRate(req.params.id, validatedData);
+        if (!serviceRate) {
+          return res.status(404).json({ message: "Service rate not found" });
+        }
+        res.json(serviceRate);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid service rate data", errors: error.errors });
+        }
+        console.error("Error updating service rate:", error);
+        res.status(500).json({ message: "Failed to update service rate" });
+      }
+    }
+  );
+
+  app.delete("/api/service-rates/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteServiceRate(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting service rate:", error);
+        res.status(500).json({ message: "Failed to delete service rate" });
+      }
+    }
+  );
+
+  // Support Plans routes
+  app.post("/api/support-plans",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertSupportPlanSchema.parse(req.body);
+        const supportPlan = await storage.createSupportPlan(validatedData);
+        res.status(201).json(supportPlan);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid support plan data", errors: error.errors });
+        }
+        console.error("Error creating support plan:", error);
+        res.status(500).json({ message: "Failed to create support plan" });
+      }
+    }
+  );
+
+  app.get("/api/support-plans",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const supportPlans = await storage.getSupportPlans();
+        res.json(supportPlans);
+      } catch (error) {
+        console.error("Error getting support plans:", error);
+        res.status(500).json({ message: "Failed to get support plans" });
+      }
+    }
+  );
+
+  app.put("/api/support-plans/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateSupportPlanSchema.parse(req.body);
+        const supportPlan = await storage.updateSupportPlan(req.params.id, validatedData);
+        if (!supportPlan) {
+          return res.status(404).json({ message: "Support plan not found" });
+        }
+        res.json(supportPlan);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid support plan data", errors: error.errors });
+        }
+        console.error("Error updating support plan:", error);
+        res.status(500).json({ message: "Failed to update support plan" });
+      }
+    }
+  );
+
+  app.delete("/api/support-plans/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteSupportPlan(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting support plan:", error);
+        res.status(500).json({ message: "Failed to delete support plan" });
       }
     }
   );
