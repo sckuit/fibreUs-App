@@ -40,6 +40,10 @@ import {
   updateCompanyCertificationSchema,
   insertTeamMemberSchema,
   updateTeamMemberSchema,
+  insertPriceMatrixSchema,
+  updatePriceMatrixSchema,
+  insertQuoteSchema,
+  updateQuoteSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -2548,6 +2552,262 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting team member:", error);
         res.status(500).json({ message: "Failed to delete team member" });
+      }
+    }
+  );
+
+  // Price Matrix routes
+  app.get("/api/price-matrix",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const items = await storage.getPriceMatrixItems();
+        res.json(items);
+      } catch (error) {
+        console.error("Error fetching price matrix items:", error);
+        res.status(500).json({ message: "Failed to fetch price matrix items" });
+      }
+    }
+  );
+
+  app.post("/api/price-matrix",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validated = insertPriceMatrixSchema.parse(req.body);
+        const newItem = await storage.createPriceMatrixItem(validated);
+        
+        await logActivity(
+          userId,
+          'create',
+          'price_matrix',
+          newItem.id,
+          newItem.item,
+          undefined,
+          req
+        );
+        
+        res.status(201).json(newItem);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid price matrix data", errors: error.errors });
+        }
+        console.error("Error creating price matrix item:", error);
+        res.status(500).json({ message: "Failed to create price matrix item" });
+      }
+    }
+  );
+
+  app.put("/api/price-matrix/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validated = updatePriceMatrixSchema.parse(req.body);
+        const updatedItem = await storage.updatePriceMatrixItem(req.params.id, validated);
+        
+        if (!updatedItem) {
+          return res.status(404).json({ message: "Price matrix item not found" });
+        }
+        
+        await logActivity(
+          userId,
+          'update',
+          'price_matrix',
+          updatedItem.id,
+          updatedItem.item,
+          undefined,
+          req
+        );
+        
+        res.json(updatedItem);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating price matrix item:", error);
+        res.status(500).json({ message: "Failed to update price matrix item" });
+      }
+    }
+  );
+
+  app.delete("/api/price-matrix/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deletePriceMatrixItem(req.params.id);
+        
+        await logActivity(
+          userId,
+          'delete',
+          'price_matrix',
+          req.params.id,
+          null,
+          undefined,
+          req
+        );
+        
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting price matrix item:", error);
+        res.status(500).json({ message: "Failed to delete price matrix item" });
+      }
+    }
+  );
+
+  // Quotes routes
+  app.get("/api/quotes",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'viewLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const quotes = await storage.getQuotes();
+        res.json(quotes);
+      } catch (error) {
+        console.error("Error fetching quotes:", error);
+        res.status(500).json({ message: "Failed to fetch quotes" });
+      }
+    }
+  );
+
+  app.post("/api/quotes",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validated = insertQuoteSchema.parse({
+          ...req.body,
+          createdById: userId
+        });
+        
+        const newQuote = await storage.createQuote(validated);
+        
+        await logActivity(
+          userId,
+          'create',
+          'quote',
+          newQuote.id,
+          newQuote.quoteNumber,
+          undefined,
+          req
+        );
+        
+        res.status(201).json(newQuote);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid quote data", errors: error.errors });
+        }
+        console.error("Error creating quote:", error);
+        res.status(500).json({ message: "Failed to create quote" });
+      }
+    }
+  );
+
+  app.put("/api/quotes/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validated = updateQuoteSchema.parse(req.body);
+        const updatedQuote = await storage.updateQuote(req.params.id, validated);
+        
+        if (!updatedQuote) {
+          return res.status(404).json({ message: "Quote not found" });
+        }
+        
+        await logActivity(
+          userId,
+          'update',
+          'quote',
+          updatedQuote.id,
+          updatedQuote.quoteNumber,
+          undefined,
+          req
+        );
+        
+        res.json(updatedQuote);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating quote:", error);
+        res.status(500).json({ message: "Failed to update quote" });
+      }
+    }
+  );
+
+  app.delete("/api/quotes/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageLeads')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteQuote(req.params.id);
+        
+        await logActivity(
+          userId,
+          'delete',
+          'quote',
+          req.params.id,
+          null,
+          undefined,
+          req
+        );
+        
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting quote:", error);
+        res.status(500).json({ message: "Failed to delete quote" });
       }
     }
   );

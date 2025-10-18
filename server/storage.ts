@@ -20,6 +20,8 @@ import {
   serviceTypes,
   companyCertifications,
   teamMembers,
+  priceMatrix,
+  quotes,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -71,6 +73,12 @@ import {
   type TeamMember,
   type InsertTeamMemberType,
   type UpdateTeamMemberType,
+  type PriceMatrix,
+  type InsertPriceMatrixType,
+  type UpdatePriceMatrixType,
+  type Quote,
+  type InsertQuoteType,
+  type UpdateQuoteType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, asc } from "drizzle-orm";
@@ -232,6 +240,20 @@ export interface IStorage {
   getTeamMembers(includeInactive?: boolean): Promise<TeamMember[]>;
   updateTeamMember(id: string, updates: UpdateTeamMemberType): Promise<TeamMember | undefined>;
   deleteTeamMember(id: string): Promise<void>;
+
+  // Price Matrix operations
+  createPriceMatrixItem(data: InsertPriceMatrixType): Promise<PriceMatrix>;
+  getPriceMatrixItems(includeInactive?: boolean): Promise<PriceMatrix[]>;
+  getPriceMatrixItem(id: string): Promise<PriceMatrix | undefined>;
+  updatePriceMatrixItem(id: string, updates: UpdatePriceMatrixType): Promise<PriceMatrix | undefined>;
+  deletePriceMatrixItem(id: string): Promise<void>;
+
+  // Quote operations
+  createQuote(data: InsertQuoteType): Promise<Quote>;
+  getQuotes(filters?: { leadId?: string; clientId?: string; status?: string }): Promise<Quote[]>;
+  getQuote(id: string): Promise<Quote | undefined>;
+  updateQuote(id: string, updates: UpdateQuoteType): Promise<Quote | undefined>;
+  deleteQuote(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1368,6 +1390,109 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTeamMember(id: string): Promise<void> {
     await db.delete(teamMembers).where(eq(teamMembers.id, id));
+  }
+
+  // Price Matrix operations
+  async createPriceMatrixItem(data: InsertPriceMatrixType): Promise<PriceMatrix> {
+    const [result] = await db.insert(priceMatrix).values(data).returning();
+    return result;
+  }
+
+  async getPriceMatrixItems(includeInactive = false): Promise<PriceMatrix[]> {
+    let query = db.select().from(priceMatrix);
+    
+    if (!includeInactive) {
+      query = query.where(eq(priceMatrix.isActive, true));
+    }
+    
+    return query.orderBy(desc(priceMatrix.year), asc(priceMatrix.item));
+  }
+
+  async getPriceMatrixItem(id: string): Promise<PriceMatrix | undefined> {
+    const [result] = await db.select().from(priceMatrix).where(eq(priceMatrix.id, id));
+    return result;
+  }
+
+  async updatePriceMatrixItem(id: string, updates: UpdatePriceMatrixType): Promise<PriceMatrix | undefined> {
+    const [result] = await db
+      .update(priceMatrix)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(priceMatrix.id, id))
+      .returning();
+    return result;
+  }
+
+  async deletePriceMatrixItem(id: string): Promise<void> {
+    await db.delete(priceMatrix).where(eq(priceMatrix.id, id));
+  }
+
+  // Quote operations
+  async createQuote(data: InsertQuoteType): Promise<Quote> {
+    // Generate quote number if not provided
+    let quoteNumber = data.quoteNumber;
+    if (!quoteNumber) {
+      const year = new Date().getFullYear();
+      const result = await db
+        .select({ quoteNumber: quotes.quoteNumber })
+        .from(quotes)
+        .orderBy(desc(quotes.quoteNumber))
+        .limit(1);
+      
+      if (result.length === 0) {
+        quoteNumber = `Q-${year}-00001`;
+      } else {
+        const lastQuote = result[0].quoteNumber;
+        const parts = lastQuote.split('-');
+        const lastNumber = parseInt(parts[2]);
+        const nextNumber = lastNumber + 1;
+        quoteNumber = `Q-${year}-${nextNumber.toString().padStart(5, '0')}`;
+      }
+    }
+    
+    const [result] = await db.insert(quotes).values({
+      ...data,
+      quoteNumber
+    }).returning();
+    return result;
+  }
+
+  async getQuotes(filters?: { leadId?: string; clientId?: string; status?: string }): Promise<Quote[]> {
+    let query = db.select().from(quotes);
+    
+    const conditions = [];
+    if (filters?.leadId) {
+      conditions.push(eq(quotes.leadId, filters.leadId));
+    }
+    if (filters?.clientId) {
+      conditions.push(eq(quotes.clientId, filters.clientId));
+    }
+    if (filters?.status) {
+      conditions.push(eq(quotes.status, filters.status as any));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(quotes.createdAt));
+  }
+
+  async getQuote(id: string): Promise<Quote | undefined> {
+    const [result] = await db.select().from(quotes).where(eq(quotes.id, id));
+    return result;
+  }
+
+  async updateQuote(id: string, updates: UpdateQuoteType): Promise<Quote | undefined> {
+    const [result] = await db
+      .update(quotes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(quotes.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteQuote(id: string): Promise<void> {
+    await db.delete(quotes).where(eq(quotes.id, id));
   }
 }
 
