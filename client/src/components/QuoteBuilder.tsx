@@ -224,11 +224,11 @@ export default function QuoteBuilder() {
       const margin = 20;
       let yPos = margin;
 
-      // Load company logo if available
+      // Load company logo if available (use dark logo for PDF)
       let logoData: string | null = null;
-      if (systemConfig?.logoUrl) {
+      if (systemConfig?.darkLogoUrl) {
         try {
-          const response = await fetch(systemConfig.logoUrl);
+          const response = await fetch(systemConfig.darkLogoUrl);
           const blob = await response.blob();
           logoData = await new Promise<string>((resolve) => {
             const reader = new FileReader();
