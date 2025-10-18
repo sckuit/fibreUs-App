@@ -907,6 +907,16 @@ export const legalDocuments = pgTable("legal_documents", {
   termsOfService: text("terms_of_service"),
   serviceAgreement: text("service_agreement"),
   warrantyInfo: text("warranty_info"),
+  termsAndConditions: text("terms_and_conditions"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Custom Legal Documents table (user-defined document types like NDA, Warranty Policy, etc.)
+export const customLegalDocuments = pgTable("custom_legal_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1059,6 +1069,22 @@ export const updateLegalDocumentsSchema = createInsertSchema(legalDocuments).omi
 export type LegalDocuments = typeof legalDocuments.$inferSelect;
 export type InsertLegalDocumentsType = z.infer<typeof insertLegalDocumentsSchema>;
 export type UpdateLegalDocumentsType = z.infer<typeof updateLegalDocumentsSchema>;
+
+export const insertCustomLegalDocumentSchema = createInsertSchema(customLegalDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateCustomLegalDocumentSchema = createInsertSchema(customLegalDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type CustomLegalDocument = typeof customLegalDocuments.$inferSelect;
+export type InsertCustomLegalDocumentType = z.infer<typeof insertCustomLegalDocumentSchema>;
+export type UpdateCustomLegalDocumentType = z.infer<typeof updateCustomLegalDocumentSchema>;
 
 export const insertRateTypeSchema = createInsertSchema(rateTypes).omit({
   id: true,
