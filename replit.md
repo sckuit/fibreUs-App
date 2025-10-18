@@ -8,13 +8,19 @@ The application follows a modern full-stack architecture with a React frontend, 
 
 ## Recent Changes
 
-### October 2025 - Legal Documents Management
-- **Legal Tab**: Added Legal tab under Settings for managing company legal documents and hourly rates
-- **Legal Documents**: Privacy Policy, Terms of Service, Service Agreement, and Warranty Information stored in database
-- **Hourly Rates**: Configurable regular, after-hours, and holiday hourly rates with notes
-- **Database Schema**: Created legal_documents table with text fields for documents and decimal fields for rates
-- **API Routes**: Protected GET/PUT /api/legal-documents endpoints with manageSettings permission
-- **Empty Value Handling**: Schema properly transforms empty rate strings to undefined, storage converts to null for database compatibility
+### October 2025 - Rate Types & Support Plans System
+- **Flexible Rate Structure**: Replaced fixed hourly rate fields with flexible rate_types system allowing custom rate categories
+- **Service Rates Table**: Three-dimensional rate structure (rate type × time period) with regular, after-hours, and holiday rates for each rate type
+- **Support Plans**: Dedicated support_plans table for recurring service offerings with customizable rates and billing periods (monthly, quarterly, annual, per-hour)
+- **Database Schema**: Created three new tables:
+  - `rate_types`: Stores rate type definitions (e.g., Phone/Remote Service, Trip Rate, Onsite Service, Bench Time) with custom flag and display order
+  - `service_rates`: Links each rate type to three time-period rates (regular, after-hours, holiday) plus notes field
+  - `support_plans`: Stores support plan offerings with rate, billing period, description, and custom flag
+- **Auto-Creation Logic**: When a new rate type is created, corresponding service_rate record is automatically generated with null default values
+- **Default Data**: Seeded 4 standard rate types (Phone/Remote, Trip, Onsite, Bench) and 2 support plans (Phone Support monthly, Remote Programming per-hour)
+- **API Routes**: Full CRUD routes for /api/rate-types, /api/service-rates, /api/support-plans with manageSettings permission
+- **LegalManager UI**: Redesigned with three sections: Legal Documents, Service Rates table (editable grid), and Support Plans management
+- **Decimal Handling**: Proper empty string to undefined conversion in Zod schemas, with undefined to null conversion in storage layer
 
 ### October 2025 - Quote System Enhancements & Database Population
 - **Quote Save Fix**: Made quoteNumber optional in insertQuoteSchema - backend auto-generates in format Q-YYYY-00001
