@@ -166,10 +166,11 @@ export default function QuotesManager() {
     updateQuoteMutation.mutate({ id: editingQuote.id, data: updateData });
   };
 
-  const handleDownloadPDF = (quote: Quote) => {
+  const handleDownloadPDF = async (quote: Quote) => {
     try {
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 20;
       let yPos = margin;
 
@@ -177,11 +178,65 @@ export default function QuotesManager() {
         ? leads.find(l => l.id === quote.leadId)
         : clients.find(c => c.id === quote.clientId);
 
-      // Company Header
-      pdf.setFontSize(20);
+      // Load company logo if available
+      let logoData: string | null = null;
+      if (systemConfig?.logoUrl) {
+        try {
+          const response = await fetch(systemConfig.logoUrl);
+          const blob = await response.blob();
+          logoData = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (error) {
+          console.error('Failed to load logo:', error);
+        }
+      }
+
+      // Header Background
+      pdf.setFillColor(30, 58, 95);
+      pdf.rect(0, 0, pageWidth, 45, 'F');
+
+      // Company Logo
+      if (logoData) {
+        try {
+          pdf.addImage(logoData, 'PNG', margin, 10, 30, 25);
+        } catch (error) {
+          console.error('Failed to add logo to PDF:', error);
+        }
+      }
+
+      // Company Name and Info
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(22);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(systemConfig?.companyName || 'Quote', margin, yPos);
-      yPos += 15;
+      pdf.text(systemConfig?.companyName || 'Quote', logoData ? margin + 35 : margin, 20);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const tagline = systemConfig?.headerTagline || 'Professional Quote';
+      pdf.text(tagline, logoData ? margin + 35 : margin, 27);
+
+      // Company Contact Info (Right Side)
+      pdf.setFontSize(9);
+      const contactInfo = [];
+      if (systemConfig?.phoneNumber) contactInfo.push(systemConfig.phoneNumber);
+      if (systemConfig?.contactEmail) contactInfo.push(systemConfig.contactEmail);
+      if (systemConfig?.website) contactInfo.push(systemConfig.website);
+      
+      contactInfo.forEach((info, index) => {
+        pdf.text(info, pageWidth - margin, 18 + (index * 5), { align: 'right' });
+      });
+
+      if (systemConfig?.address) {
+        pdf.setFontSize(8);
+        pdf.text(systemConfig.address, pageWidth - margin, 33, { align: 'right' });
+      }
+
+      // Reset text color for body
+      pdf.setTextColor(0, 0, 0);
+      yPos = 55;
 
       // Quote Number and Date
       pdf.setFontSize(10);
