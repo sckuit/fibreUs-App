@@ -38,7 +38,6 @@ export default function Footer() {
   ];
 
   const support = [
-    { name: "System Status", url: "/support/system-status" },
     { name: "Technical Support", url: "/support/technical-support" },
     { name: "Maintenance", url: "/support/maintenance" },
     { name: "Training", url: "/support/training" }
