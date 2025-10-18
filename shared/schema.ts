@@ -49,6 +49,7 @@ export const leadStatusEnum = pgEnum('lead_status', ['new', 'contacted', 'qualif
 export const clientStatusEnum = pgEnum('client_status', ['potential', 'active', 'inactive', 'archived']);
 export const supplierTypeEnum = pgEnum('supplier_type', ['supplier', 'vendor', 'partner']);
 export const supplierStatusEnum = pgEnum('supplier_status', ['active', 'inactive', 'pending', 'suspended']);
+export const quoteStatusEnum = pgEnum('quote_status', ['draft', 'sent', 'accepted', 'rejected', 'expired']);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -864,6 +865,41 @@ export const teamMembers = pgTable("team_members", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Price Matrix table (billable items catalog)
+export const priceMatrix = pgTable("price_matrix", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  item: varchar("item").notNull(),
+  description: text("description"),
+  unit: varchar("unit").notNull(), // e.g., "hour", "unit", "sq ft", etc.
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  costPrice: decimal("cost_price", { precision: 10, scale: 2 }).notNull(),
+  customerPrice: decimal("customer_price", { precision: 10, scale: 2 }).notNull(),
+  year: integer("year").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Quotes table (formal quotes sent to leads/clients)
+export const quotes = pgTable("quotes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  quoteNumber: varchar("quote_number").notNull().unique(),
+  leadId: varchar("lead_id").references(() => leads.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  status: quoteStatusEnum("status").default('draft').notNull(),
+  items: jsonb("items").notNull(), // Array of {priceMatrixId, quantity, lineTotal}
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default('0'),
+  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default('0'),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  validUntil: timestamp("valid_until"),
+  notes: text("notes"),
+  termsAndConditions: text("terms_and_conditions"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
   id: true,
   createdAt: true,
@@ -924,6 +960,38 @@ export type UpdateCompanyCertificationType = z.infer<typeof updateCompanyCertifi
 export type TeamMember = typeof teamMembers.$inferSelect;
 export type InsertTeamMemberType = z.infer<typeof insertTeamMemberSchema>;
 export type UpdateTeamMemberType = z.infer<typeof updateTeamMemberSchema>;
+
+export const insertPriceMatrixSchema = createInsertSchema(priceMatrix).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updatePriceMatrixSchema = createInsertSchema(priceMatrix).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type PriceMatrix = typeof priceMatrix.$inferSelect;
+export type InsertPriceMatrixType = z.infer<typeof insertPriceMatrixSchema>;
+export type UpdatePriceMatrixType = z.infer<typeof updatePriceMatrixSchema>;
+
+export const insertQuoteSchema = createInsertSchema(quotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateQuoteSchema = createInsertSchema(quotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type Quote = typeof quotes.$inferSelect;
+export type InsertQuoteType = z.infer<typeof insertQuoteSchema>;
+export type UpdateQuoteType = z.infer<typeof updateQuoteSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
