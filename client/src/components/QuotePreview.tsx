@@ -4,6 +4,14 @@ import type { SystemConfig, LegalDocuments, Lead, Client } from "@shared/schema"
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
+interface ServiceType {
+  id: string;
+  name: string;
+  displayName: string;
+  description: string | null;
+  isActive: boolean;
+}
+
 interface QuoteItem {
   itemName: string;
   description: string;
@@ -52,6 +60,10 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
+  });
+
+  const { data: serviceTypes = [] } = useQuery<ServiceType[]>({
+    queryKey: ['/api/service-types'],
   });
 
   const selectedLead = leadId ? leads.find(l => l.id === leadId) : null;
@@ -222,6 +234,25 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           </>
         )}
       </CardContent>
+
+      {/* Services Section - Blue Background */}
+      {serviceTypes.filter(s => s.isActive).length > 0 && (
+        <div className="bg-[#1e3a5f] text-white p-6 rounded-b-lg">
+          <h3 className="font-bold text-lg mb-4">OUR SERVICES</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {serviceTypes
+              .filter(service => service.isActive)
+              .map(service => (
+                <div key={service.id} className="space-y-1">
+                  <h4 className="font-semibold">{service.displayName}</h4>
+                  {service.description && (
+                    <p className="text-sm opacity-90">{service.description}</p>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </Card>
   );
 });
