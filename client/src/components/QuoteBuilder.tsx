@@ -347,7 +347,7 @@ export default function QuoteBuilder() {
   };
 
   return (
-    <>
+    <div className="space-y-6">
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -730,6 +730,6 @@ export default function QuoteBuilder() {
         clientId={form.watch('clientId')}
         quoteNumber={form.watch('quoteNumber')}
       />
-    </>
+    </div>
   );
 }
