@@ -46,12 +46,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSalesRecordSchema, salesRecords, users, projects, tasks, type InsertSalesRecord } from "@shared/schema";
 import type { User, Visitor } from "@shared/schema";
 import { format } from "date-fns";
-import { hasPermission } from "@shared/permissions";
 import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
-import InvoiceBuilder from "@/components/InvoiceBuilder";
-import InvoicesManager from "@/components/InvoicesManager";
 
 type SelectSalesRecord = typeof salesRecords.$inferSelect;
 type SelectUser = typeof users.$inferSelect;
@@ -318,16 +315,6 @@ export default function SalesPortal() {
             <TabsTrigger value="messages" data-testid="tab-messages">
               Messages
             </TabsTrigger>
-            {user && hasPermission(user.role, 'manageFinancial') && (
-              <TabsTrigger value="create-invoice" data-testid="tab-create-invoice">
-                Create Invoice
-              </TabsTrigger>
-            )}
-            {user && hasPermission(user.role, 'viewFinancial') && (
-              <TabsTrigger value="invoices" data-testid="tab-invoices">
-                Invoices
-              </TabsTrigger>
-            )}
             <TabsTrigger value="visitors" data-testid="tab-visitors">
               Lead Analytics
             </TabsTrigger>
@@ -501,18 +488,6 @@ export default function SalesPortal() {
           <TabsContent value="messages" className="space-y-4">
             <MessagesManager />
           </TabsContent>
-
-          {user && hasPermission(user.role, 'manageFinancial') && (
-            <TabsContent value="create-invoice" className="space-y-4">
-              <InvoiceBuilder />
-            </TabsContent>
-          )}
-
-          {user && hasPermission(user.role, 'viewFinancial') && (
-            <TabsContent value="invoices" className="space-y-4">
-              <InvoicesManager />
-            </TabsContent>
-          )}
 
           <TabsContent value="visitors" className="space-y-4">
             <Card>

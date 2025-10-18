@@ -14,11 +14,8 @@ import {
 } from "@/components/ui/table";
 import { Users, Briefcase, TrendingUp, DollarSign, Eye } from "lucide-react";
 import type { User, Visitor } from "@shared/schema";
-import { hasPermission } from "@shared/permissions";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
-import InvoiceBuilder from "@/components/InvoiceBuilder";
-import InvoicesManager from "@/components/InvoicesManager";
 
 export default function ManagerPortal() {
   const [activeTab, setActiveTab] = useState("team");
@@ -136,16 +133,6 @@ export default function ManagerPortal() {
             <TabsTrigger value="tasks" data-testid="tab-tasks">
               Tasks
             </TabsTrigger>
-            {user && hasPermission(user.role, 'manageFinancial') && (
-              <TabsTrigger value="create-invoice" data-testid="tab-create-invoice">
-                Create Invoice
-              </TabsTrigger>
-            )}
-            {user && hasPermission(user.role, 'viewFinancial') && (
-              <TabsTrigger value="invoices" data-testid="tab-invoices">
-                Invoices
-              </TabsTrigger>
-            )}
             <TabsTrigger value="analytics" data-testid="tab-analytics">
               Performance
             </TabsTrigger>
@@ -261,18 +248,6 @@ export default function ManagerPortal() {
           <TabsContent value="tasks" className="space-y-4">
             {user && <TasksManager role="manager" userId={user.id} />}
           </TabsContent>
-
-          {user && hasPermission(user.role, 'manageFinancial') && (
-            <TabsContent value="create-invoice" className="space-y-4">
-              <InvoiceBuilder />
-            </TabsContent>
-          )}
-
-          {user && hasPermission(user.role, 'viewFinancial') && (
-            <TabsContent value="invoices" className="space-y-4">
-              <InvoicesManager />
-            </TabsContent>
-          )}
 
           <TabsContent value="analytics" className="space-y-4">
             <Card>
