@@ -990,7 +990,9 @@ export const updateQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial();
+}).partial().extend({
+  validUntil: z.string().optional(),
+});
 
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuoteType = z.infer<typeof insertQuoteSchema>;
