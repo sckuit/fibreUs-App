@@ -8,6 +8,15 @@ The application follows a modern full-stack architecture with a React frontend, 
 
 ## Recent Changes
 
+### October 2025 - Quote System Enhancements & Database Population
+- **Quote Save Fix**: Made quoteNumber optional in insertQuoteSchema - backend auto-generates in format Q-YYYY-00001
+- **Professional PDF Quotes**: Enhanced PDF generation with company logo, dark blue header bar, company name/tagline, and full contact details (phone, email, website, address)
+- **QuotesManager PDF**: Applied same professional PDF header to quote downloads from QuotesManager
+- **Price Matrix Updates**: Fixed update functionality by changing PATCH to PUT to match backend API route
+- **Schema Type Safety**: Extended updateQuoteSchema with explicit string type for validUntil field to match form handling
+- **Supplier Database Expansion**: Added 5 major security industry vendors (Avigilon, Schneider Electric Security, Bosch Security Systems, Hikvision USA, Pelco)
+- **Price Matrix Expansion**: Populated with 10 additional items including access control readers, intrusion sensors, NVR systems, PTZ cameras, alarm panels, motion detectors, cable installation, system programming, and monitoring services
+
 ### October 2025 - Frontpage Database Integration
 - **Public System Config API**: Made /api/system-config endpoint publicly accessible (removed authentication) to enable frontpage data loading
 - **PublicHeader Integration**: Header now displays company name, phone, email, and emergency contact from database with proper fallbacks
