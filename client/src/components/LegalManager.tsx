@@ -59,6 +59,7 @@ export function LegalManager() {
       termsOfService: '',
       serviceAgreement: '',
       warrantyInfo: '',
+      termsAndConditions: '',
     },
   });
 
@@ -89,6 +90,7 @@ export function LegalManager() {
         termsOfService: legalDocs.termsOfService || '',
         serviceAgreement: legalDocs.serviceAgreement || '',
         warrantyInfo: legalDocs.warrantyInfo || '',
+        termsAndConditions: legalDocs.termsAndConditions || '',
       });
     }
   }, [legalDocs, legalDocsForm]);
@@ -390,6 +392,29 @@ export function LegalManager() {
                         placeholder="Enter warranty information..."
                         className="min-h-[150px] font-mono text-sm"
                         data-testid="textarea-warranty-info"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={legalDocsForm.control}
+                name="termsAndConditions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Terms and Conditions</FormLabel>
+                    <FormDescription>
+                      Standard terms and conditions for quotes and contracts
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value || ''}
+                        placeholder="Enter terms and conditions..."
+                        className="min-h-[150px] font-mono text-sm"
+                        data-testid="textarea-terms-and-conditions"
                       />
                     </FormControl>
                     <FormMessage />
