@@ -1,126 +1,156 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Users, Award, TrendingUp } from "lucide-react";
-import GetQuoteDialog from "@/components/GetQuoteDialog";
-import LoginDialog from "@/components/LoginDialog";
 import { useQuery } from "@tanstack/react-query";
-
-type SystemConfig = {
-  companyName?: string;
-  mission?: string;
-  aboutUs?: string;
-  phoneNumber?: string;
-  contactEmail?: string;
-};
+import type { SystemConfig } from "@shared/schema";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Users, 
+  Award, 
+  Clock, 
+  Shield,
+  CheckCircle2
+} from "lucide-react";
 
 export default function AboutUs() {
   const { data: config } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
   });
 
-  const values = [
-    { icon: Target, title: "Excellence", description: "We deliver the highest quality security solutions with meticulous attention to detail" },
-    { icon: Users, title: "Customer First", description: "Your safety and satisfaction are our top priorities in every project" },
-    { icon: Award, title: "Integrity", description: "Honest, transparent service with industry-leading certifications and standards" },
-    { icon: TrendingUp, title: "Innovation", description: "Staying ahead with the latest security technology and best practices" },
+  const companyName = config?.companyName || "FibreUS";
+  const achievements = [
+    {
+      icon: Award,
+      title: "Industry Certified",
+      description: "UL Listed, FCC Certified, and NFPA Compliant installations"
+    },
+    {
+      icon: Clock,
+      title: "15+ Years Experience", 
+      description: "Trusted by businesses and homeowners since 2008"
+    },
+    {
+      icon: Users,
+      title: "Expert Team",
+      description: "Licensed technicians with ongoing professional training"
+    },
+    {
+      icon: Shield,
+      title: "24/7 Support",
+      description: "Emergency response and round-the-clock monitoring"
+    }
   ];
 
-  const companyName = config?.companyName || "FibreUS";
-  const mission = config?.mission || "To provide cutting-edge security solutions that protect what matters most to our clients.";
-  const aboutUs = config?.aboutUs || `${companyName} is a leading provider of electronic security and fiber optic solutions. With over 15 years of experience, we've protected hundreds of properties with state-of-the-art surveillance, access control, and alarm systems.`;
+  //todo: remove mock functionality - company history
+  const milestones = [
+    {
+      year: "2008",
+      title: "FibreUS Founded",
+      description: "Established as an independent electronic security contractor"
+    },
+    {
+      year: "2013", 
+      title: "Expanded Services",
+      description: "Added comprehensive fiber optic installation and maintenance"
+    },
+    {
+      year: "2020",
+      title: "Technology Focus",
+      description: "Specialized in cloud-based surveillance and remote monitoring"
+    },
+    {
+      year: "2024",
+      title: "FibreUS Tech Services",
+      description: "Rebranded to reflect our comprehensive security and fiber expertise"
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-background">
       <section className="py-16 bg-muted/50">
         <div className="container mx-auto px-4">
-          <Badge variant="outline" className="mb-4" data-testid="badge-company-category">Company</Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-6" data-testid="text-page-title">About {companyName}</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl" data-testid="text-page-description">
-            Leading the industry in professional security solutions and fiber optic installations since 2008.
-          </p>
-        </div>
-      </section>
-
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold mb-6">Our Story</h2>
-            <p className="text-lg text-muted-foreground mb-4" data-testid="text-about-us">
-              {aboutUs}
-            </p>
-            <p className="text-lg text-muted-foreground">
-              Our team of certified technicians brings decades of combined experience to every 
-              installation. We pride ourselves on staying at the forefront of security technology, 
-              ensuring our clients benefit from the most advanced and reliable systems available.
+          {/* Header */}
+          <div className="text-center mb-12">
+            <Badge variant="outline" className="mb-4">
+              About {companyName}
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Your Trusted Security & Fiber Partner
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              {config?.aboutUs || "From our founding in 2008 as an independent security contractor to becoming a leading provider of comprehensive security solutions, we've been protecting what matters most."}
             </p>
           </div>
 
-          <div className="bg-primary text-primary-foreground rounded-lg p-8 mb-16">
-            <h2 className="text-2xl font-bold mb-4 text-center">Our Mission</h2>
-            <p className="text-center text-lg max-w-3xl mx-auto" data-testid="text-mission">
-              {mission}
-            </p>
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            {/* Left Column - Story */}
+            <div>
+              <h3 className="text-2xl font-bold mb-6">Our Story</h3>
+              <div className="space-y-6">
+                <p className="text-muted-foreground leading-relaxed">
+                  {config?.aboutUs || "Since 2008, we've evolved from a small independent security contractor into a comprehensive electronic security solutions provider. Our journey began with a commitment to delivering reliable, cutting-edge security services for homes and businesses across the region."}
+                </p>
+                <p className="text-muted-foreground leading-relaxed">
+                  Today, {companyName} combines decades of experience with 
+                  cutting-edge technology to deliver reliable, future-proof security 
+                  and fiber optic systems that protect your most valuable assets.
+                </p>
+                
+                {/* Key Services List */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
+                  {[
+                    "Consulting & Design",
+                    "Professional Installation", 
+                    "System Integration",
+                    "Maintenance & Support",
+                    "24/7 Monitoring",
+                    "Emergency Response"
+                  ].map((service) => (
+                    <div key={service} className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">{service}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Achievements */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {achievements.map((achievement, index) => {
+                const IconComponent = achievement.icon;
+                return (
+                  <Card key={achievement.title} className="hover-elevate" data-testid={`card-achievement-${index}`}>
+                    <CardContent className="p-6">
+                      <div className="p-3 bg-primary/10 rounded-md w-fit mb-4">
+                        <IconComponent className="h-6 w-6 text-primary" />
+                      </div>
+                      <h4 className="font-semibold mb-2">{achievement.title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {achievement.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
 
-          <h2 className="text-3xl font-bold mb-12 text-center">Our Core Values</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            {values.map((value) => (
-              <Card key={value.title} data-testid={`card-value-${value.title.toLowerCase()}`}>
-                <CardHeader>
-                  <value.icon className="h-12 w-12 text-primary mb-4" />
-                  <CardTitle>{value.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">{value.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
-            <Card data-testid="card-stat-experience">
-              <CardHeader>
-                <CardTitle className="text-4xl font-bold text-primary">15+</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Years of Excellence</p>
-              </CardContent>
-            </Card>
-            <Card data-testid="card-stat-clients">
-              <CardHeader>
-                <CardTitle className="text-4xl font-bold text-primary">500+</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Satisfied Clients</p>
-              </CardContent>
-            </Card>
-            <Card data-testid="card-stat-projects">
-              <CardHeader>
-                <CardTitle className="text-4xl font-bold text-primary">1,200+</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Projects Completed</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="text-center">
-            <h2 className="text-3xl font-bold mb-6">Ready to Secure Your Property?</h2>
-            <p className="text-xl text-muted-foreground mb-8">
-              Contact us today for a free consultation and discover how we can protect what matters most to you.
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <GetQuoteDialog>
-                <Button size="lg" data-testid="button-get-consultation">
-                  Get Free Consultation
-                </Button>
-              </GetQuoteDialog>
-              <LoginDialog>
-                <Button variant="outline" size="lg" data-testid="button-client-portal">
-                  Client Portal
-                </Button>
-              </LoginDialog>
+          {/* Timeline */}
+          <div className="mb-16">
+            <h3 className="text-2xl font-bold text-center mb-8">Our Journey</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {milestones.map((milestone, index) => (
+                <Card key={milestone.year} className="text-center hover-elevate" data-testid={`card-milestone-${index}`}>
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold text-primary mb-2">
+                      {milestone.year}
+                    </div>
+                    <h4 className="font-semibold mb-2">{milestone.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {milestone.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </div>
