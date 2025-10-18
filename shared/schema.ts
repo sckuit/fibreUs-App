@@ -981,6 +981,7 @@ export const insertQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  createdById: true,
 }).extend({
   quoteNumber: z.string().optional(),
   validUntil: z.string().optional(),
