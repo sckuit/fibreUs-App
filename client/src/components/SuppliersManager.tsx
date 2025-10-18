@@ -40,8 +40,9 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Mail, Phone, MapPin, Calendar, FileText, Plus } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, Calendar, FileText, Plus, Pencil } from "lucide-react";
 import { insertSupplierSchema, type Supplier, type InsertSupplierType } from "@shared/schema";
+import { Switch } from "@/components/ui/switch";
 
 export default function SuppliersManager() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -457,19 +458,34 @@ export default function SuppliersManager() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(supplier.status)} data-testid={`badge-status-${supplier.id}`}>
-                        {supplier.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={supplier.status === "active"}
+                          onCheckedChange={(checked) => {
+                            updateSupplier.mutate({
+                              id: supplier.id,
+                              updates: { status: checked ? "active" : "inactive" },
+                            });
+                          }}
+                          data-testid={`switch-status-${supplier.id}`}
+                        />
+                        <Badge className={getStatusColor(supplier.status)} data-testid={`badge-status-${supplier.id}`}>
+                          {supplier.status}
+                        </Badge>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(supplier)}
-                        data-testid={`button-view-${supplier.id}`}
-                      >
-                        View Details
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(supplier)}
+                          data-testid={`button-edit-${supplier.id}`}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

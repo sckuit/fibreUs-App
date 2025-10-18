@@ -41,12 +41,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Mail, Phone, Building, MapPin, TrendingUp, AlertCircle, Send, FileText } from "lucide-react";
+import { UserPlus, Mail, Phone, Building, MapPin, TrendingUp, AlertCircle, Send, FileText, FolderKanban } from "lucide-react";
 import { insertLeadSchema, type Lead, type Inquiry, type InsertLeadType } from "@shared/schema";
 import { LeadDialog } from "@/components/LeadDialog";
 import { apiRequest } from "@/lib/queryClient";
 import FlyerBuilder from "./FlyerBuilder";
 import QuoteBuilder from "./QuoteBuilder";
+import QuotesManager from "./QuotesManager";
 
 export default function LeadsManager() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -236,6 +237,10 @@ export default function LeadsManager() {
           <TabsTrigger value="quotes" data-testid="tab-quotes">
             <FileText className="w-4 h-4 mr-2" />
             Create Quote
+          </TabsTrigger>
+          <TabsTrigger value="manage-quotes" data-testid="tab-manage-quotes">
+            <FolderKanban className="w-4 h-4 mr-2" />
+            Manage Quotes
           </TabsTrigger>
         </TabsList>
 
@@ -455,6 +460,10 @@ export default function LeadsManager() {
 
         <TabsContent value="quotes" className="space-y-4">
           <QuoteBuilder />
+        </TabsContent>
+
+        <TabsContent value="manage-quotes" className="space-y-4">
+          <QuotesManager />
         </TabsContent>
       </Tabs>
 

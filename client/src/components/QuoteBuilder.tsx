@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType } from "@shared/schema";
+import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig } from "@shared/schema";
 import { insertQuoteSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, DollarSign, Save } from "lucide-react";
+import { Plus, Trash2, FileText, DollarSign, Save, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { format } from "date-fns";
 
 interface QuoteItem {
   priceMatrixId: string;
@@ -43,6 +46,10 @@ export default function QuoteBuilder() {
 
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
+  });
+
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
   });
 
   const form = useForm({
@@ -177,6 +184,192 @@ export default function QuoteBuilder() {
   const resetForm = () => {
     setSelectedItems([]);
     form.reset();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (selectedItems.length === 0) {
+      toast({
+        title: "No items to export",
+        description: "Please add items before generating a PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const leadId = form.watch('leadId');
+    const clientId = form.watch('clientId');
+    const selectedLead = leads.find(l => l.id === leadId);
+    const selectedClient = clients.find(c => c.id === clientId);
+    const recipient = selectedLead || selectedClient;
+
+    if (!recipient) {
+      toast({
+        title: "No recipient selected",
+        description: "Please select a lead or client before generating PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPos = margin;
+
+      // Company Header
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(systemConfig?.companyName || 'Quote', margin, yPos);
+      yPos += 15;
+
+      // Quote Number and Date
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      const quoteNumber = form.watch('quoteNumber') || 'DRAFT';
+      const currentDate = format(new Date(), 'MMMM dd, yyyy');
+      pdf.text(`Quote #: ${quoteNumber}`, margin, yPos);
+      pdf.text(`Date: ${currentDate}`, pageWidth - margin - 50, yPos);
+      yPos += 7;
+
+      const validUntil = form.watch('validUntil');
+      if (validUntil) {
+        pdf.text(`Valid Until: ${format(new Date(validUntil), 'MMMM dd, yyyy')}`, pageWidth - margin - 50, yPos);
+        yPos += 7;
+      }
+
+      yPos += 5;
+
+      // Customer Information
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Bill To:', margin, yPos);
+      yPos += 7;
+
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(recipient.name, margin, yPos);
+      yPos += 5;
+      if (recipient.company) {
+        pdf.text(recipient.company, margin, yPos);
+        yPos += 5;
+      }
+      if (recipient.email) {
+        pdf.text(recipient.email, margin, yPos);
+        yPos += 5;
+      }
+      if (recipient.phone) {
+        pdf.text(recipient.phone, margin, yPos);
+        yPos += 5;
+      }
+      yPos += 10;
+
+      // Items Table Header
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFillColor(240, 240, 240);
+      pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
+      pdf.text('Item', margin + 2, yPos + 5);
+      pdf.text('Qty', pageWidth - 90, yPos + 5);
+      pdf.text('Unit Price', pageWidth - 70, yPos + 5);
+      pdf.text('Total', pageWidth - margin - 2, yPos + 5, { align: 'right' });
+      yPos += 10;
+
+      // Items
+      pdf.setFont('helvetica', 'normal');
+      selectedItems.forEach((item) => {
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = margin;
+        }
+
+        pdf.text(item.itemName, margin + 2, yPos);
+        if (item.description) {
+          pdf.setFontSize(8);
+          pdf.setTextColor(100, 100, 100);
+          const descLines = pdf.splitTextToSize(item.description, 70);
+          pdf.text(descLines[0], margin + 2, yPos + 4);
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFontSize(10);
+        }
+        pdf.text(item.quantity.toString(), pageWidth - 90, yPos);
+        pdf.text(`$${parseFloat(item.unitPrice).toFixed(2)}`, pageWidth - 70, yPos);
+        pdf.text(`$${item.total.toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
+        yPos += 8;
+      });
+
+      yPos += 5;
+
+      // Totals
+      const subtotal = calculateSubtotal();
+      const tax = calculateTax();
+      const total = calculateTotal();
+      const taxRate = parseFloat(form.watch('taxRate') || '0');
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Subtotal:', pageWidth - 70, yPos);
+      pdf.text(`$${subtotal.toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
+      yPos += 6;
+
+      if (taxRate > 0) {
+        pdf.text(`Tax (${taxRate.toFixed(2)}%):`, pageWidth - 70, yPos);
+        pdf.text(`$${tax.toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
+        yPos += 6;
+      }
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('Total:', pageWidth - 70, yPos);
+      pdf.text(`$${total.toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
+      yPos += 10;
+
+      // Notes
+      const notes = form.watch('notes');
+      if (notes) {
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Notes:', margin, yPos);
+        yPos += 5;
+        pdf.setFont('helvetica', 'normal');
+        const noteLines = pdf.splitTextToSize(notes, pageWidth - 2 * margin);
+        pdf.text(noteLines, margin, yPos);
+        yPos += noteLines.length * 5;
+      }
+
+      // Footer
+      const pageCount = (pdf as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(
+          `Page ${i} of ${pageCount}`,
+          pageWidth / 2,
+          pdf.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+        if (systemConfig?.companyName) {
+          pdf.text(
+            systemConfig.companyName,
+            margin,
+            pdf.internal.pageSize.getHeight() - 10
+          );
+        }
+      }
+
+      pdf.save(`quote-${quoteNumber}-${currentDate}.pdf`);
+      toast({
+        title: "PDF Downloaded",
+        description: "Quote has been downloaded successfully",
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "Failed to generate PDF",
+        description: "An error occurred while creating the PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -442,6 +635,16 @@ export default function QuoteBuilder() {
                 data-testid="button-reset"
               >
                 Reset
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDownloadPDF}
+                disabled={selectedItems.length === 0}
+                data-testid="button-download-pdf"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download PDF
               </Button>
               <Button
                 type="submit"
