@@ -62,8 +62,7 @@ export default function ContactSection() {
       details: [
         config?.phoneNumber || "(555) 123-4567",
         config?.emergencyPhone ? `Emergency: ${config.emergencyPhone}` : "Emergency: (555) 911-HELP"
-      ],
-      action: "Call Now"
+      ]
     },
     {
       icon: Mail,
@@ -71,20 +70,12 @@ export default function ContactSection() {
       details: [
         config?.contactEmail || "info@fibreus.co",
         config?.infoEmail || "support@fibreus.co"
-      ],
-      action: "Send Email"
+      ]
     },
     {
       icon: MapPin,
       title: "Visit Us",
-      details: config?.address ? [config.address.split(',')[0], config.address.split(',').slice(1).join(',').trim()] : ["123 Security Blvd", "Washington, DC 20001"],
-      action: "Get Directions"
-    },
-    {
-      icon: Clock,
-      title: "Business Hours",
-      details: ["Mon-Fri: 8AM-6PM", "Emergency: 24/7"],
-      action: "View Schedule"
+      details: config?.address ? [config.address.split(',')[0], config.address.split(',').slice(1).join(',').trim()] : ["123 Security Blvd", "Washington, DC 20001"]
     }
   ];
 
@@ -241,17 +232,6 @@ export default function ContactSection() {
                             {detail}
                           </p>
                         ))}
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="mt-2 p-0 h-auto text-primary"
-                          onClick={() => {
-                            if (info.title === "Call Us") window.location.href = 'tel:5551234567';
-                            else if (info.title === "Email Us") window.location.href = 'mailto:info@fibreus.co';
-                          }}
-                        >
-                          {info.action}
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
