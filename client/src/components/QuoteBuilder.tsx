@@ -161,7 +161,6 @@ export default function QuoteBuilder() {
     const total = calculateTotal();
 
     const quoteData: InsertQuoteType = {
-      ...values,
       leadId: values.leadId || undefined,
       clientId: values.clientId || undefined,
       items: selectedItems.map(item => ({
@@ -174,9 +173,12 @@ export default function QuoteBuilder() {
         total: item.total,
       })),
       subtotal: subtotal.toFixed(2),
+      taxRate: values.taxRate || '0',
       taxAmount: taxAmount.toFixed(2),
       total: total.toFixed(2),
-      validUntil: values.validUntil ? new Date(values.validUntil) : undefined,
+      validUntil: values.validUntil && values.validUntil !== '' ? new Date(values.validUntil) : undefined,
+      notes: values.notes || undefined,
+      status: values.status || 'draft',
     };
 
     createQuoteMutation.mutate(quoteData);
