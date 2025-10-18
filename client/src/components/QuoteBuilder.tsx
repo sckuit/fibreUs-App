@@ -703,8 +703,13 @@ export default function QuoteBuilder() {
               </Button>
               <Button
                 type="submit"
-                disabled={createQuoteMutation.isPending || selectedItems.length === 0}
+                disabled={createQuoteMutation.isPending}
                 data-testid="button-save-quote"
+                onClick={() => {
+                  console.log('Form errors:', form.formState.errors);
+                  console.log('Form values:', form.getValues());
+                  console.log('Selected items:', selectedItems);
+                }}
               >
                 <Save className="h-4 w-4 mr-2" />
                 {createQuoteMutation.isPending ? 'Saving...' : 'Save Quote'}
