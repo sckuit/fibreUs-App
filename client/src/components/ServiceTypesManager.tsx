@@ -288,6 +288,7 @@ export function ServiceTypesManager() {
                     <FormControl>
                       <Textarea
                         {...field}
+                        value={field.value || ''}
                         placeholder="Describe this service..."
                         data-testid="textarea-description"
                       />

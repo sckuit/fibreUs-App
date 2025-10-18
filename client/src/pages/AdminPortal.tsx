@@ -27,6 +27,9 @@ import ClientsManager from "@/components/ClientsManager";
 import SuppliersManager from "@/components/SuppliersManager";
 import { CertificationsManager } from "@/components/CertificationsManager";
 import { TeamMembersManager } from "@/components/TeamMembersManager";
+import { ServiceTypesManager } from "@/components/ServiceTypesManager";
+import { PriceMatrixManager } from "@/components/PriceMatrixManager";
+import { AppConfigDialog } from "@/components/AppConfigDialog";
 import type { User, Visitor, InventoryItem, FinancialLog } from "@shared/schema";
 
 export default function AdminPortal() {
@@ -35,6 +38,7 @@ export default function AdminPortal() {
   const [editingUser, setEditingUser] = useState<User | undefined>();
   const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
   const [editingInventoryItem, setEditingInventoryItem] = useState<InventoryItem | undefined>();
+  const [isAppConfigDialogOpen, setIsAppConfigDialogOpen] = useState(false);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/auth/user"],
@@ -396,12 +400,6 @@ export default function AdminPortal() {
               <TabsTrigger value="leads" data-testid="tab-leads">
                 Leads
               </TabsTrigger>
-              <TabsTrigger value="certifications" data-testid="tab-certifications">
-                Certifications
-              </TabsTrigger>
-              <TabsTrigger value="team" data-testid="tab-team">
-                Team
-              </TabsTrigger>
               <TabsTrigger value="visitors" data-testid="tab-visitors">
                 Visitors
               </TabsTrigger>
@@ -510,14 +508,6 @@ export default function AdminPortal() {
 
           <TabsContent value="suppliers" className="space-y-4">
             <SuppliersManager />
-          </TabsContent>
-
-          <TabsContent value="certifications" className="space-y-4">
-            <CertificationsManager />
-          </TabsContent>
-
-          <TabsContent value="team" className="space-y-4">
-            <TeamMembersManager />
           </TabsContent>
 
           <TabsContent value="inventory" className="space-y-4">
@@ -760,29 +750,65 @@ export default function AdminPortal() {
           </TabsContent>
 
           <TabsContent value="system" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Configuration</CardTitle>
-                <CardDescription>
-                  Manage system-wide settings and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+            <Tabs defaultValue="company" className="space-y-4">
+              <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="company" data-testid="subtab-company">
+                  Company Settings
+                </TabsTrigger>
+                <TabsTrigger value="services" data-testid="subtab-services">
+                  Service Types
+                </TabsTrigger>
+                <TabsTrigger value="pricing" data-testid="subtab-pricing">
+                  Price Matrix
+                </TabsTrigger>
+                <TabsTrigger value="certifications" data-testid="subtab-certifications">
+                  Certifications
+                </TabsTrigger>
+                <TabsTrigger value="team" data-testid="subtab-team">
+                  Team Members
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="company" className="space-y-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
                     <div>
-                      <p className="font-medium">Maintenance Mode</p>
-                      <p className="text-sm text-muted-foreground">
-                        Enable system maintenance mode
-                      </p>
+                      <CardTitle>Company Settings</CardTitle>
+                      <CardDescription>
+                        Manage company information and branding
+                      </CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" data-testid="button-maintenance">
-                      Configure
+                    <Button 
+                      onClick={() => setIsAppConfigDialogOpen(true)}
+                      data-testid="button-edit-company-settings"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Settings
                     </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                  </CardHeader>
+                </Card>
+                <AppConfigDialog 
+                  open={isAppConfigDialogOpen} 
+                  onOpenChange={setIsAppConfigDialogOpen}
+                />
+              </TabsContent>
+
+              <TabsContent value="services" className="space-y-4">
+                <ServiceTypesManager />
+              </TabsContent>
+
+              <TabsContent value="pricing" className="space-y-4">
+                <PriceMatrixManager />
+              </TabsContent>
+
+              <TabsContent value="certifications" className="space-y-4">
+                <CertificationsManager />
+              </TabsContent>
+
+              <TabsContent value="team" className="space-y-4">
+                <TeamMembersManager />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           <TabsContent value="logs" className="space-y-4">
