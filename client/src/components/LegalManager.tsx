@@ -20,6 +20,8 @@ export function LegalManager() {
   const { toast } = useToast();
   const [rateTypeDialogOpen, setRateTypeDialogOpen] = useState(false);
   const [supportPlanDialogOpen, setSupportPlanDialogOpen] = useState(false);
+  const [editedServiceRates, setEditedServiceRates] = useState<Record<string, Partial<ServiceRate>>>({});
+  const [editedSupportPlans, setEditedSupportPlans] = useState<Record<string, Partial<SupportPlan>>>({});
 
   const { data: legalDocs, isLoading } = useQuery<LegalDocuments>({
     queryKey: ['/api/legal-documents'],
@@ -130,16 +132,22 @@ export function LegalManager() {
     },
   });
 
-  const updateServiceRateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateServiceRateType }) =>
-      apiRequest('PUT', `/api/service-rates/${id}`, data),
+  const updateServiceRatesMutation = useMutation({
+    mutationFn: async (updates: Array<{ id: string; data: UpdateServiceRateType }>) => {
+      await Promise.all(
+        updates.map(({ id, data }) => 
+          apiRequest('PUT', `/api/service-rates/${id}`, data)
+        )
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-rates'] });
-      toast({ title: "Service rate updated successfully" });
+      setEditedServiceRates({});
+      toast({ title: "Service rates saved successfully" });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to update service rate",
+        title: "Failed to save service rates",
         description: error.message,
         variant: "destructive",
       });
@@ -164,16 +172,22 @@ export function LegalManager() {
     },
   });
 
-  const updateSupportPlanMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateSupportPlanType }) =>
-      apiRequest('PUT', `/api/support-plans/${id}`, data),
+  const updateSupportPlansMutation = useMutation({
+    mutationFn: async (updates: Array<{ id: string; data: UpdateSupportPlanType }>) => {
+      await Promise.all(
+        updates.map(({ id, data }) => 
+          apiRequest('PUT', `/api/support-plans/${id}`, data)
+        )
+      );
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support-plans'] });
-      toast({ title: "Support plan updated successfully" });
+      setEditedSupportPlans({});
+      toast({ title: "Support plans saved successfully" });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to update support plan",
+        title: "Failed to save support plans",
         description: error.message,
         variant: "destructive",
       });
@@ -196,23 +210,76 @@ export function LegalManager() {
     },
   });
 
-  const handleUpdateServiceRate = (rateId: string, field: 'regularRate' | 'afterHoursRate' | 'holidayRate', value: string) => {
-    updateServiceRateMutation.mutate({
-      id: rateId,
-      data: { [field]: value === '' ? '' : value },
-    });
+  const handleEditServiceRate = (rateId: string, field: 'regularRate' | 'afterHoursRate' | 'holidayRate', value: string) => {
+    setEditedServiceRates(prev => ({
+      ...prev,
+      [rateId]: {
+        ...prev[rateId],
+        [field]: value,
+      },
+    }));
   };
 
-  const handleUpdateSupportPlan = (planId: string, field: 'rate' | 'billingPeriod' | 'description', value: string) => {
-    updateSupportPlanMutation.mutate({
-      id: planId,
-      data: { [field]: value === '' ? '' : value },
-    });
+  const handleEditSupportPlan = (planId: string, field: 'rate' | 'billingPeriod' | 'description', value: string) => {
+    setEditedSupportPlans(prev => ({
+      ...prev,
+      [planId]: {
+        ...prev[planId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSaveServiceRates = () => {
+    const updates = Object.entries(editedServiceRates).map(([id, data]) => ({
+      id,
+      data: data as UpdateServiceRateType,
+    }));
+    
+    if (updates.length === 0) {
+      toast({ title: "No changes to save", variant: "default" });
+      return;
+    }
+    
+    updateServiceRatesMutation.mutate(updates);
+  };
+
+  const handleSaveSupportPlans = () => {
+    const updates = Object.entries(editedSupportPlans).map(([id, data]) => ({
+      id,
+      data: data as UpdateSupportPlanType,
+    }));
+    
+    if (updates.length === 0) {
+      toast({ title: "No changes to save", variant: "default" });
+      return;
+    }
+    
+    updateSupportPlansMutation.mutate(updates);
   };
 
   const getRateForType = (rateTypeId: string) => {
     return serviceRates.find(sr => sr.rateTypeId === rateTypeId);
   };
+
+  const getServiceRateValue = (rateId: string, field: 'regularRate' | 'afterHoursRate' | 'holidayRate'): string => {
+    if (editedServiceRates[rateId]?.[field] !== undefined) {
+      return editedServiceRates[rateId][field] ?? '';
+    }
+    const rate = serviceRates.find(sr => sr.id === rateId);
+    return rate?.[field] ?? '';
+  };
+
+  const getSupportPlanValue = (planId: string, field: 'rate' | 'billingPeriod' | 'description'): string => {
+    if (editedSupportPlans[planId]?.[field] !== undefined) {
+      return editedSupportPlans[planId][field] ?? '';
+    }
+    const plan = supportPlans.find(sp => sp.id === planId);
+    return plan?.[field] ?? '';
+  };
+
+  const hasUnsavedServiceRates = Object.keys(editedServiceRates).length > 0;
+  const hasUnsavedSupportPlans = Object.keys(editedSupportPlans).length > 0;
 
   if (isLoading) {
     return (
@@ -429,8 +496,8 @@ export function LegalManager() {
                           step="0.01"
                           placeholder="0.00"
                           className="pl-7"
-                          value={rate?.regularRate || ''}
-                          onChange={(e) => rate && handleUpdateServiceRate(rate.id, 'regularRate', e.target.value)}
+                          value={rate ? getServiceRateValue(rate.id, 'regularRate') : ''}
+                          onChange={(e) => rate && handleEditServiceRate(rate.id, 'regularRate', e.target.value)}
                           data-testid={`input-regular-rate-${rateType.id}`}
                         />
                       </div>
@@ -443,8 +510,8 @@ export function LegalManager() {
                           step="0.01"
                           placeholder="0.00"
                           className="pl-7"
-                          value={rate?.afterHoursRate || ''}
-                          onChange={(e) => rate && handleUpdateServiceRate(rate.id, 'afterHoursRate', e.target.value)}
+                          value={rate ? getServiceRateValue(rate.id, 'afterHoursRate') : ''}
+                          onChange={(e) => rate && handleEditServiceRate(rate.id, 'afterHoursRate', e.target.value)}
                           data-testid={`input-after-hours-rate-${rateType.id}`}
                         />
                       </div>
@@ -457,8 +524,8 @@ export function LegalManager() {
                           step="0.01"
                           placeholder="0.00"
                           className="pl-7"
-                          value={rate?.holidayRate || ''}
-                          onChange={(e) => rate && handleUpdateServiceRate(rate.id, 'holidayRate', e.target.value)}
+                          value={rate ? getServiceRateValue(rate.id, 'holidayRate') : ''}
+                          onChange={(e) => rate && handleEditServiceRate(rate.id, 'holidayRate', e.target.value)}
                           data-testid={`input-holiday-rate-${rateType.id}`}
                         />
                       </div>
@@ -481,6 +548,23 @@ export function LegalManager() {
               })}
             </TableBody>
           </Table>
+          
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={handleSaveServiceRates}
+              disabled={!hasUnsavedServiceRates || updateServiceRatesMutation.isPending}
+              data-testid="button-save-service-rates"
+            >
+              {updateServiceRatesMutation.isPending ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Service Rates
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -624,16 +708,16 @@ export function LegalManager() {
                         step="0.01"
                         placeholder="0.00"
                         className="pl-7"
-                        value={plan.rate || ''}
-                        onChange={(e) => handleUpdateSupportPlan(plan.id, 'rate', e.target.value)}
+                        value={getSupportPlanValue(plan.id, 'rate')}
+                        onChange={(e) => handleEditSupportPlan(plan.id, 'rate', e.target.value)}
                         data-testid={`input-support-plan-rate-${plan.id}`}
                       />
                     </div>
                   </TableCell>
                   <TableCell>
                     <Select
-                      value={plan.billingPeriod || ''}
-                      onValueChange={(value) => handleUpdateSupportPlan(plan.id, 'billingPeriod', value)}
+                      value={getSupportPlanValue(plan.id, 'billingPeriod')}
+                      onValueChange={(value) => handleEditSupportPlan(plan.id, 'billingPeriod', value)}
                     >
                       <SelectTrigger className="w-[150px]" data-testid={`select-billing-period-${plan.id}`}>
                         <SelectValue placeholder="Select" />
@@ -648,8 +732,8 @@ export function LegalManager() {
                   </TableCell>
                   <TableCell>
                     <Textarea
-                      value={plan.description || ''}
-                      onChange={(e) => handleUpdateSupportPlan(plan.id, 'description', e.target.value)}
+                      value={getSupportPlanValue(plan.id, 'description')}
+                      onChange={(e) => handleEditSupportPlan(plan.id, 'description', e.target.value)}
                       placeholder="Plan description..."
                       className="min-h-[60px]"
                       data-testid={`textarea-support-plan-description-${plan.id}`}
@@ -672,6 +756,23 @@ export function LegalManager() {
               ))}
             </TableBody>
           </Table>
+          
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={handleSaveSupportPlans}
+              disabled={!hasUnsavedSupportPlans || updateSupportPlansMutation.isPending}
+              data-testid="button-save-support-plans"
+            >
+              {updateSupportPlansMutation.isPending ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Support Plans
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
