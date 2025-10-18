@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { LegalDocuments, UpdateLegalDocumentsType, RateType, ServiceRate, UpdateServiceRateType, InsertRateTypeType, SupportPlan, InsertSupportPlanType, UpdateSupportPlanType } from "@shared/schema";
+import type { LegalDocuments, UpdateLegalDocumentsType, RateType, ServiceRate, UpdateServiceRateType, InsertRateTypeType, SupportPlan, InsertSupportPlanType, UpdateSupportPlanType, CustomLegalDocument, InsertCustomLegalDocumentType, UpdateCustomLegalDocumentType } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -13,13 +13,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { updateLegalDocumentsSchema, insertRateTypeSchema, insertSupportPlanSchema } from "@shared/schema";
-import { Save, FileText, DollarSign, Plus, Trash2, LifeBuoy } from "lucide-react";
+import { updateLegalDocumentsSchema, insertRateTypeSchema, insertSupportPlanSchema, insertCustomLegalDocumentSchema, updateCustomLegalDocumentSchema } from "@shared/schema";
+import { Save, FileText, DollarSign, Plus, Trash2, LifeBuoy, Edit2, FilePlus } from "lucide-react";
 
 export function LegalManager() {
   const { toast } = useToast();
   const [rateTypeDialogOpen, setRateTypeDialogOpen] = useState(false);
   const [supportPlanDialogOpen, setSupportPlanDialogOpen] = useState(false);
+  const [customDocDialogOpen, setCustomDocDialogOpen] = useState(false);
+  const [editingCustomDoc, setEditingCustomDoc] = useState<CustomLegalDocument | null>(null);
   const [localServiceRates, setLocalServiceRates] = useState<ServiceRate[]>([]);
   const [localSupportPlans, setLocalSupportPlans] = useState<SupportPlan[]>([]);
 
@@ -37,6 +39,10 @@ export function LegalManager() {
 
   const { data: supportPlans = [] } = useQuery<SupportPlan[]>({
     queryKey: ['/api/support-plans'],
+  });
+
+  const { data: customDocs = [] } = useQuery<CustomLegalDocument[]>({
+    queryKey: ['/api/custom-legal-documents'],
   });
 
   // Initialize local state when data loads
@@ -82,6 +88,28 @@ export function LegalManager() {
       isCustom: true,
     },
   });
+
+  const customDocForm = useForm<InsertCustomLegalDocumentType | UpdateCustomLegalDocumentType>({
+    resolver: zodResolver(editingCustomDoc ? updateCustomLegalDocumentSchema : insertCustomLegalDocumentSchema),
+    defaultValues: {
+      name: '',
+      content: '',
+    },
+  });
+
+  useEffect(() => {
+    if (editingCustomDoc) {
+      customDocForm.reset({
+        name: editingCustomDoc.name,
+        content: editingCustomDoc.content,
+      });
+    } else {
+      customDocForm.reset({
+        name: '',
+        content: '',
+      });
+    }
+  }, [editingCustomDoc, customDocForm]);
 
   useEffect(() => {
     if (legalDocs) {
@@ -223,6 +251,60 @@ export function LegalManager() {
     },
   });
 
+  const createCustomDocMutation = useMutation({
+    mutationFn: (data: InsertCustomLegalDocumentType) =>
+      apiRequest('POST', '/api/custom-legal-documents', data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/custom-legal-documents'] });
+      setCustomDocDialogOpen(false);
+      setEditingCustomDoc(null);
+      customDocForm.reset();
+      toast({ title: "Custom legal document created successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create custom legal document",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCustomDocMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateCustomLegalDocumentType }) =>
+      apiRequest('PUT', `/api/custom-legal-documents/${id}`, data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['/api/custom-legal-documents'] });
+      setCustomDocDialogOpen(false);
+      setEditingCustomDoc(null);
+      customDocForm.reset();
+      toast({ title: "Custom legal document updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update custom legal document",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCustomDocMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest('DELETE', `/api/custom-legal-documents/${id}`, undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/custom-legal-documents'] });
+      toast({ title: "Custom legal document deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete custom legal document",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditServiceRate = (rateId: string, field: 'regularRate' | 'afterHoursRate' | 'holidayRate', value: string) => {
     setLocalServiceRates(prev => 
       prev.map(rate => 
@@ -263,6 +345,25 @@ export function LegalManager() {
     }));
     
     updateSupportPlansMutation.mutate(updates);
+  };
+
+  const handleSubmitCustomDoc = (data: InsertCustomLegalDocumentType | UpdateCustomLegalDocumentType) => {
+    if (editingCustomDoc) {
+      updateCustomDocMutation.mutate({ id: editingCustomDoc.id, data: data as UpdateCustomLegalDocumentType });
+    } else {
+      createCustomDocMutation.mutate(data as InsertCustomLegalDocumentType);
+    }
+  };
+
+  const handleEditCustomDoc = (doc: CustomLegalDocument) => {
+    setEditingCustomDoc(doc);
+    setCustomDocDialogOpen(true);
+  };
+
+  const handleCloseCustomDocDialog = () => {
+    setCustomDocDialogOpen(false);
+    setEditingCustomDoc(null);
+    customDocForm.reset();
   };
 
   const getRateForType = (rateTypeId: string) => {
@@ -797,6 +898,142 @@ export function LegalManager() {
               )}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <FilePlus className="h-5 w-5 text-primary" />
+                <CardTitle>Custom Legal Documents</CardTitle>
+              </div>
+              <CardDescription>
+                Create and manage custom legal document types
+              </CardDescription>
+            </div>
+            <Dialog open={customDocDialogOpen} onOpenChange={setCustomDocDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" onClick={() => setEditingCustomDoc(null)} data-testid="button-add-custom-doc">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Custom Document
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editingCustomDoc ? 'Edit Custom Document' : 'Add Custom Document'}</DialogTitle>
+                  <DialogDescription>
+                    {editingCustomDoc ? 'Update the custom legal document' : 'Create a new custom legal document type'}
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...customDocForm}>
+                  <form onSubmit={customDocForm.handleSubmit(handleSubmitCustomDoc)} className="space-y-4">
+                    <FormField
+                      control={customDocForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Document Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Safety Waiver" data-testid="input-custom-doc-name" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={customDocForm.control}
+                      name="content"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Document Content</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              value={field.value || ''}
+                              placeholder="Enter the document content..."
+                              className="min-h-[200px] font-mono text-sm"
+                              data-testid="textarea-custom-doc-content"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCloseCustomDocDialog}
+                        data-testid="button-cancel-custom-doc"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={createCustomDocMutation.isPending || updateCustomDocMutation.isPending}
+                        data-testid="button-submit-custom-doc"
+                      >
+                        {editingCustomDoc
+                          ? (updateCustomDocMutation.isPending ? 'Updating...' : 'Update Document')
+                          : (createCustomDocMutation.isPending ? 'Creating...' : 'Create Document')
+                        }
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {customDocs.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No custom legal documents yet. Create one to get started.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Document Name</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead className="w-[120px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customDocs.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell className="font-medium">{doc.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString() : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditCustomDoc(doc)}
+                          data-testid={`button-edit-custom-doc-${doc.id}`}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteCustomDocMutation.mutate(doc.id)}
+                          disabled={deleteCustomDocMutation.isPending}
+                          data-testid={`button-delete-custom-doc-${doc.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
