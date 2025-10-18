@@ -1,8 +1,8 @@
+import { forwardRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { SystemConfig, LegalDocuments, Lead, Client } from "@shared/schema";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { FileText } from "lucide-react";
 
 interface QuoteItem {
   itemName: string;
@@ -23,9 +23,10 @@ interface QuotePreviewProps {
   notes?: string;
   leadId?: string;
   clientId?: string;
+  quoteNumber?: string;
 }
 
-export function QuotePreview({
+export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   items,
   subtotal,
   taxRate,
@@ -35,7 +36,8 @@ export function QuotePreview({
   notes,
   leadId,
   clientId,
-}: QuotePreviewProps) {
+  quoteNumber,
+}, ref) => {
   const { data: systemConfig } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
   });
@@ -57,48 +59,62 @@ export function QuotePreview({
   const customer = selectedClient || selectedLead;
 
   const companyName = systemConfig?.companyName || 'FibreUS';
-  const headerTagline = systemConfig?.headerTagline || 'Professional Quote';
+  const headerTagline = systemConfig?.headerTagline || 'Electronic Security & Tech Services';
   const companyPhone = systemConfig?.phoneNumber || '';
   const companyEmail = systemConfig?.contactEmail || '';
   const companyWebsite = systemConfig?.website || '';
   const companyAddress = systemConfig?.address || '';
+  const darkLogoUrl = systemConfig?.darkLogoUrl || '';
+
+  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const validUntilDate = validUntil ? new Date(validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
   return (
-    <Card className="mt-6">
-      <CardHeader className="bg-primary text-primary-foreground py-6">
+    <Card className="mt-6" ref={ref}>
+      {/* Professional Header - Dark Blue Background */}
+      <div className="bg-[#1e3a5f] text-white p-6">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <FileText className="h-8 w-8" />
-            <div>
+          <div className="flex items-start gap-4">
+            {darkLogoUrl && (
+              <img src={darkLogoUrl} alt={companyName} className="h-16 w-auto object-contain" />
+            )}
+            <div className="pt-1">
               <h1 className="text-2xl font-bold">{companyName}</h1>
-              <p className="text-sm opacity-90">{headerTagline}</p>
+              <p className="text-sm mt-1 opacity-90">{headerTagline}</p>
             </div>
           </div>
-          <div className="text-right text-sm">
+          <div className="text-right text-sm space-y-0.5">
             {companyPhone && <div>{companyPhone}</div>}
             {companyEmail && <div>{companyEmail}</div>}
             {companyWebsite && <div>{companyWebsite}</div>}
-            {companyAddress && <div className="mt-1">{companyAddress}</div>}
+            {companyAddress && <div className="text-xs mt-2">{companyAddress}</div>}
           </div>
         </div>
-      </CardHeader>
+      </div>
+
       <CardContent className="p-6 space-y-6">
+        {/* Quote Metadata Section */}
+        <div className="flex justify-between items-start pb-4 border-b">
+          <div>
+            <div className="text-sm"><span className="font-semibold">Quote #:</span> {quoteNumber || 'DRAFT'}</div>
+          </div>
+          <div className="text-right text-sm space-y-1">
+            <div><span className="font-semibold">Date:</span> {currentDate}</div>
+            {validUntilDate && <div><span className="font-semibold">Valid Until:</span> {validUntilDate}</div>}
+          </div>
+        </div>
+
+        {/* Bill To Section */}
         {customer && (
           <div>
-            <h3 className="font-semibold text-sm text-muted-foreground mb-2">PREPARED FOR</h3>
-            <div className="space-y-1">
+            <h3 className="font-bold text-sm mb-2">Bill To:</h3>
+            <div className="space-y-0.5 text-sm">
               <div className="font-medium">{customer.name}</div>
-              {customer.email && <div className="text-sm">{customer.email}</div>}
-              {customer.phone && <div className="text-sm">{customer.phone}</div>}
-              {customer.address && <div className="text-sm text-muted-foreground">{customer.address}</div>}
+              {(customer as any).company && <div>{(customer as any).company}</div>}
+              {customer.email && <div>{customer.email}</div>}
+              {customer.phone && <div>{customer.phone}</div>}
+              {customer.address && <div className="text-muted-foreground">{customer.address}</div>}
             </div>
-          </div>
-        )}
-
-        {validUntil && (
-          <div>
-            <span className="text-sm font-semibold text-muted-foreground">Valid Until: </span>
-            <span className="text-sm">{new Date(validUntil).toLocaleDateString()}</span>
           </div>
         )}
 
@@ -208,4 +224,6 @@ export function QuotePreview({
       </CardContent>
     </Card>
   );
-}
+});
+
+QuotePreview.displayName = 'QuotePreview';
