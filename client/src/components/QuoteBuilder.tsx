@@ -176,6 +176,7 @@ export default function QuoteBuilder() {
       subtotal: subtotal.toFixed(2),
       taxAmount: taxAmount.toFixed(2),
       total: total.toFixed(2),
+      validUntil: values.validUntil ? new Date(values.validUntil) : undefined,
     };
 
     createQuoteMutation.mutate(quoteData);
@@ -705,11 +706,6 @@ export default function QuoteBuilder() {
                 type="submit"
                 disabled={createQuoteMutation.isPending}
                 data-testid="button-save-quote"
-                onClick={() => {
-                  console.log('Form errors:', form.formState.errors);
-                  console.log('Form values:', form.getValues());
-                  console.log('Selected items:', selectedItems);
-                }}
               >
                 <Save className="h-4 w-4 mr-2" />
                 {createQuoteMutation.isPending ? 'Saving...' : 'Save Quote'}
