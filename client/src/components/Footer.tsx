@@ -93,10 +93,6 @@ export default function Footer() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-6">
-              <Badge variant="outline">24/7 Support</Badge>
-            </div>
-
             {/* Social Media Links */}
             {(config?.facebookUrl || config?.twitterUrl || config?.linkedinUrl || config?.instagramUrl) && (
               <div className="flex gap-3">
