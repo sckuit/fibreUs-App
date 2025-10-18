@@ -2718,8 +2718,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...req.body,
           createdById: userId
         });
+
+        // Convert validUntil from string to Date if present
+        const quoteData: any = {
+          ...validated,
+        };
+        if (validated.validUntil) {
+          quoteData.validUntil = new Date(validated.validUntil);
+        }
         
-        const newQuote = await storage.createQuote(validated);
+        const newQuote = await storage.createQuote(quoteData);
         
         await logActivity(
           userId,

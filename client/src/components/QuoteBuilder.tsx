@@ -160,9 +160,8 @@ export default function QuoteBuilder() {
     const taxAmount = calculateTax();
     const total = calculateTotal();
 
-    const quoteData: InsertQuoteType = {
-      leadId: values.leadId || undefined,
-      clientId: values.clientId || undefined,
+    // Build quote data - send only non-empty values
+    const quoteData: any = {
       items: selectedItems.map(item => ({
         priceMatrixId: item.priceMatrixId,
         itemName: item.itemName,
@@ -176,10 +175,14 @@ export default function QuoteBuilder() {
       taxRate: values.taxRate || '0',
       taxAmount: taxAmount.toFixed(2),
       total: total.toFixed(2),
-      validUntil: values.validUntil && values.validUntil !== '' ? new Date(values.validUntil) : undefined,
-      notes: values.notes || undefined,
-      status: values.status || 'draft',
+      status: 'draft',
     };
+
+    // Add optional fields only if they have values
+    if (values.leadId) quoteData.leadId = values.leadId;
+    if (values.clientId) quoteData.clientId = values.clientId;
+    if (values.validUntil && values.validUntil !== '') quoteData.validUntil = values.validUntil;
+    if (values.notes && values.notes.trim() !== '') quoteData.notes = values.notes;
 
     createQuoteMutation.mutate(quoteData);
   };
