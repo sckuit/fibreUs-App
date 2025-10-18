@@ -23,6 +23,7 @@ import {
   priceMatrix,
   quotes,
   legalDocuments,
+  customLegalDocuments,
   rateTypes,
   serviceRates,
   supportPlans,
@@ -86,6 +87,9 @@ import {
   type LegalDocuments,
   type InsertLegalDocumentsType,
   type UpdateLegalDocumentsType,
+  type CustomLegalDocument,
+  type InsertCustomLegalDocumentType,
+  type UpdateCustomLegalDocumentType,
   type RateType,
   type InsertRateTypeType,
   type UpdateRateTypeType,
@@ -274,6 +278,13 @@ export interface IStorage {
   // Legal Documents operations
   getLegalDocuments(): Promise<LegalDocuments | undefined>;
   updateLegalDocuments(updates: UpdateLegalDocumentsType): Promise<LegalDocuments>;
+
+  // Custom Legal Documents operations
+  createCustomLegalDocument(data: InsertCustomLegalDocumentType): Promise<CustomLegalDocument>;
+  getCustomLegalDocuments(): Promise<CustomLegalDocument[]>;
+  getCustomLegalDocument(id: string): Promise<CustomLegalDocument | undefined>;
+  updateCustomLegalDocument(id: string, updates: UpdateCustomLegalDocumentType): Promise<CustomLegalDocument | undefined>;
+  deleteCustomLegalDocument(id: string): Promise<void>;
 
   // Rate Type operations
   createRateType(data: InsertRateTypeType): Promise<RateType>;
@@ -1557,6 +1568,34 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return result;
     }
+  }
+
+  // Custom Legal Documents operations
+  async createCustomLegalDocument(data: InsertCustomLegalDocumentType): Promise<CustomLegalDocument> {
+    const [result] = await db.insert(customLegalDocuments).values(data).returning();
+    return result;
+  }
+
+  async getCustomLegalDocuments(): Promise<CustomLegalDocument[]> {
+    return db.select().from(customLegalDocuments).orderBy(desc(customLegalDocuments.createdAt));
+  }
+
+  async getCustomLegalDocument(id: string): Promise<CustomLegalDocument | undefined> {
+    const [result] = await db.select().from(customLegalDocuments).where(eq(customLegalDocuments.id, id));
+    return result;
+  }
+
+  async updateCustomLegalDocument(id: string, updates: UpdateCustomLegalDocumentType): Promise<CustomLegalDocument | undefined> {
+    const [result] = await db
+      .update(customLegalDocuments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(customLegalDocuments.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteCustomLegalDocument(id: string): Promise<void> {
+    await db.delete(customLegalDocuments).where(eq(customLegalDocuments.id, id));
   }
 
   // Rate Type operations

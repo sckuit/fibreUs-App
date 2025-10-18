@@ -45,6 +45,8 @@ import {
   insertQuoteSchema,
   updateQuoteSchema,
   updateLegalDocumentsSchema,
+  insertCustomLegalDocumentSchema,
+  updateCustomLegalDocumentSchema,
   insertRateTypeSchema,
   updateRateTypeSchema,
   insertServiceRateSchema,
@@ -2336,6 +2338,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         console.error("Error updating legal documents:", error);
         res.status(500).json({ message: "Failed to update legal documents" });
+      }
+    }
+  );
+
+  // Custom Legal Documents routes
+  app.post("/api/custom-legal-documents",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertCustomLegalDocumentSchema.parse(req.body);
+        const doc = await storage.createCustomLegalDocument(validatedData);
+        res.status(201).json(doc);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid custom legal document data", errors: error.errors });
+        }
+        console.error("Error creating custom legal document:", error);
+        res.status(500).json({ message: "Failed to create custom legal document" });
+      }
+    }
+  );
+
+  app.get("/api/custom-legal-documents",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const docs = await storage.getCustomLegalDocuments();
+        res.json(docs);
+      } catch (error) {
+        console.error("Error getting custom legal documents:", error);
+        res.status(500).json({ message: "Failed to get custom legal documents" });
+      }
+    }
+  );
+
+  app.get("/api/custom-legal-documents/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const doc = await storage.getCustomLegalDocument(req.params.id);
+        if (!doc) {
+          return res.status(404).json({ message: "Custom legal document not found" });
+        }
+        res.json(doc);
+      } catch (error) {
+        console.error("Error getting custom legal document:", error);
+        res.status(500).json({ message: "Failed to get custom legal document" });
+      }
+    }
+  );
+
+  app.put("/api/custom-legal-documents/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateCustomLegalDocumentSchema.parse(req.body);
+        const doc = await storage.updateCustomLegalDocument(req.params.id, validatedData);
+        if (!doc) {
+          return res.status(404).json({ message: "Custom legal document not found" });
+        }
+        res.json(doc);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid custom legal document data", errors: error.errors });
+        }
+        console.error("Error updating custom legal document:", error);
+        res.status(500).json({ message: "Failed to update custom legal document" });
+      }
+    }
+  );
+
+  app.delete("/api/custom-legal-documents/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteCustomLegalDocument(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting custom legal document:", error);
+        res.status(500).json({ message: "Failed to delete custom legal document" });
       }
     }
   );
