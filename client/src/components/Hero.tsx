@@ -13,7 +13,6 @@ export default function Hero() {
   });
 
   const companyName = config?.companyName || "FibreUS";
-  const emergencyPhone = config?.emergencyPhone || "5559114357";
   const stats = [
     { label: "Years Experience", value: "15+" },
     { label: "Clients Protected", value: "500+" },
@@ -107,15 +106,6 @@ export default function Hero() {
                 Schedule Service
               </Button>
             </ScheduleAppointmentDialog>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
-              data-testid="button-emergency-service"
-              onClick={() => window.location.href = `tel:${emergencyPhone.replace(/\D/g, '')}`}
-            >
-              Emergency Service
-            </Button>
           </div>
 
           {/* Stats */}
