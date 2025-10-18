@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,9 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Edit, Download, FileText, DollarSign, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { QuotePreview } from "@/components/QuotePreview";
+import { formatCurrency } from "@/lib/currency";
 
 interface QuoteItem {
   priceMatrixId: string;
@@ -37,6 +40,8 @@ export default function QuotesManager() {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
+  const [downloadingQuote, setDownloadingQuote] = useState<Quote | null>(null);
+  const downloadPreviewRef = useRef<HTMLDivElement>(null);
 
   const { data: quotes = [], isLoading: quotesLoading } = useQuery<Quote[]>({
     queryKey: ['/api/quotes'],
@@ -167,206 +172,98 @@ export default function QuotesManager() {
   };
 
   const handleDownloadPDF = async (quote: Quote) => {
+    // Set the quote to download, which will trigger rendering of the hidden preview
+    setDownloadingQuote(quote);
+    
+    // Wait for the preview to render
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    if (!downloadPreviewRef.current) {
+      toast({
+        title: "Preview not ready",
+        description: "Please try again",
+        variant: "destructive",
+      });
+      setDownloadingQuote(null);
+      return;
+    }
+
     try {
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      let yPos = margin;
-
-      const recipient = quote.leadId
-        ? leads.find(l => l.id === quote.leadId)
-        : clients.find(c => c.id === quote.clientId);
-
-      // Load company logo if available (use dark logo for PDF)
-      let logoData: string | null = null;
-      if (systemConfig?.darkLogoUrl) {
-        try {
-          const response = await fetch(systemConfig.darkLogoUrl);
-          const blob = await response.blob();
-          logoData = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        } catch (error) {
-          console.error('Failed to load logo:', error);
-        }
-      }
-
-      // Header Background
-      pdf.setFillColor(30, 58, 95);
-      pdf.rect(0, 0, pageWidth, 45, 'F');
-
-      // Company Logo
-      if (logoData) {
-        try {
-          pdf.addImage(logoData, 'PNG', margin, 10, 30, 25);
-        } catch (error) {
-          console.error('Failed to add logo to PDF:', error);
-        }
-      }
-
-      // Company Name and Info
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(22);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(systemConfig?.companyName || 'Quote', logoData ? margin + 35 : margin, 20);
-      
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      const tagline = systemConfig?.headerTagline || 'Professional Quote';
-      pdf.text(tagline, logoData ? margin + 35 : margin, 27);
-
-      // Company Contact Info (Right Side)
-      pdf.setFontSize(9);
-      const contactInfo = [];
-      if (systemConfig?.phoneNumber) contactInfo.push(systemConfig.phoneNumber);
-      if (systemConfig?.contactEmail) contactInfo.push(systemConfig.contactEmail);
-      if (systemConfig?.website) contactInfo.push(systemConfig.website);
-      
-      contactInfo.forEach((info, index) => {
-        pdf.text(info, pageWidth - margin, 18 + (index * 5), { align: 'right' });
+      // Capture the preview component as an image
+      const canvas = await html2canvas(downloadPreviewRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
       });
 
-      if (systemConfig?.address) {
-        pdf.setFontSize(8);
-        pdf.text(systemConfig.address, pageWidth - margin, 33, { align: 'right' });
-      }
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      
+      // Calculate how the image maps to PDF dimensions
+      const imgWidth = pageWidth;
+      const pageHeightInPixels = (canvas.width * pageHeight) / pageWidth;
 
-      // Reset text color for body
-      pdf.setTextColor(0, 0, 0);
-      yPos = 55;
+      let heightLeft = canvas.height;
+      let position = 0;
+      let page = 0;
 
-      // Quote Number and Date
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(`Quote #: ${quote.quoteNumber}`, margin, yPos);
-      pdf.text(`Date: ${format(new Date(quote.createdAt!), 'MMMM dd, yyyy')}`, pageWidth - margin - 50, yPos);
-      yPos += 7;
+      while (heightLeft > 0) {
+        // Calculate slice height, clamped to remaining content
+        const idealSliceHeight = Math.ceil(pageHeightInPixels);
+        const actualSliceHeight = Math.min(idealSliceHeight, heightLeft);
+        
+        // Create a temporary canvas for each page
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = actualSliceHeight;
+        
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          // Draw the slice of the original canvas for this page
+          // Ensure we don't try to read past the end of the source canvas
+          const sourceHeight = Math.min(actualSliceHeight, canvas.height - position);
+          
+          ctx.drawImage(
+            canvas,
+            0,
+            position,
+            canvas.width,
+            sourceHeight,
+            0,
+            0,
+            canvas.width,
+            sourceHeight
+          );
 
-      if (quote.validUntil) {
-        pdf.text(`Valid Until: ${format(new Date(quote.validUntil), 'MMMM dd, yyyy')}`, pageWidth - margin - 50, yPos);
-        yPos += 7;
-      }
-
-      yPos += 5;
-
-      // Customer Information
-      if (recipient) {
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Bill To:', margin, yPos);
-        yPos += 7;
-
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(recipient.name, margin, yPos);
-        yPos += 5;
-        if (recipient.company) {
-          pdf.text(recipient.company, margin, yPos);
-          yPos += 5;
-        }
-        if (recipient.email) {
-          pdf.text(recipient.email, margin, yPos);
-          yPos += 5;
-        }
-        if (recipient.phone) {
-          pdf.text(recipient.phone, margin, yPos);
-          yPos += 5;
-        }
-      }
-      yPos += 10;
-
-      // Items Table Header
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFillColor(240, 240, 240);
-      pdf.rect(margin, yPos, pageWidth - 2 * margin, 8, 'F');
-      pdf.text('Item', margin + 2, yPos + 5);
-      pdf.text('Qty', pageWidth - 90, yPos + 5);
-      pdf.text('Unit Price', pageWidth - 70, yPos + 5);
-      pdf.text('Total', pageWidth - margin - 2, yPos + 5, { align: 'right' });
-      yPos += 10;
-
-      // Items
-      const items = Array.isArray(quote.items) ? quote.items as QuoteItem[] : [];
-      pdf.setFont('helvetica', 'normal');
-      items.forEach((item: QuoteItem) => {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = margin;
-        }
-
-        pdf.text(item.itemName, margin + 2, yPos);
-        if (item.description) {
-          pdf.setFontSize(8);
-          pdf.setTextColor(100, 100, 100);
-          const descLines = pdf.splitTextToSize(item.description, 70);
-          pdf.text(descLines[0], margin + 2, yPos + 4);
-          pdf.setTextColor(0, 0, 0);
-          pdf.setFontSize(10);
-        }
-        pdf.text(item.quantity.toString(), pageWidth - 90, yPos);
-        pdf.text(`$${parseFloat(item.unitPrice).toFixed(2)}`, pageWidth - 70, yPos);
-        pdf.text(`$${item.total.toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
-        yPos += 8;
-      });
-
-      yPos += 5;
-
-      // Totals
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Subtotal:', pageWidth - 70, yPos);
-      pdf.text(`$${parseFloat(quote.subtotal).toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
-      yPos += 6;
-
-      const taxRate = parseFloat(quote.taxRate || '0');
-      if (taxRate > 0) {
-        pdf.text(`Tax (${taxRate.toFixed(2)}%):`, pageWidth - 70, yPos);
-        pdf.text(`$${parseFloat(quote.taxAmount || '0').toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
-        yPos += 6;
-      }
-
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.text('Total:', pageWidth - 70, yPos);
-      pdf.text(`$${parseFloat(quote.total).toFixed(2)}`, pageWidth - margin - 2, yPos, { align: 'right' });
-      yPos += 10;
-
-      // Notes
-      if (quote.notes) {
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Notes:', margin, yPos);
-        yPos += 5;
-        pdf.setFont('helvetica', 'normal');
-        const noteLines = pdf.splitTextToSize(quote.notes, pageWidth - 2 * margin);
-        pdf.text(noteLines, margin, yPos);
-      }
-
-      // Footer
-      const pageCount = (pdf as any).internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(8);
-        pdf.setTextColor(150, 150, 150);
-        pdf.text(
-          `Page ${i} of ${pageCount}`,
-          pageWidth / 2,
-          pdf.internal.pageSize.getHeight() - 10,
-          { align: 'center' }
-        );
-        if (systemConfig?.companyName) {
-          pdf.text(
-            systemConfig.companyName,
-            margin,
-            pdf.internal.pageSize.getHeight() - 10
+          const pageImgHeight = (actualSliceHeight * pageWidth) / pageCanvas.width;
+          
+          // Add new page if not the first page
+          if (page > 0) {
+            pdf.addPage();
+          }
+          
+          // Add the sliced image to the PDF
+          pdf.addImage(
+            pageCanvas.toDataURL('image/png'),
+            'PNG',
+            0,
+            0,
+            imgWidth,
+            pageImgHeight
           );
         }
+
+        // Update position based on actual slice height used
+        heightLeft -= actualSliceHeight;
+        position += actualSliceHeight;
+        page++;
       }
 
-      pdf.save(`quote-${quote.quoteNumber}.pdf`);
+      const currentDate = format(new Date(), 'yyyy-MM-dd');
+      pdf.save(`quote-${quote.quoteNumber}-${currentDate}.pdf`);
+      
       toast({
         title: "PDF Downloaded",
         description: "Quote has been downloaded successfully",
@@ -378,6 +275,8 @@ export default function QuotesManager() {
         description: "An error occurred while creating the PDF",
         variant: "destructive",
       });
+    } finally {
+      setDownloadingQuote(null);
     }
   };
 
@@ -836,7 +735,7 @@ export default function QuotesManager() {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal:</span>
                       <span className="font-medium">
-                        ${calculateSubtotal().toFixed(2)}
+                        {formatCurrency(calculateSubtotal())}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
@@ -844,12 +743,12 @@ export default function QuotesManager() {
                         Tax ({parseFloat(form.watch('taxRate') || '0').toFixed(2)}%):
                       </span>
                       <span className="font-medium">
-                        ${calculateTax().toFixed(2)}
+                        {formatCurrency(calculateTax())}
                       </span>
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t pt-2">
                       <span>Total:</span>
-                      <span>${calculateTotal().toFixed(2)}</span>
+                      <span>{formatCurrency(calculateTotal())}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -927,6 +826,25 @@ export default function QuotesManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden QuotePreview for PDF Download */}
+      {downloadingQuote && (
+        <div className="fixed -left-[9999px] top-0">
+          <QuotePreview
+            ref={downloadPreviewRef}
+            items={Array.isArray(downloadingQuote.items) ? downloadingQuote.items as QuoteItem[] : []}
+            subtotal={downloadingQuote.subtotal}
+            taxRate={downloadingQuote.taxRate || '0'}
+            taxAmount={downloadingQuote.taxAmount || '0'}
+            total={downloadingQuote.total}
+            validUntil={downloadingQuote.validUntil ? new Date(downloadingQuote.validUntil).toISOString().split('T')[0] : undefined}
+            notes={downloadingQuote.notes || undefined}
+            leadId={downloadingQuote.leadId || undefined}
+            clientId={downloadingQuote.clientId || undefined}
+            quoteNumber={downloadingQuote.quoteNumber}
+          />
+        </div>
+      )}
     </Card>
   );
 }

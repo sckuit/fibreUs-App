@@ -6,6 +6,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments, User } from "@shared/schema";
 import { insertQuoteSchema } from "@shared/schema";
+import { formatCurrency } from "@/lib/currency";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -597,7 +598,7 @@ export default function QuoteBuilder() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal:</span>
                     <span className="font-medium">
-                      ${calculateSubtotal().toFixed(2)}
+                      {formatCurrency(calculateSubtotal())}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -605,12 +606,12 @@ export default function QuoteBuilder() {
                       Tax ({parseFloat(form.watch('taxRate') || '0').toFixed(2)}%):
                     </span>
                     <span className="font-medium">
-                      ${calculateTax().toFixed(2)}
+                      {formatCurrency(calculateTax())}
                     </span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>Total:</span>
-                    <span>${calculateTotal().toFixed(2)}</span>
+                    <span>{formatCurrency(calculateTotal())}</span>
                   </div>
                 </CardContent>
               </Card>

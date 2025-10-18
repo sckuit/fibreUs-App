@@ -44,6 +44,8 @@ import {
   updatePriceMatrixSchema,
   insertQuoteSchema,
   updateQuoteSchema,
+  insertInvoiceSchema,
+  updateInvoiceSchema,
   updateLegalDocumentsSchema,
   insertCustomLegalDocumentSchema,
   updateCustomLegalDocumentSchema,
@@ -3261,6 +3263,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting quote:", error);
         res.status(500).json({ message: "Failed to delete quote" });
+      }
+    }
+  );
+
+  // Invoice routes
+  app.get("/api/invoices",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'viewFinancial')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const invoices = await storage.getInvoices();
+        res.json(invoices);
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+        res.status(500).json({ message: "Failed to fetch invoices" });
+      }
+    }
+  );
+
+  app.get("/api/invoices/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'viewFinancial')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const invoice = await storage.getInvoice(req.params.id);
+        if (!invoice) {
+          return res.status(404).json({ message: "Invoice not found" });
+        }
+        res.json(invoice);
+      } catch (error) {
+        console.error("Error fetching invoice:", error);
+        res.status(500).json({ message: "Failed to fetch invoice" });
+      }
+    }
+  );
+
+  app.post("/api/invoices",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageFinancial')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validated = insertInvoiceSchema.parse({
+          ...req.body,
+          createdById: userId
+        });
+
+        // Convert dueDate from string to Date if present
+        const invoiceData: any = {
+          ...validated,
+        };
+        if (validated.dueDate) {
+          invoiceData.dueDate = new Date(validated.dueDate);
+        }
+        
+        const newInvoice = await storage.createInvoice(invoiceData);
+        
+        await logActivity(
+          userId,
+          'create',
+          'invoice',
+          newInvoice.id,
+          newInvoice.invoiceNumber,
+          undefined,
+          req
+        );
+        
+        res.status(201).json(newInvoice);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid invoice data", errors: error.errors });
+        }
+        console.error("Error creating invoice:", error);
+        res.status(500).json({ message: "Failed to create invoice" });
+      }
+    }
+  );
+
+  app.put("/api/invoices/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageFinancial')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validated = updateInvoiceSchema.parse(req.body);
+        const updatedInvoice = await storage.updateInvoice(req.params.id, validated);
+        
+        if (!updatedInvoice) {
+          return res.status(404).json({ message: "Invoice not found" });
+        }
+        
+        await logActivity(
+          userId,
+          'update',
+          'invoice',
+          updatedInvoice.id,
+          updatedInvoice.invoiceNumber,
+          undefined,
+          req
+        );
+        
+        res.json(updatedInvoice);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating invoice:", error);
+        res.status(500).json({ message: "Failed to update invoice" });
+      }
+    }
+  );
+
+  app.delete("/api/invoices/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageFinancial')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteInvoice(req.params.id);
+        
+        await logActivity(
+          userId,
+          'delete',
+          'invoice',
+          req.params.id,
+          null,
+          undefined,
+          req
+        );
+        
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting invoice:", error);
+        res.status(500).json({ message: "Failed to delete invoice" });
       }
     }
   );

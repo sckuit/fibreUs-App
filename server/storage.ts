@@ -22,6 +22,7 @@ import {
   teamMembers,
   priceMatrix,
   quotes,
+  invoices,
   legalDocuments,
   customLegalDocuments,
   rateTypes,
@@ -84,6 +85,9 @@ import {
   type Quote,
   type InsertQuoteType,
   type UpdateQuoteType,
+  type Invoice,
+  type InsertInvoiceType,
+  type UpdateInvoiceType,
   type LegalDocuments,
   type InsertLegalDocumentsType,
   type UpdateLegalDocumentsType,
@@ -274,6 +278,13 @@ export interface IStorage {
   getQuote(id: string): Promise<Quote | undefined>;
   updateQuote(id: string, updates: UpdateQuoteType): Promise<Quote | undefined>;
   deleteQuote(id: string): Promise<void>;
+
+  // Invoice operations
+  createInvoice(data: InsertInvoiceType): Promise<Invoice>;
+  getInvoices(filters?: { leadId?: string; clientId?: string; quoteId?: string; paymentStatus?: string }): Promise<Invoice[]>;
+  getInvoice(id: string): Promise<Invoice | undefined>;
+  updateInvoice(id: string, updates: UpdateInvoiceType): Promise<Invoice | undefined>;
+  deleteInvoice(id: string): Promise<void>;
 
   // Legal Documents operations
   getLegalDocuments(): Promise<LegalDocuments | undefined>;
@@ -1543,6 +1554,120 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuote(id: string): Promise<void> {
     await db.delete(quotes).where(eq(quotes.id, id));
+  }
+
+  // Invoice operations
+  async createInvoice(data: InsertInvoiceType): Promise<Invoice> {
+    // Generate invoice number if not provided
+    let invoiceNumber = data.invoiceNumber;
+    if (!invoiceNumber) {
+      const year = new Date().getFullYear();
+      const result = await db
+        .select({ invoiceNumber: invoices.invoiceNumber })
+        .from(invoices)
+        .orderBy(desc(invoices.invoiceNumber))
+        .limit(1);
+      
+      if (result.length === 0) {
+        invoiceNumber = `INV-${year}-00001`;
+      } else {
+        const lastInvoice = result[0].invoiceNumber;
+        const parts = lastInvoice.split('-');
+        const lastNumber = parseInt(parts[2]);
+        const nextNumber = lastNumber + 1;
+        invoiceNumber = `INV-${year}-${nextNumber.toString().padStart(5, '0')}`;
+      }
+    }
+    
+    // Calculate initial balanceDue if not provided
+    const total = data.total || 0;
+    const amountPaid = data.amountPaid || 0;
+    const balanceDue = data.balanceDue !== undefined ? data.balanceDue : (total - amountPaid);
+    
+    // Determine initial payment status
+    let paymentStatus = data.paymentStatus;
+    if (!paymentStatus) {
+      if (balanceDue <= 0) {
+        paymentStatus = 'paid';
+      } else if (amountPaid > 0) {
+        paymentStatus = 'partial';
+      } else {
+        paymentStatus = 'unpaid';
+      }
+    }
+    
+    const [result] = await db.insert(invoices).values({
+      ...data,
+      invoiceNumber,
+      balanceDue,
+      paymentStatus
+    }).returning();
+    return result;
+  }
+
+  async getInvoices(filters?: { leadId?: string; clientId?: string; quoteId?: string; paymentStatus?: string }): Promise<Invoice[]> {
+    let query = db.select().from(invoices);
+    
+    const conditions = [];
+    if (filters?.leadId) {
+      conditions.push(eq(invoices.leadId, filters.leadId));
+    }
+    if (filters?.clientId) {
+      conditions.push(eq(invoices.clientId, filters.clientId));
+    }
+    if (filters?.quoteId) {
+      conditions.push(eq(invoices.quoteId, filters.quoteId));
+    }
+    if (filters?.paymentStatus) {
+      conditions.push(eq(invoices.paymentStatus, filters.paymentStatus as any));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return query.orderBy(desc(invoices.createdAt));
+  }
+
+  async getInvoice(id: string): Promise<Invoice | undefined> {
+    const [result] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return result;
+  }
+
+  async updateInvoice(id: string, updates: UpdateInvoiceType): Promise<Invoice | undefined> {
+    // Get current invoice to recalculate balanceDue if needed
+    const current = await this.getInvoice(id);
+    if (!current) {
+      return undefined;
+    }
+    
+    // Prepare updated data
+    const updatedData: any = { ...updates, updatedAt: new Date() };
+    
+    // Recalculate balanceDue if total or amountPaid changed
+    const newTotal = updates.total !== undefined ? updates.total : current.total;
+    const newAmountPaid = updates.amountPaid !== undefined ? updates.amountPaid : current.amountPaid;
+    updatedData.balanceDue = newTotal - newAmountPaid;
+    
+    // Update paymentStatus based on balance
+    if (updatedData.balanceDue <= 0) {
+      updatedData.paymentStatus = 'paid';
+    } else if (newAmountPaid > 0) {
+      updatedData.paymentStatus = 'partial';
+    } else {
+      updatedData.paymentStatus = 'unpaid';
+    }
+    
+    const [result] = await db
+      .update(invoices)
+      .set(updatedData)
+      .where(eq(invoices.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteInvoice(id: string): Promise<void> {
+    await db.delete(invoices).where(eq(invoices.id, id));
   }
 
   // Legal Documents operations

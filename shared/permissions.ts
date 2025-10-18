@@ -263,9 +263,9 @@ export const rolePermissions: Record<UserRole, Permission> = {
     // Visitors - view only (can't CRUD visitors, only view analytics)
     viewVisitors: true,
     
-    // Financial - no access
-    viewFinancial: false,
-    manageFinancial: false,
+    // Financial - FULL CRUD (sales can create and manage invoices/quotes)
+    viewFinancial: true,
+    manageFinancial: true,
     
     // Users - NO access
     viewUsers: false,

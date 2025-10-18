@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { SystemConfig, LegalDocuments, Lead, Client } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { formatCurrency } from "@/lib/currency";
 
 interface ServiceType {
   id: string;
@@ -160,9 +161,9 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                         {item.description}
                         <span className="text-xs block mt-1">Unit: {item.unit}</span>
                       </td>
-                      <td className="py-3 text-right align-top">${parseFloat(item.unitPrice).toFixed(2)}</td>
+                      <td className="py-3 text-right align-top">{formatCurrency(item.unitPrice)}</td>
                       <td className="py-3 text-center align-top">{item.quantity}</td>
-                      <td className="py-3 text-right align-top font-medium">${item.total.toFixed(2)}</td>
+                      <td className="py-3 text-right align-top font-medium">{formatCurrency(item.total)}</td>
                     </tr>
                   ))
                 )}
@@ -175,16 +176,16 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           <div className="w-full max-w-sm space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal:</span>
-              <span className="font-medium">${parseFloat(subtotal || '0').toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tax ({parseFloat(taxRate || '0').toFixed(1)}%):</span>
-              <span className="font-medium">${parseFloat(taxAmount || '0').toFixed(2)}</span>
+              <span className="font-medium">{formatCurrency(taxAmount)}</span>
             </div>
             <Separator />
             <div className="flex justify-between text-lg font-bold">
               <span>Total:</span>
-              <span>${parseFloat(total || '0').toFixed(2)}</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </div>
         </div>

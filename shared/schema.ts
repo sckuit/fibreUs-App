@@ -50,6 +50,8 @@ export const clientStatusEnum = pgEnum('client_status', ['potential', 'active', 
 export const supplierTypeEnum = pgEnum('supplier_type', ['supplier', 'vendor', 'partner']);
 export const supplierStatusEnum = pgEnum('supplier_status', ['active', 'inactive', 'pending', 'suspended']);
 export const quoteStatusEnum = pgEnum('quote_status', ['draft', 'sent', 'accepted', 'rejected', 'expired']);
+export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'paid', 'partial', 'cancelled', 'overdue']);
+export const paymentStatusEnum = pgEnum('payment_status', ['unpaid', 'partial', 'paid']);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -900,6 +902,31 @@ export const quotes = pgTable("quotes", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Invoices table (formal invoices sent to leads/clients)
+export const invoices = pgTable("invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNumber: varchar("invoice_number").notNull().unique(),
+  quoteId: varchar("quote_id").references(() => quotes.id),
+  leadId: varchar("lead_id").references(() => leads.id),
+  clientId: varchar("client_id").references(() => clients.id),
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  status: invoiceStatusEnum("status").default('draft').notNull(),
+  items: jsonb("items").notNull(), // Array of {priceMatrixId, itemName, description, unit, unitPrice, quantity, total}
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default('0'),
+  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default('0'),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  percentageOfQuote: decimal("percentage_of_quote", { precision: 5, scale: 2 }), // Optional: if invoice is % of quote (e.g., 50% deposit)
+  amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default('0').notNull(),
+  balanceDue: decimal("balance_due", { precision: 10, scale: 2 }).notNull(),
+  paymentStatus: paymentStatusEnum("payment_status").default('unpaid').notNull(),
+  dueDate: timestamp("due_date"),
+  notes: text("notes"),
+  termsAndConditions: text("terms_and_conditions"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Legal Documents table (stores legal content)
 export const legalDocuments = pgTable("legal_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1053,6 +1080,28 @@ export const updateQuoteSchema = createInsertSchema(quotes).omit({
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuoteType = z.infer<typeof insertQuoteSchema>;
 export type UpdateQuoteType = z.infer<typeof updateQuoteSchema>;
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdById: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  invoiceNumber: z.string().optional(),
+  dueDate: z.string().optional(),
+});
+
+export const updateInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial().extend({
+  dueDate: z.string().optional(),
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoiceType = z.infer<typeof insertInvoiceSchema>;
+export type UpdateInvoiceType = z.infer<typeof updateInvoiceSchema>;
 
 export const insertLegalDocumentsSchema = createInsertSchema(legalDocuments).omit({
   id: true,
