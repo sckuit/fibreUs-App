@@ -39,6 +39,9 @@ import SuppliersManager from "@/components/SuppliersManager";
 import { ServiceTypesManager } from "@/components/ServiceTypesManager";
 import { AppConfigDialog } from "@/components/AppConfigDialog";
 import { LogoUploadDialog } from "@/components/LogoUploadDialog";
+import { CertificationsManager } from "@/components/CertificationsManager";
+import { TeamMembersManager } from "@/components/TeamMembersManager";
+import { PriceMatrixManager } from "@/components/PriceMatrixManager";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -977,99 +980,149 @@ export default function Dashboard() {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Profile</CardTitle>
-                <CardDescription>View and update your personal information</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {typedUser && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Email</label>
-                        <p className="text-lg">{typedUser.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Role</label>
-                        <p className="text-lg capitalize">{typedUser.role}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">First Name</label>
-                        <p className="text-lg">{typedUser.firstName || '-'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Last Name</label>
-                        <p className="text-lg">{typedUser.lastName || '-'}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                        <p className="text-lg">{typedUser.phone || '-'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Company</label>
-                        <p className="text-lg">{typedUser.company || '-'}</p>
-                      </div>
-                    </div>
-                    <div className="pt-4 border-t">
-                      <Button 
-                        onClick={() => { 
-                          setEditingUser(typedUser); 
-                          setIsUserDialogOpen(true); 
-                        }}
-                        data-testid="button-edit-profile"
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        Update Profile
-                      </Button>
-                    </div>
-                  </div>
+            <Tabs defaultValue="profile" className="space-y-4">
+              <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="profile" data-testid="subtab-profile">
+                  Profile
+                </TabsTrigger>
+                {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                  <>
+                    <TabsTrigger value="company" data-testid="subtab-company">
+                      Company Settings
+                    </TabsTrigger>
+                    <TabsTrigger value="services" data-testid="subtab-services">
+                      Service Types
+                    </TabsTrigger>
+                    <TabsTrigger value="pricing" data-testid="subtab-pricing">
+                      Price Matrix
+                    </TabsTrigger>
+                    <TabsTrigger value="certifications" data-testid="subtab-certifications">
+                      Certifications
+                    </TabsTrigger>
+                    <TabsTrigger value="team" data-testid="subtab-team">
+                      Team Members
+                    </TabsTrigger>
+                  </>
                 )}
-              </CardContent>
-            </Card>
+              </TabsList>
 
-            {/* System Configuration (only for managers and admins) */}
-            {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
-              <>
+              {/* Profile Tab */}
+              <TabsContent value="profile" className="space-y-4">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
-                    <div>
-                      <CardTitle>App Configuration</CardTitle>
-                      <CardDescription>Manage application settings and branding</CardDescription>
-                    </div>
-                    <Button
-                      onClick={() => setIsAppConfigDialogOpen(true)}
-                      data-testid="button-open-app-config"
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Configure
-                    </Button>
+                  <CardHeader>
+                    <CardTitle>User Profile</CardTitle>
+                    <CardDescription>View and update your personal information</CardDescription>
                   </CardHeader>
+                  <CardContent className="space-y-6">
+                    {typedUser && (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Email</label>
+                            <p className="text-lg">{typedUser.email}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Role</label>
+                            <p className="text-lg capitalize">{typedUser.role}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">First Name</label>
+                            <p className="text-lg">{typedUser.firstName || '-'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Last Name</label>
+                            <p className="text-lg">{typedUser.lastName || '-'}</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                            <p className="text-lg">{typedUser.phone || '-'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Company</label>
+                            <p className="text-lg">{typedUser.company || '-'}</p>
+                          </div>
+                        </div>
+                        <div className="pt-4 border-t">
+                          <Button 
+                            onClick={() => { 
+                              setEditingUser(typedUser); 
+                              setIsUserDialogOpen(true); 
+                            }}
+                            data-testid="button-edit-profile"
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Update Profile
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
                 </Card>
+              </TabsContent>
 
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
-                    <div>
-                      <CardTitle>Logo Upload</CardTitle>
-                      <CardDescription>Upload and manage application logos</CardDescription>
-                    </div>
-                    <Button
-                      onClick={() => setIsLogoUploadDialogOpen(true)}
-                      data-testid="button-open-logo-upload"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Logos
-                    </Button>
-                  </CardHeader>
-                </Card>
+              {/* Company Settings Tab */}
+              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                <TabsContent value="company" className="space-y-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 pb-4">
+                      <div>
+                        <CardTitle>Company Settings</CardTitle>
+                        <CardDescription>
+                          Manage company information and branding
+                        </CardDescription>
+                      </div>
+                      <Button 
+                        onClick={() => setIsAppConfigDialogOpen(true)}
+                        data-testid="button-edit-company-settings"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Settings
+                      </Button>
+                    </CardHeader>
+                  </Card>
+                  <AppConfigDialog 
+                    open={isAppConfigDialogOpen} 
+                    onOpenChange={setIsAppConfigDialogOpen}
+                  />
+                  <LogoUploadDialog
+                    open={isLogoUploadDialogOpen}
+                    onOpenChange={setIsLogoUploadDialogOpen}
+                  />
+                </TabsContent>
+              )}
 
-                <ServiceTypesManager />
-              </>
-            )}
+              {/* Service Types Tab */}
+              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                <TabsContent value="services" className="space-y-4">
+                  <ServiceTypesManager />
+                </TabsContent>
+              )}
+
+              {/* Price Matrix Tab */}
+              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                <TabsContent value="pricing" className="space-y-4">
+                  <PriceMatrixManager />
+                </TabsContent>
+              )}
+
+              {/* Certifications Tab */}
+              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                <TabsContent value="certifications" className="space-y-4">
+                  <CertificationsManager />
+                </TabsContent>
+              )}
+
+              {/* Team Members Tab */}
+              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                <TabsContent value="team" className="space-y-4">
+                  <TeamMembersManager />
+                </TabsContent>
+              )}
+            </Tabs>
           </TabsContent>
         </Tabs>
 
