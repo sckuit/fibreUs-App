@@ -900,6 +900,21 @@ export const quotes = pgTable("quotes", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Legal Documents table (stores legal content and hourly rates)
+export const legalDocuments = pgTable("legal_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  privacyPolicy: text("privacy_policy"),
+  termsOfService: text("terms_of_service"),
+  serviceAgreement: text("service_agreement"),
+  warrantyInfo: text("warranty_info"),
+  regularHourlyRate: decimal("regular_hourly_rate", { precision: 10, scale: 2 }),
+  afterHoursRate: decimal("after_hours_rate", { precision: 10, scale: 2 }),
+  holidayRate: decimal("holiday_rate", { precision: 10, scale: 2 }),
+  hoursRatesNotes: text("hours_rates_notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
   id: true,
   createdAt: true,
@@ -998,6 +1013,38 @@ export const updateQuoteSchema = createInsertSchema(quotes).omit({
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuoteType = z.infer<typeof insertQuoteSchema>;
 export type UpdateQuoteType = z.infer<typeof updateQuoteSchema>;
+
+export const insertLegalDocumentsSchema = createInsertSchema(legalDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateLegalDocumentsSchema = createInsertSchema(legalDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial().extend({
+  regularHourlyRate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+  afterHoursRate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+  holidayRate: z.union([
+    z.string().transform(val => val === '' ? undefined : val),
+    z.number().transform(val => val.toString()),
+    z.undefined()
+  ]).optional(),
+});
+
+export type LegalDocuments = typeof legalDocuments.$inferSelect;
+export type InsertLegalDocumentsType = z.infer<typeof insertLegalDocumentsSchema>;
+export type UpdateLegalDocumentsType = z.infer<typeof updateLegalDocumentsSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;

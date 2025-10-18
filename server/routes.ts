@@ -44,6 +44,7 @@ import {
   updatePriceMatrixSchema,
   insertQuoteSchema,
   updateQuoteSchema,
+  updateLegalDocumentsSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -2284,6 +2285,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         console.error("Error updating system config:", error);
         res.status(500).json({ message: "Failed to update system configuration" });
+      }
+    }
+  );
+
+  // Legal Documents routes
+  app.get("/api/legal-documents",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const docs = await storage.getLegalDocuments();
+        res.json(docs || {});
+      } catch (error) {
+        console.error("Error getting legal documents:", error);
+        res.status(500).json({ message: "Failed to get legal documents" });
+      }
+    }
+  );
+
+  app.put("/api/legal-documents",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateLegalDocumentsSchema.parse(req.body);
+        const docs = await storage.updateLegalDocuments(validatedData);
+        res.json(docs);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid legal documents data", errors: error.errors });
+        }
+        console.error("Error updating legal documents:", error);
+        res.status(500).json({ message: "Failed to update legal documents" });
       }
     }
   );

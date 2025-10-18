@@ -8,6 +8,14 @@ The application follows a modern full-stack architecture with a React frontend, 
 
 ## Recent Changes
 
+### October 2025 - Legal Documents Management
+- **Legal Tab**: Added Legal tab under Settings for managing company legal documents and hourly rates
+- **Legal Documents**: Privacy Policy, Terms of Service, Service Agreement, and Warranty Information stored in database
+- **Hourly Rates**: Configurable regular, after-hours, and holiday hourly rates with notes
+- **Database Schema**: Created legal_documents table with text fields for documents and decimal fields for rates
+- **API Routes**: Protected GET/PUT /api/legal-documents endpoints with manageSettings permission
+- **Empty Value Handling**: Schema properly transforms empty rate strings to undefined, storage converts to null for database compatibility
+
 ### October 2025 - Quote System Enhancements & Database Population
 - **Quote Save Fix**: Made quoteNumber optional in insertQuoteSchema - backend auto-generates in format Q-YYYY-00001
 - **Professional PDF Quotes**: Enhanced PDF generation with company logo, dark blue header bar, company name/tagline, and full contact details (phone, email, website, address)

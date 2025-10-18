@@ -43,6 +43,7 @@ import { LogoUploadManager } from "@/components/LogoUploadManager";
 import { CertificationsManager } from "@/components/CertificationsManager";
 import { TeamMembersManager } from "@/components/TeamMembersManager";
 import { PriceMatrixManager } from "@/components/PriceMatrixManager";
+import { LegalManager } from "@/components/LegalManager";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -1006,6 +1007,9 @@ export default function Dashboard() {
                     <TabsTrigger value="team" data-testid="subtab-team">
                       Team Members
                     </TabsTrigger>
+                    <TabsTrigger value="legal" data-testid="subtab-legal">
+                      Legal
+                    </TabsTrigger>
                   </>
                 )}
               </TabsList>
@@ -1131,6 +1135,13 @@ export default function Dashboard() {
               {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
                 <TabsContent value="team" className="space-y-4">
                   <TeamMembersManager />
+                </TabsContent>
+              )}
+
+              {/* Legal Tab */}
+              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
+                <TabsContent value="legal" className="space-y-4">
+                  <LegalManager />
                 </TabsContent>
               )}
             </Tabs>

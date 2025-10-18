@@ -22,6 +22,7 @@ import {
   teamMembers,
   priceMatrix,
   quotes,
+  legalDocuments,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -79,6 +80,9 @@ import {
   type Quote,
   type InsertQuoteType,
   type UpdateQuoteType,
+  type LegalDocuments,
+  type InsertLegalDocumentsType,
+  type UpdateLegalDocumentsType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, asc } from "drizzle-orm";
@@ -254,6 +258,10 @@ export interface IStorage {
   getQuote(id: string): Promise<Quote | undefined>;
   updateQuote(id: string, updates: UpdateQuoteType): Promise<Quote | undefined>;
   deleteQuote(id: string): Promise<void>;
+
+  // Legal Documents operations
+  getLegalDocuments(): Promise<LegalDocuments | undefined>;
+  updateLegalDocuments(updates: UpdateLegalDocumentsType): Promise<LegalDocuments>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1493,6 +1501,42 @@ export class DatabaseStorage implements IStorage {
 
   async deleteQuote(id: string): Promise<void> {
     await db.delete(quotes).where(eq(quotes.id, id));
+  }
+
+  // Legal Documents operations
+  async getLegalDocuments(): Promise<LegalDocuments | undefined> {
+    const [docs] = await db.select().from(legalDocuments).limit(1);
+    return docs;
+  }
+
+  async updateLegalDocuments(updates: UpdateLegalDocumentsType): Promise<LegalDocuments> {
+    // Check if legal documents exist
+    const existing = await this.getLegalDocuments();
+    
+    // Clean up undefined decimal fields - convert to null for DB
+    const cleanedUpdates = {
+      ...updates,
+      regularHourlyRate: updates.regularHourlyRate === undefined ? null : updates.regularHourlyRate,
+      afterHoursRate: updates.afterHoursRate === undefined ? null : updates.afterHoursRate,
+      holidayRate: updates.holidayRate === undefined ? null : updates.holidayRate,
+      updatedAt: new Date()
+    };
+    
+    if (existing) {
+      const [result] = await db
+        .update(legalDocuments)
+        .set(cleanedUpdates)
+        .where(eq(legalDocuments.id, existing.id))
+        .returning();
+      return result;
+    } else {
+      // Create new legal documents record if it doesn't exist
+      const [result] = await db
+        .insert(legalDocuments)
+        .values(cleanedUpdates)
+        .returning();
+      return result;
+    }
   }
 }
 
