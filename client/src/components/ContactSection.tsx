@@ -258,25 +258,6 @@ export default function ContactSection() {
                 </Card>
               );
             })}
-
-            {/* Emergency Contact */}
-            <Card className="border-destructive bg-destructive/5">
-              <CardContent className="p-6">
-                <h3 className="font-semibold text-destructive mb-2">Emergency Service</h3>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Security system down? Need immediate assistance?
-                </p>
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  className="w-full" 
-                  data-testid="button-emergency"
-                  onClick={() => window.location.href = 'tel:5559114357'}
-                >
-                  Call Emergency Line
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
