@@ -20,8 +20,8 @@ export function LegalManager() {
   const { toast } = useToast();
   const [rateTypeDialogOpen, setRateTypeDialogOpen] = useState(false);
   const [supportPlanDialogOpen, setSupportPlanDialogOpen] = useState(false);
-  const [editedServiceRates, setEditedServiceRates] = useState<Record<string, Partial<ServiceRate>>>({});
-  const [editedSupportPlans, setEditedSupportPlans] = useState<Record<string, Partial<SupportPlan>>>({});
+  const [localServiceRates, setLocalServiceRates] = useState<ServiceRate[]>([]);
+  const [localSupportPlans, setLocalSupportPlans] = useState<SupportPlan[]>([]);
 
   const { data: legalDocs, isLoading } = useQuery<LegalDocuments>({
     queryKey: ['/api/legal-documents'],
@@ -38,6 +38,19 @@ export function LegalManager() {
   const { data: supportPlans = [] } = useQuery<SupportPlan[]>({
     queryKey: ['/api/support-plans'],
   });
+
+  // Initialize local state when data loads
+  useEffect(() => {
+    if (serviceRates.length > 0) {
+      setLocalServiceRates(serviceRates);
+    }
+  }, [serviceRates]);
+
+  useEffect(() => {
+    if (supportPlans.length > 0) {
+      setLocalSupportPlans(supportPlans);
+    }
+  }, [supportPlans]);
 
   const legalDocsForm = useForm<UpdateLegalDocumentsType>({
     resolver: zodResolver(updateLegalDocumentsSchema),
@@ -142,7 +155,6 @@ export function LegalManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/service-rates'] });
-      setEditedServiceRates({});
       toast({ title: "Service rates saved successfully" });
     },
     onError: (error: any) => {
@@ -182,7 +194,6 @@ export function LegalManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/support-plans'] });
-      setEditedSupportPlans({});
       toast({ title: "Support plans saved successfully" });
     },
     onError: (error: any) => {
@@ -211,75 +222,63 @@ export function LegalManager() {
   });
 
   const handleEditServiceRate = (rateId: string, field: 'regularRate' | 'afterHoursRate' | 'holidayRate', value: string) => {
-    setEditedServiceRates(prev => ({
-      ...prev,
-      [rateId]: {
-        ...prev[rateId],
-        [field]: value,
-      },
-    }));
+    setLocalServiceRates(prev => 
+      prev.map(rate => 
+        rate.id === rateId ? { ...rate, [field]: value } : rate
+      )
+    );
   };
 
   const handleEditSupportPlan = (planId: string, field: 'rate' | 'billingPeriod' | 'description', value: string) => {
-    setEditedSupportPlans(prev => ({
-      ...prev,
-      [planId]: {
-        ...prev[planId],
-        [field]: value,
-      },
-    }));
+    setLocalSupportPlans(prev => 
+      prev.map(plan => 
+        plan.id === planId ? { ...plan, [field]: value } : plan
+      )
+    );
   };
 
   const handleSaveServiceRates = () => {
-    const updates = Object.entries(editedServiceRates).map(([id, data]) => ({
-      id,
-      data: data as UpdateServiceRateType,
+    const updates = localServiceRates.map(rate => ({
+      id: rate.id,
+      data: {
+        regularRate: rate.regularRate,
+        afterHoursRate: rate.afterHoursRate,
+        holidayRate: rate.holidayRate,
+      } as UpdateServiceRateType,
     }));
-    
-    if (updates.length === 0) {
-      toast({ title: "No changes to save", variant: "default" });
-      return;
-    }
     
     updateServiceRatesMutation.mutate(updates);
   };
 
   const handleSaveSupportPlans = () => {
-    const updates = Object.entries(editedSupportPlans).map(([id, data]) => ({
-      id,
-      data: data as UpdateSupportPlanType,
+    const updates = localSupportPlans.map(plan => ({
+      id: plan.id,
+      data: {
+        rate: plan.rate,
+        billingPeriod: plan.billingPeriod,
+        description: plan.description,
+      } as UpdateSupportPlanType,
     }));
-    
-    if (updates.length === 0) {
-      toast({ title: "No changes to save", variant: "default" });
-      return;
-    }
     
     updateSupportPlansMutation.mutate(updates);
   };
 
   const getRateForType = (rateTypeId: string) => {
-    return serviceRates.find(sr => sr.rateTypeId === rateTypeId);
+    return localServiceRates.find(sr => sr.rateTypeId === rateTypeId);
   };
 
   const getServiceRateValue = (rateId: string, field: 'regularRate' | 'afterHoursRate' | 'holidayRate'): string => {
-    if (editedServiceRates[rateId]?.[field] !== undefined) {
-      return editedServiceRates[rateId][field] ?? '';
-    }
-    const rate = serviceRates.find(sr => sr.id === rateId);
+    const rate = localServiceRates.find(sr => sr.id === rateId);
     return rate?.[field] ?? '';
   };
 
   const getSupportPlanValue = (planId: string, field: 'rate' | 'billingPeriod' | 'description'): string => {
-    if (editedSupportPlans[planId]?.[field] !== undefined) {
-      return editedSupportPlans[planId][field] ?? '';
-    }
-    const plan = supportPlans.find(sp => sp.id === planId);
+    const plan = localSupportPlans.find(sp => sp.id === planId);
     return plan?.[field] ?? '';
   };
 
-  const hasUnsavedServiceRates = Object.keys(editedServiceRates).length > 0;
-  const hasUnsavedSupportPlans = Object.keys(editedSupportPlans).length > 0;
+  const hasUnsavedServiceRates = JSON.stringify(localServiceRates) !== JSON.stringify(serviceRates);
+  const hasUnsavedSupportPlans = JSON.stringify(localSupportPlans) !== JSON.stringify(supportPlans);
 
   if (isLoading) {
     return (
@@ -697,7 +696,7 @@ export function LegalManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {supportPlans.map((plan) => (
+              {localSupportPlans.map((plan) => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-medium">{plan.name}</TableCell>
                   <TableCell>
