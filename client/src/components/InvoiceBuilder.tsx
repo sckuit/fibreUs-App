@@ -70,7 +70,7 @@ export default function InvoiceBuilder() {
   });
 
   const form = useForm({
-    resolver: zodResolver(insertInvoiceSchema),
+    resolver: zodResolver(insertInvoiceSchema.omit({ createdById: true })),
     defaultValues: {
       invoiceNumber: '',
       quoteId: '',
@@ -148,9 +148,9 @@ export default function InvoiceBuilder() {
       const selectedQuote = quotes.find(q => q.id === quoteId);
       if (selectedQuote) {
         // Auto-populate from quote
-        form.setValue('leadId', selectedQuote.leadId || '');
-        form.setValue('clientId', selectedQuote.clientId || '');
-        form.setValue('taxRate', selectedQuote.taxRate);
+        form.setValue('leadId', selectedQuote.leadId ?? '');
+        form.setValue('clientId', selectedQuote.clientId ?? '');
+        form.setValue('taxRate', selectedQuote.taxRate ?? '0');
         
         // Handle percentage of quote if specified
         const percentageStr = form.watch('percentageOfQuote');
@@ -160,8 +160,9 @@ export default function InvoiceBuilder() {
           // Calculate partial invoice based on percentage
           const quoteTotal = parseFloat(selectedQuote.total);
           const partialTotal = (quoteTotal * percentage) / 100;
+          const quoteTaxRate = parseFloat(selectedQuote.taxRate ?? '0');
           
-          form.setValue('subtotal', (partialTotal / (1 + parseFloat(selectedQuote.taxRate) / 100)).toFixed(2));
+          form.setValue('subtotal', (partialTotal / (1 + quoteTaxRate / 100)).toFixed(2));
           form.setValue('total', partialTotal.toFixed(2));
           
           // Clear items when using percentage mode
@@ -264,8 +265,18 @@ export default function InvoiceBuilder() {
       return;
     }
 
+    if (!currentUser?.id) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create invoices",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const invoiceData = {
       ...values,
+      createdById: currentUser.id,
       items: selectedItems,
       leadId: values.leadId || undefined,
       clientId: values.clientId || undefined,

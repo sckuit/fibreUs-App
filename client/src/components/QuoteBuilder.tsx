@@ -65,7 +65,7 @@ export default function QuoteBuilder() {
   });
 
   const form = useForm({
-    resolver: zodResolver(insertQuoteSchema),
+    resolver: zodResolver(insertQuoteSchema.omit({ createdById: true })),
     defaultValues: {
       quoteNumber: '',
       leadId: '',
