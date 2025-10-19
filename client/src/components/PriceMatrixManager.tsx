@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { PriceMatrix, InsertPriceMatrixType, UpdatePriceMatrixType } from "@shared/schema";
@@ -28,10 +28,13 @@ export function PriceMatrixManager() {
     queryFn: () => fetch(`/api/price-matrix?includeInactive=true`).then(res => res.json()),
   });
 
-  // Filter items based on the toggle
-  const priceMatrixItems = includeInactive 
-    ? allPriceMatrixItems 
-    : allPriceMatrixItems.filter(item => item.isActive);
+  // Filter items based on the toggle using useMemo
+  const priceMatrixItems = useMemo(() => {
+    if (includeInactive) {
+      return allPriceMatrixItems;
+    }
+    return allPriceMatrixItems.filter(item => item.isActive);
+  }, [allPriceMatrixItems, includeInactive]);
 
   const form = useForm<InsertPriceMatrixType>({
     resolver: zodResolver(editingItem ? updatePriceMatrixSchema : insertPriceMatrixSchema),
