@@ -281,7 +281,7 @@ export default function InvoiceBuilder() {
       leadId: values.leadId || undefined,
       clientId: values.clientId || undefined,
       quoteId: values.quoteId || undefined,
-      percentageOfQuote: values.percentageOfQuote ? parseFloat(values.percentageOfQuote) : undefined,
+      percentageOfQuote: values.percentageOfQuote || undefined,
       dueDate: values.dueDate || undefined,
     };
 
