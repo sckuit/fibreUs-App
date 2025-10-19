@@ -56,7 +56,7 @@ export default function QuotesManager() {
   });
 
   const { data: priceMatrixItems = [] } = useQuery<PriceMatrix[]>({
-    queryKey: ['/api/price-matrix'],
+    queryKey: ['/api/price-matrix/active'],
   });
 
   const { data: systemConfig } = useQuery<SystemConfig>({
