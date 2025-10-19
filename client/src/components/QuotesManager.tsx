@@ -57,6 +57,7 @@ export default function QuotesManager() {
 
   const { data: priceMatrixItems = [] } = useQuery<PriceMatrix[]>({
     queryKey: ['/api/price-matrix'],
+    queryFn: () => fetch('/api/price-matrix?includeInactive=false').then(res => res.json()),
   });
 
   const { data: systemConfig } = useQuery<SystemConfig>({
