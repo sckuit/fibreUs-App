@@ -41,7 +41,7 @@ export default function QuoteBuilder() {
 
   const { data: priceMatrixItems = [], isLoading: priceMatrixLoading } = useQuery<PriceMatrix[]>({
     queryKey: ['/api/price-matrix'],
-    queryFn: () => fetch('/api/price-matrix?includeInactive=false').then(res => res.json()),
+    queryFn: () => fetch('/api/price-matrix').then(res => res.json()),
   });
 
   const { data: leads = [] } = useQuery<Lead[]>({
