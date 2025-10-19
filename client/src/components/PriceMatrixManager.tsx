@@ -23,10 +23,15 @@ export function PriceMatrixManager() {
   const [editingItem, setEditingItem] = useState<PriceMatrix | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
 
-  const { data: priceMatrixItems = [], isLoading } = useQuery<PriceMatrix[]>({
-    queryKey: ['/api/price-matrix', includeInactive],
-    queryFn: () => fetch(`/api/price-matrix?includeInactive=${includeInactive}`).then(res => res.json()),
+  const { data: allPriceMatrixItems = [], isLoading } = useQuery<PriceMatrix[]>({
+    queryKey: ['/api/price-matrix'],
+    queryFn: () => fetch(`/api/price-matrix?includeInactive=true`).then(res => res.json()),
   });
+
+  // Filter items based on the toggle
+  const priceMatrixItems = includeInactive 
+    ? allPriceMatrixItems 
+    : allPriceMatrixItems.filter(item => item.isActive);
 
   const form = useForm<InsertPriceMatrixType>({
     resolver: zodResolver(editingItem ? updatePriceMatrixSchema : insertPriceMatrixSchema),
@@ -88,6 +93,21 @@ export function PriceMatrixManager() {
     onError: (error: any) => {
       toast({
         title: "Failed to delete price matrix item",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      apiRequest('PUT', `/api/price-matrix/${id}`, { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/price-matrix'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update item status",
         description: error.message,
         variant: "destructive",
       });
@@ -340,12 +360,18 @@ export function PriceMatrixManager() {
                       </TableCell>
                       <TableCell>{item.year}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={item.isActive ? "default" : "secondary"}
-                          data-testid={`badge-status-${item.id}`}
-                        >
-                          {item.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={item.isActive}
+                            onCheckedChange={(checked) => {
+                              toggleActiveMutation.mutate({ id: item.id, isActive: checked });
+                            }}
+                            data-testid={`switch-status-${item.id}`}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {item.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
