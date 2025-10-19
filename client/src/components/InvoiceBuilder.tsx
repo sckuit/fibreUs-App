@@ -41,8 +41,8 @@ export default function InvoiceBuilder() {
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
 
   const { data: priceMatrixItems = [], isLoading: priceMatrixLoading } = useQuery<PriceMatrix[]>({
-    queryKey: ['/api/price-matrix'],
-    queryFn: () => fetch('/api/price-matrix').then(res => res.json()),
+    queryKey: ['/api/price-matrix/active'],
+    queryFn: () => fetch('/api/price-matrix/active').then(res => res.json()),
   });
 
   const { data: leads = [] } = useQuery<Lead[]>({

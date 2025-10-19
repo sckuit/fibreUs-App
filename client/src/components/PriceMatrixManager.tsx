@@ -25,7 +25,7 @@ export function PriceMatrixManager() {
 
   const { data: allPriceMatrixItems = [], isLoading } = useQuery<PriceMatrix[]>({
     queryKey: ['/api/price-matrix'],
-    queryFn: () => fetch(`/api/price-matrix?includeInactive=true`).then(res => res.json()),
+    queryFn: () => fetch('/api/price-matrix').then(res => res.json()),
   });
 
   // Filter items based on the toggle using useMemo
