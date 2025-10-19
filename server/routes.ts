@@ -3016,7 +3016,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "Permission denied" });
         }
         
-        const items = await storage.getPriceMatrixItems();
+        const includeInactive = req.query.includeInactive === 'true';
+        const items = await storage.getPriceMatrixItems(includeInactive);
         res.json(items);
       } catch (error) {
         console.error("Error fetching price matrix items:", error);
