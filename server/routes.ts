@@ -3004,6 +3004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Price Matrix routes
+  // Get all price matrix items (for settings/management tab)
   app.get("/api/price-matrix",
     isSessionAuthenticated,
     async (req: any, res) => {
@@ -3011,17 +3012,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        // Sales users need to view price matrix for quotes/invoices, admins for settings
-        if (!user || !(hasPermission(user.role, 'manageFinancial') || hasPermission(user.role, 'manageSettings'))) {
+        // Only admins with manageSettings can view all items
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
-        const includeInactive = req.query.includeInactive === 'true';
-        const items = await storage.getPriceMatrixItems(includeInactive);
+        const items = await storage.getPriceMatrixItems(true); // Always include inactive
         res.json(items);
       } catch (error) {
         console.error("Error fetching price matrix items:", error);
         res.status(500).json({ message: "Failed to fetch price matrix items" });
+      }
+    }
+  );
+
+  // Get only active price matrix items (for quote/invoice building)
+  app.get("/api/price-matrix/active",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        // Sales users and admins can view active items for quotes/invoices
+        if (!user || !(hasPermission(user.role, 'manageFinancial') || hasPermission(user.role, 'manageSettings'))) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const items = await storage.getPriceMatrixItems(false); // Only active items
+        res.json(items);
+      } catch (error) {
+        console.error("Error fetching active price matrix items:", error);
+        res.status(500).json({ message: "Failed to fetch active price matrix items" });
       }
     }
   );
