@@ -77,7 +77,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   const companyEmail = systemConfig?.contactEmail || '';
   const companyWebsite = systemConfig?.website || '';
   const companyAddress = systemConfig?.address || '';
-  const darkLogoUrl = systemConfig?.darkLogoUrl || '';
+  const logoUrl = systemConfig?.logoUrl || '';
 
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const validUntilDate = validUntil ? new Date(validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
@@ -88,8 +88,8 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
       <div className="bg-[#1e3a5f] text-white p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            {darkLogoUrl && (
-              <img src={darkLogoUrl} alt={companyName} className="h-16 w-auto object-contain" />
+            {logoUrl && (
+              <img src={logoUrl} alt={companyName} className="h-16 w-auto object-contain" />
             )}
             <div className="pt-1">
               <h1 className="text-2xl font-bold">{companyName}</h1>
