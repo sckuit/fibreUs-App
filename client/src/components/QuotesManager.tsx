@@ -64,6 +64,14 @@ export default function QuotesManager() {
     queryKey: ['/api/system-config'],
   });
 
+  const { data: legalDocs } = useQuery({
+    queryKey: ['/api/legal-documents'],
+  });
+
+  const { data: serviceTypes } = useQuery({
+    queryKey: ['/api/service-types'],
+  });
+
   const form = useForm<UpdateQuoteType>({
     resolver: zodResolver(updateQuoteSchema),
     defaultValues: {
@@ -176,12 +184,32 @@ export default function QuotesManager() {
     // Set the quote to download, which will trigger rendering of the hidden preview
     setDownloadingQuote(quote);
     
-    // Wait for the preview to render
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    if (!downloadPreviewRef.current) {
+    try {
+      // Ensure all required queries are loaded before capturing PDF
+      await Promise.all([
+        queryClient.ensureQueryData({ queryKey: ['/api/system-config'] }),
+        queryClient.ensureQueryData({ queryKey: ['/api/legal-documents'] }),
+        queryClient.ensureQueryData({ queryKey: ['/api/leads'] }),
+        queryClient.ensureQueryData({ queryKey: ['/api/clients'] }),
+        queryClient.ensureQueryData({ queryKey: ['/api/service-types'] }),
+      ]);
+      
+      // Small delay to ensure DOM is fully rendered with loaded data
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (!downloadPreviewRef.current) {
+        toast({
+          title: "Preview not ready",
+          description: "Please try again",
+          variant: "destructive",
+        });
+        setDownloadingQuote(null);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to load required data:', error);
       toast({
-        title: "Preview not ready",
+        title: "Failed to load data",
         description: "Please try again",
         variant: "destructive",
       });
@@ -865,9 +893,9 @@ export default function QuotesManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Hidden QuotePreview for PDF Download */}
+      {/* Hidden QuotePreview for PDF Download - matches QuoteBuilder rendering context */}
       {downloadingQuote && (
-        <div className="fixed -left-[9999px] top-0">
+        <div className="fixed -left-[9999px] top-0 space-y-6 max-w-screen-lg">
           <QuotePreview
             ref={downloadPreviewRef}
             items={Array.isArray(downloadingQuote.items) ? downloadingQuote.items as QuoteItem[] : []}
