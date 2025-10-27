@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Download, FileText, DollarSign, Trash2 } from "lucide-react";
+import { Plus, Edit, Download, FileText, DollarSign, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -40,6 +40,7 @@ export default function QuotesManager() {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [downloadingQuote, setDownloadingQuote] = useState<Quote | null>(null);
   const downloadPreviewRef = useRef<HTMLDivElement>(null);
 
@@ -293,6 +294,14 @@ export default function QuotesManager() {
       deleteQuoteMutation.mutate(id);
     }
   };
+
+  const filteredPriceMatrixItems = priceMatrixItems.filter(item => {
+    const query = searchQuery.toLowerCase();
+    return (
+      item.item.toLowerCase().includes(query) ||
+      (item.description?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   const handleAddItem = (item: PriceMatrix) => {
     const existingItem = selectedItems.find(si => si.priceMatrixId === item.id);
@@ -776,54 +785,83 @@ export default function QuotesManager() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isItemDialogOpen} onOpenChange={setIsItemDialogOpen}>
+      <Dialog open={isItemDialogOpen} onOpenChange={(open) => {
+        setIsItemDialogOpen(open);
+        if (!open) setSearchQuery('');
+      }}>
         <DialogContent className="sm:max-w-[700px]" data-testid="dialog-edit-add-item">
           <DialogHeader>
             <DialogTitle>Add Item from Price Matrix</DialogTitle>
             <DialogDescription>
-              Select an item from the catalog to add to this quote
+              Search and select an item from the catalog to add to this quote
             </DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-md border max-h-[400px] overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Unit Price</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {priceMatrixItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.item}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">
-                      {item.description || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        {parseFloat(item.customerPrice).toFixed(2)}/{item.unit}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddItem(item)}
-                        data-testid={`button-edit-select-${item.id}`}
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {priceMatrixItems.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No active items in the price matrix. Please add items in Settings.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by item name or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-items"
+                />
+              </div>
+
+              {filteredPriceMatrixItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No items found matching "{searchQuery}"
+                </div>
+              ) : (
+                <div className="rounded-md border max-h-[400px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Unit Price</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPriceMatrixItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.item}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {item.description || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4 text-muted-foreground" />
+                              {parseFloat(item.customerPrice).toFixed(2)}/{item.unit}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleAddItem(item)}
+                              data-testid={`button-edit-select-${item.id}`}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
