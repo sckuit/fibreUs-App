@@ -1510,10 +1510,14 @@ export class DatabaseStorage implements IStorage {
       }
     }
     
-    const [result] = await db.insert(quotes).values({
+    // Transform validUntil string to Date object or undefined
+    const transformedData = {
       ...data,
-      quoteNumber
-    }).returning();
+      quoteNumber,
+      validUntil: data.validUntil ? new Date(data.validUntil) : undefined,
+    };
+    
+    const [result] = await db.insert(quotes).values(transformedData).returning();
     return result;
   }
 
@@ -1544,9 +1548,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateQuote(id: string, updates: UpdateQuoteType): Promise<Quote | undefined> {
+    // Transform validUntil string to Date object or null
+    const transformedUpdates = {
+      ...updates,
+      validUntil: updates.validUntil ? new Date(updates.validUntil) : null,
+      updatedAt: new Date(),
+    };
+    
     const [result] = await db
       .update(quotes)
-      .set({ ...updates, updatedAt: new Date() })
+      .set(transformedUpdates)
       .where(eq(quotes.id, id))
       .returning();
     return result;
@@ -1584,8 +1595,16 @@ export class DatabaseStorage implements IStorage {
     const amountPaid = data.amountPaid || 0;
     const balanceDue = data.balanceDue !== undefined ? data.balanceDue : (total - amountPaid);
     
+    // Transform dueDate string to Date object or undefined
+    const transformedData = {
+      ...data,
+      invoiceNumber,
+      balanceDue,
+      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+    };
+    
     // Determine initial payment status
-    let paymentStatus = data.paymentStatus;
+    let paymentStatus = transformedData.paymentStatus;
     if (!paymentStatus) {
       if (balanceDue <= 0) {
         paymentStatus = 'paid';
@@ -1597,8 +1616,7 @@ export class DatabaseStorage implements IStorage {
     }
     
     const [result] = await db.insert(invoices).values({
-      ...data,
-      invoiceNumber,
+      ...transformedData,
       balanceDue,
       paymentStatus
     }).returning();
@@ -1641,8 +1659,12 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
     
-    // Prepare updated data
-    const updatedData: any = { ...updates, updatedAt: new Date() };
+    // Prepare updated data with date transformation
+    const updatedData: any = {
+      ...updates,
+      dueDate: updates.dueDate ? new Date(updates.dueDate) : null,
+      updatedAt: new Date(),
+    };
     
     // Recalculate balanceDue if total or amountPaid changed
     const newTotal = updates.total !== undefined ? updates.total : current.total;
