@@ -1,5 +1,6 @@
 import Hero from "@/components/Hero";
 import ServicesSection from "@/components/ServicesSection";
+import ReferralProgram from "@/components/ReferralProgram";
 import ContactSection from "@/components/ContactSection";
 
 export default function Home() {
@@ -7,6 +8,7 @@ export default function Home() {
     <>
       <Hero />
       <ServicesSection />
+      <ReferralProgram />
       <ContactSection />
     </>
   );
