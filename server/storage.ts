@@ -202,6 +202,13 @@ export interface IStorage {
     systemHealthPercent: number;
   }>;
 
+  getReferralMetrics(): Promise<{
+    totalReferrals: number;
+    pendingReferrals: number;
+    convertedReferrals: number;
+    conversionRate: number;
+  }>;
+
   // Task operations (managers create, employees view assigned)
   createTask(task: InsertTaskType): Promise<Task>;
   getTasks(filters?: { assignedToId?: string; createdById?: string; status?: string }): Promise<Task[]>;
@@ -841,6 +848,45 @@ export class DatabaseStorage implements IStorage {
       databaseSizeGB,
       activeSessions,
       systemHealthPercent,
+    };
+  }
+
+  async getReferralMetrics(): Promise<{
+    totalReferrals: number;
+    pendingReferrals: number;
+    convertedReferrals: number;
+    conversionRate: number;
+  }> {
+    // Get total referrals count
+    const totalReferralsResult = await db.select({
+      count: sql<number>`count(*)::int`
+    }).from(referrals);
+    const totalReferrals = totalReferralsResult[0]?.count || 0;
+
+    // Get pending referrals count
+    const pendingReferralsResult = await db.select({
+      count: sql<number>`count(*)::int`
+    }).from(referrals)
+      .where(eq(referrals.status, 'pending'));
+    const pendingReferrals = pendingReferralsResult[0]?.count || 0;
+
+    // Get converted referrals count
+    const convertedReferralsResult = await db.select({
+      count: sql<number>`count(*)::int`
+    }).from(referrals)
+      .where(eq(referrals.status, 'converted'));
+    const convertedReferrals = convertedReferralsResult[0]?.count || 0;
+
+    // Calculate conversion rate
+    const conversionRate = totalReferrals > 0 
+      ? Number(((convertedReferrals / totalReferrals) * 100).toFixed(1))
+      : 0;
+
+    return {
+      totalReferrals,
+      pendingReferrals,
+      convertedReferrals,
+      conversionRate,
     };
   }
 

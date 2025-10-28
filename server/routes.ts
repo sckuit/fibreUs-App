@@ -3924,6 +3924,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/referrals/metrics - Get referral metrics (admin only)
+  app.get('/api/referrals/metrics', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const metrics = await storage.getReferralMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching referral metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch referral metrics' });
+    }
+  });
+
   // PATCH /api/referrals/:id - Update referral status/reward (manageLeads permission)
   app.patch('/api/referrals/:id', isSessionAuthenticated, async (req: any, res) => {
     try {

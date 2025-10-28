@@ -68,6 +68,13 @@ interface SystemMetrics {
   systemHealthPercent: number;
 }
 
+interface ReferralMetrics {
+  totalReferrals: number;
+  pendingReferrals: number;
+  convertedReferrals: number;
+  conversionRate: number;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const typedUser = user as User | undefined;
@@ -130,6 +137,13 @@ export default function Dashboard() {
   // Fetch system metrics (admin only)
   const { data: systemMetrics, isLoading: systemMetricsLoading } = useQuery<SystemMetrics>({
     queryKey: ["/api/system/metrics"],
+    enabled: typedUser?.role === 'admin',
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Fetch referral metrics (admin only)
+  const { data: referralMetrics, isLoading: referralMetricsLoading } = useQuery<ReferralMetrics>({
+    queryKey: ["/api/referrals/metrics"],
     enabled: typedUser?.role === 'admin',
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -763,6 +777,79 @@ export default function Dashboard() {
 
               {/* Referrals Sub-Tab with nested Track/Manage */}
               <TabsContent value="referrals" className="mt-4">
+                {/* Referral Metrics Dashboard (Admin Only) */}
+                {userRole === 'admin' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    {/* Total Referrals Card */}
+                    <Card data-testid="card-total-referrals">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
+                        <Gift className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {referralMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <div className="text-2xl font-bold" data-testid="text-total-referrals">
+                            {referralMetrics?.totalReferrals || 0}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Pending Referrals Card */}
+                    <Card data-testid="card-pending-referrals">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {referralMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <div className="text-2xl font-bold" data-testid="text-pending-referrals">
+                            {referralMetrics?.pendingReferrals || 0}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Converted Referrals Card */}
+                    <Card data-testid="card-converted-referrals">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Converted</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {referralMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <div className="text-2xl font-bold" data-testid="text-converted-referrals">
+                            {referralMetrics?.convertedReferrals || 0}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Conversion Rate Card */}
+                    <Card data-testid="card-conversion-rate">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                        <Gauge className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {referralMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <div className="text-2xl font-bold" data-testid="text-conversion-rate">
+                            {referralMetrics?.conversionRate || 0}%
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
                 <Tabs defaultValue="track-referrals" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="track-referrals" data-testid="tab-sales-referrals-track">
