@@ -1109,12 +1109,6 @@ export default function Dashboard() {
                     <TabsTrigger value="company" data-testid="subtab-company">
                       Company Settings
                     </TabsTrigger>
-                    <TabsTrigger value="services" data-testid="subtab-services">
-                      Service Types
-                    </TabsTrigger>
-                    <TabsTrigger value="pricing" data-testid="subtab-pricing">
-                      Price Matrix
-                    </TabsTrigger>
                     <TabsTrigger value="logos" data-testid="subtab-logos">
                       Logos
                     </TabsTrigger>
