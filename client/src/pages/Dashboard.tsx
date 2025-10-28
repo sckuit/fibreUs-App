@@ -1214,21 +1214,7 @@ export default function Dashboard() {
                 </TabsContent>
               )}
 
-              {/* Service Types Tab */}
-              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
-                <TabsContent value="services" className="space-y-4">
-                  <ServiceTypesManager />
-                </TabsContent>
-              )}
-
-              {/* Price Matrix Tab */}
-              {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
-                <TabsContent value="pricing" className="space-y-4">
-                  <PriceMatrixManager />
-                </TabsContent>
-              )}
-
-              {/* Logos Tab */}
+              {/* Logos Tab */}}
               {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
                 <TabsContent value="logos" className="space-y-4">
                   <LogoUploadManager />
