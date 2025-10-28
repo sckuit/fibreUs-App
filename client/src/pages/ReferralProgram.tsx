@@ -1,9 +1,88 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Gift, Users, DollarSign, TrendingUp, ArrowRight } from "lucide-react";
+import { Gift, Users, DollarSign, TrendingUp, ArrowRight, Send } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import LoginDialog from "@/components/LoginDialog";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { publicReferralSubmissionSchema, type ReferralProgram } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+type ReferralFormData = z.infer<typeof publicReferralSubmissionSchema>;
 
 export default function ReferralProgram() {
+  const { toast } = useToast();
+  const [isReferralDialogOpen, setIsReferralDialogOpen] = useState(false);
+
+  const { data: activePrograms = [] } = useQuery<ReferralProgram[]>({
+    queryKey: ["/api/referral-programs/active"],
+  });
+
+  const form = useForm<ReferralFormData>({
+    resolver: zodResolver(publicReferralSubmissionSchema),
+    defaultValues: {
+      referrerName: "",
+      referrerEmail: "",
+      referrerPhone: "",
+      referredName: "",
+      referredEmail: "",
+      referredPhone: "",
+      referredCompany: "",
+      referralProgramId: "",
+    },
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async (data: ReferralFormData) => {
+      const response = await apiRequest("POST", "/api/referrals/submit-public", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Your referral has been submitted successfully. We'll be in touch soon!",
+      });
+      setIsReferralDialogOpen(false);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit referral",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: ReferralFormData) => {
+    submitMutation.mutate(data);
+  };
 
   const benefits = [
     {
@@ -104,11 +183,11 @@ export default function ReferralProgram() {
         </div>
 
         {/* CTA Section */}
-        <div className="text-center">
+        <div className="grid md:grid-cols-2 gap-6 text-center">
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-8 pb-8">
               <h2 className="text-2xl font-bold mb-4">Ready to Start Earning?</h2>
-              <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+              <p className="text-muted-foreground mb-6">
                 Join our referral program today and start earning rewards for sharing professional security services with your network.
               </p>
               <LoginDialog>
@@ -123,8 +202,239 @@ export default function ReferralProgram() {
               </LoginDialog>
             </CardContent>
           </Card>
+
+          <Card className="bg-accent/5 border-accent/20">
+            <CardContent className="pt-8 pb-8">
+              <h2 className="text-2xl font-bold mb-4">Send a Referral Now</h2>
+              <p className="text-muted-foreground mb-6">
+                Know someone who needs our services? Submit their information and earn rewards when they become a client.
+              </p>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="text-lg px-8"
+                onClick={() => setIsReferralDialogOpen(true)}
+                data-testid="button-send-referral"
+              >
+                <Send className="mr-2 w-5 h-5" />
+                Send Referral
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
+
+      <Dialog open={isReferralDialogOpen} onOpenChange={setIsReferralDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Send a Referral</DialogTitle>
+            <DialogDescription>
+              Fill out the form below to refer someone to our services. We'll reach out to them and you'll earn rewards when they become a client.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Your Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Your Information</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="referrerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your Name (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="John Doe"
+                          data-testid="input-referrer-name"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="referrerEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your Email (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="john@example.com"
+                          data-testid="input-referrer-email"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="referrerPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your Phone (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="(555) 123-4567"
+                          data-testid="input-referrer-phone"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Referral Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Who Are You Referring?</h3>
+
+                <FormField
+                  control={form.control}
+                  name="referredName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Their Name *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Jane Smith"
+                          data-testid="input-referred-name"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="referredEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Their Email *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="jane@example.com"
+                          data-testid="input-referred-email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="referredPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Their Phone (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="(555) 987-6543"
+                          data-testid="input-referred-phone"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="referredCompany"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Their Company (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Acme Corp"
+                          data-testid="input-referred-company"
+                          {...field}
+                          value={field.value || ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {activePrograms.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="referralProgramId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Referral Program (Optional)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger data-testid="select-referral-program">
+                              <SelectValue placeholder="Select a program" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {activePrograms.map((program) => (
+                              <SelectItem key={program.id} value={program.id}>
+                                {program.name} - ${program.rewardAmount}
+                                {program.rewardType === 'percentage' && '%'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsReferralDialogOpen(false);
+                    form.reset();
+                  }}
+                  data-testid="button-cancel"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submitMutation.isPending}
+                  data-testid="button-submit-referral"
+                >
+                  {submitMutation.isPending ? "Submitting..." : "Submit Referral"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

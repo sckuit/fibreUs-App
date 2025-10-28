@@ -19,7 +19,7 @@ import {
   Plus, FileText, Wrench, Clock, Users, ClipboardList, 
   DollarSign, MessageSquare, BarChart, Package, Truck,
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
-  UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp
+  UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, Gift
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
@@ -49,6 +49,7 @@ import QuotesManager from "@/components/QuotesManager";
 import InvoiceBuilder from "@/components/InvoiceBuilder";
 import InvoicesManager from "@/components/InvoicesManager";
 import ReferralTracker from "@/components/ReferralTracker";
+import ReferralProgramManager from "@/components/ReferralProgramManager";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -411,6 +412,12 @@ export default function Dashboard() {
               <TabsTrigger value="financial" data-testid="tab-financial">
                 <DollarSign className="w-4 h-4 mr-2" />
                 Financial
+              </TabsTrigger>
+            )}
+            {hasPermission(userRole, 'manageSettings') && (
+              <TabsTrigger value="referrals" data-testid="tab-referrals">
+                <Gift className="w-4 h-4 mr-2" />
+                Manage Referral
               </TabsTrigger>
             )}
             <TabsTrigger value="settings" data-testid="tab-settings">
@@ -1105,6 +1112,13 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Manage Referral Tab */}
+          {hasPermission(userRole, 'manageSettings') && (
+            <TabsContent value="referrals" className="space-y-4">
+              <ReferralProgramManager />
+            </TabsContent>
+          )}
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">

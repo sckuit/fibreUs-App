@@ -55,10 +55,13 @@ import {
   updateServiceRateSchema,
   insertSupportPlanSchema,
   updateSupportPlanSchema,
+  insertReferralProgramSchema,
+  updateReferralProgramSchema,
   insertReferralCodeSchema,
   updateReferralCodeSchema,
   insertReferralSchema,
   updateReferralSchema,
+  publicReferralSubmissionSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -2735,6 +2738,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error deleting support plan:", error);
         res.status(500).json({ message: "Failed to delete support plan" });
+      }
+    }
+  );
+
+  // Referral Program routes
+  app.post("/api/referral-programs",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertReferralProgramSchema.parse(req.body);
+        const referralProgram = await storage.createReferralProgram(validatedData);
+        res.status(201).json(referralProgram);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid referral program data", errors: error.errors });
+        }
+        console.error("Error creating referral program:", error);
+        res.status(500).json({ message: "Failed to create referral program" });
+      }
+    }
+  );
+
+  app.get("/api/referral-programs",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const referralPrograms = await storage.getReferralPrograms();
+        res.json(referralPrograms);
+      } catch (error) {
+        console.error("Error getting referral programs:", error);
+        res.status(500).json({ message: "Failed to get referral programs" });
+      }
+    }
+  );
+
+  app.get("/api/referral-programs/active",
+    async (req: any, res) => {
+      try {
+        const referralPrograms = await storage.getActiveReferralPrograms();
+        res.json(referralPrograms);
+      } catch (error) {
+        console.error("Error getting active referral programs:", error);
+        res.status(500).json({ message: "Failed to get active referral programs" });
+      }
+    }
+  );
+
+  app.get("/api/referral-programs/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const referralProgram = await storage.getReferralProgramById(req.params.id);
+        if (!referralProgram) {
+          return res.status(404).json({ message: "Referral program not found" });
+        }
+        res.json(referralProgram);
+      } catch (error) {
+        console.error("Error getting referral program:", error);
+        res.status(500).json({ message: "Failed to get referral program" });
+      }
+    }
+  );
+
+  app.put("/api/referral-programs/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateReferralProgramSchema.parse(req.body);
+        const referralProgram = await storage.updateReferralProgram(req.params.id, validatedData);
+        if (!referralProgram) {
+          return res.status(404).json({ message: "Referral program not found" });
+        }
+        res.json(referralProgram);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid referral program data", errors: error.errors });
+        }
+        console.error("Error updating referral program:", error);
+        res.status(500).json({ message: "Failed to update referral program" });
+      }
+    }
+  );
+
+  app.delete("/api/referral-programs/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageSettings')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteReferralProgram(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting referral program:", error);
+        res.status(500).json({ message: "Failed to delete referral program" });
+      }
+    }
+  );
+
+  // Public referral submission route (no authentication required)
+  app.post("/api/referrals/submit-public",
+    async (req: any, res) => {
+      try {
+        // Validate the submission data
+        const validatedData = publicReferralSubmissionSchema.parse(req.body);
+        
+        // Create a lead with source='referral'
+        const lead = await storage.createLead({
+          source: 'referral',
+          name: validatedData.referredName,
+          email: validatedData.referredEmail,
+          phone: validatedData.referredPhone || '',
+          company: validatedData.referredCompany,
+          status: 'new',
+        });
+        
+        // Create a referral record linked to the created lead
+        const referral = await storage.createReferral({
+          referralProgramId: validatedData.referralProgramId,
+          referrerName: validatedData.referrerName,
+          referrerEmail: validatedData.referrerEmail,
+          referrerPhone: validatedData.referrerPhone,
+          referredName: validatedData.referredName,
+          referredEmail: validatedData.referredEmail,
+          referredPhone: validatedData.referredPhone,
+          referredCompany: validatedData.referredCompany,
+          convertedLeadId: lead.id,
+          status: 'pending',
+        });
+        
+        res.status(201).json({ lead, referral });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ 
+            message: "Invalid referral submission data", 
+            errors: error.errors 
+          });
+        }
+        console.error("Error creating referral submission:", error);
+        res.status(500).json({ message: "Failed to create referral submission" });
       }
     }
   );

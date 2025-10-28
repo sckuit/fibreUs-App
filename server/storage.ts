@@ -28,6 +28,7 @@ import {
   rateTypes,
   serviceRates,
   supportPlans,
+  referralPrograms,
   referralCodes,
   referrals,
   type User,
@@ -105,6 +106,9 @@ import {
   type SupportPlan,
   type InsertSupportPlanType,
   type UpdateSupportPlanType,
+  type ReferralProgram,
+  type InsertReferralProgramType,
+  type UpdateReferralProgramType,
   type ReferralCode,
   type InsertReferralCodeType,
   type UpdateReferralCodeType,
@@ -323,6 +327,14 @@ export interface IStorage {
   getSupportPlans(): Promise<SupportPlan[]>;
   updateSupportPlan(id: string, updates: UpdateSupportPlanType): Promise<SupportPlan | undefined>;
   deleteSupportPlan(id: string): Promise<void>;
+
+  // Referral Program operations
+  createReferralProgram(data: InsertReferralProgramType): Promise<ReferralProgram>;
+  getReferralPrograms(): Promise<ReferralProgram[]>;
+  getActiveReferralPrograms(): Promise<ReferralProgram[]>;
+  getReferralProgramById(id: string): Promise<ReferralProgram | undefined>;
+  updateReferralProgram(id: string, updates: UpdateReferralProgramType): Promise<ReferralProgram>;
+  deleteReferralProgram(id: string): Promise<void>;
 
   // Referral Code operations
   createReferralCode(data: InsertReferralCodeType): Promise<ReferralCode>;
@@ -1873,6 +1885,52 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupportPlan(id: string): Promise<void> {
     await db.delete(supportPlans).where(eq(supportPlans.id, id));
+  }
+
+  // Referral Program operations
+  async createReferralProgram(data: InsertReferralProgramType): Promise<ReferralProgram> {
+    const cleanedData = {
+      ...data,
+      rewardAmount: data.rewardAmount === undefined ? null : data.rewardAmount,
+    };
+    const [result] = await db.insert(referralPrograms).values(cleanedData).returning();
+    return result;
+  }
+
+  async getReferralPrograms(): Promise<ReferralProgram[]> {
+    return db.select().from(referralPrograms).orderBy(desc(referralPrograms.createdAt));
+  }
+
+  async getActiveReferralPrograms(): Promise<ReferralProgram[]> {
+    return db.select().from(referralPrograms)
+      .where(eq(referralPrograms.isActive, true))
+      .orderBy(desc(referralPrograms.createdAt));
+  }
+
+  async getReferralProgramById(id: string): Promise<ReferralProgram | undefined> {
+    const [result] = await db
+      .select()
+      .from(referralPrograms)
+      .where(eq(referralPrograms.id, id));
+    return result;
+  }
+
+  async updateReferralProgram(id: string, updates: UpdateReferralProgramType): Promise<ReferralProgram> {
+    const cleanedUpdates = {
+      ...updates,
+      rewardAmount: updates.rewardAmount === undefined ? null : updates.rewardAmount,
+      updatedAt: new Date()
+    };
+    const [result] = await db
+      .update(referralPrograms)
+      .set(cleanedUpdates)
+      .where(eq(referralPrograms.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteReferralProgram(id: string): Promise<void> {
+    await db.delete(referralPrograms).where(eq(referralPrograms.id, id));
   }
 
   // Referral Code operations

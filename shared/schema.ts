@@ -1321,6 +1321,20 @@ export type Referral = typeof referrals.$inferSelect;
 export type InsertReferralType = z.infer<typeof insertReferralSchema>;
 export type UpdateReferralType = z.infer<typeof updateReferralSchema>;
 
+// Public Referral Submission schema (for public form submissions)
+export const publicReferralSubmissionSchema = z.object({
+  referrerName: z.string().optional(),
+  referrerEmail: z.string().email().optional(),
+  referrerPhone: z.string().optional(),
+  referredName: z.string().min(1, "Referred name is required"),
+  referredEmail: z.string().email("Valid email is required"),
+  referredPhone: z.string().optional(),
+  referredCompany: z.string().optional(),
+  referralProgramId: z.string().optional(),
+});
+
+export type PublicReferralSubmissionType = z.infer<typeof publicReferralSubmissionSchema>;
+
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
 export type LoginType = z.infer<typeof loginSchema>;
