@@ -41,26 +41,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Mail, Phone, Building, MapPin, TrendingUp, AlertCircle, Send, FileText, FolderKanban } from "lucide-react";
-import { insertLeadSchema, type Lead, type Inquiry, type InsertLeadType, type User } from "@shared/schema";
-import { hasPermission } from "@shared/permissions";
+import { UserPlus, Mail, Phone, Building, MapPin, TrendingUp, AlertCircle, Send } from "lucide-react";
+import { insertLeadSchema, type Lead, type Inquiry, type InsertLeadType } from "@shared/schema";
 import { LeadDialog } from "@/components/LeadDialog";
 import { apiRequest } from "@/lib/queryClient";
 import FlyerBuilder from "./FlyerBuilder";
-import QuoteBuilder from "./QuoteBuilder";
-import QuotesManager from "./QuotesManager";
-import InvoiceBuilder from "./InvoiceBuilder";
-import InvoicesManager from "./InvoicesManager";
 
 export default function LeadsManager() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const { toast } = useToast();
-
-  const { data: user } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
-  });
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
     queryKey: ["/api/leads"],
@@ -456,26 +447,6 @@ export default function LeadsManager() {
         <TabsContent value="reachout" className="space-y-4">
           <FlyerBuilder />
         </TabsContent>
-
-        <TabsContent value="quotes" className="space-y-4">
-          <QuoteBuilder />
-        </TabsContent>
-
-        <TabsContent value="manage-quotes" className="space-y-4">
-          <QuotesManager />
-        </TabsContent>
-
-        {user && user.role && hasPermission(user.role, 'manageFinancial') && (
-          <TabsContent value="create-invoice" className="space-y-4">
-            <InvoiceBuilder />
-          </TabsContent>
-        )}
-
-        {user && user.role && hasPermission(user.role, 'viewFinancial') && (
-          <TabsContent value="manage-invoices" className="space-y-4">
-            <InvoicesManager />
-          </TabsContent>
-        )}
       </Tabs>
 
       <LeadDialog
