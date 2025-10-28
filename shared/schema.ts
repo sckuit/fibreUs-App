@@ -52,6 +52,7 @@ export const supplierStatusEnum = pgEnum('supplier_status', ['active', 'inactive
 export const quoteStatusEnum = pgEnum('quote_status', ['draft', 'sent', 'accepted', 'rejected', 'expired']);
 export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'paid', 'partial', 'cancelled', 'overdue']);
 export const paymentStatusEnum = pgEnum('payment_status', ['unpaid', 'partial', 'paid']);
+export const referralStatusEnum = pgEnum('referral_status', ['pending', 'contacted', 'qualified', 'converted', 'declined']);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -982,6 +983,33 @@ export const supportPlans = pgTable("support_plans", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Referral Codes table (stores unique referral codes for users)
+export const referralCodes = pgTable("referral_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  code: varchar("code", { length: 20 }).notNull().unique(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Referrals table (tracks people referred using referral codes)
+export const referrals = pgTable("referrals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  referralCodeId: varchar("referral_code_id").notNull().references(() => referralCodes.id, { onDelete: 'cascade' }),
+  referredName: varchar("referred_name", { length: 255 }).notNull(),
+  referredEmail: varchar("referred_email", { length: 255 }).notNull(),
+  referredPhone: varchar("referred_phone", { length: 50 }),
+  referredCompany: varchar("referred_company", { length: 255 }),
+  convertedLeadId: varchar("converted_lead_id").references(() => leads.id),
+  convertedClientId: varchar("converted_client_id").references(() => clients.id),
+  status: referralStatusEnum("status").default('pending').notNull(),
+  rewardAmount: decimal("reward_amount", { precision: 10, scale: 2 }).default('0'),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
   id: true,
   createdAt: true,
@@ -1224,6 +1252,40 @@ export const updateSupportPlanSchema = createInsertSchema(supportPlans).omit({
 export type SupportPlan = typeof supportPlans.$inferSelect;
 export type InsertSupportPlanType = z.infer<typeof insertSupportPlanSchema>;
 export type UpdateSupportPlanType = z.infer<typeof updateSupportPlanSchema>;
+
+// Referral Codes schemas
+export const insertReferralCodeSchema = createInsertSchema(referralCodes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateReferralCodeSchema = createInsertSchema(referralCodes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type InsertReferralCodeType = z.infer<typeof insertReferralCodeSchema>;
+export type UpdateReferralCodeType = z.infer<typeof updateReferralCodeSchema>;
+
+// Referrals schemas
+export const insertReferralSchema = createInsertSchema(referrals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateReferralSchema = createInsertSchema(referrals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferralType = z.infer<typeof insertReferralSchema>;
+export type UpdateReferralType = z.infer<typeof updateReferralSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
