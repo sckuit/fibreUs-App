@@ -80,8 +80,8 @@ export default function RevenueManager() {
       source: "service",
       amount: "",
       description: "",
-      clientId: "",
-      invoiceId: "",
+      clientId: "none",
+      invoiceId: "none",
     },
   });
 
@@ -335,7 +335,7 @@ export default function RevenueManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Source</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-revenue-source">
                           <SelectValue placeholder="Select source" />
@@ -398,7 +398,7 @@ export default function RevenueManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-revenue-client">
                           <SelectValue placeholder="Select client" />
@@ -424,7 +424,7 @@ export default function RevenueManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Invoice (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-revenue-invoice">
                           <SelectValue placeholder="Select invoice" />

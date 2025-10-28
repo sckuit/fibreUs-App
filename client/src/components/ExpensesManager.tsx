@@ -332,7 +332,7 @@ export default function ExpensesManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-expense-category">
                           <SelectValue placeholder="Select category" />
@@ -431,7 +431,7 @@ export default function ExpensesManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Project (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-expense-project">
                           <SelectValue placeholder="Select project" />
