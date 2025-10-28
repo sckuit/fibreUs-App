@@ -175,8 +175,12 @@ export default function ExpensesManager() {
   const getProjectName = (projectId?: string | null) => {
     if (!projectId) return "-";
     const project = projects.find((p) => p.id === projectId);
-    return project?.title || "-";
+    return project?.projectName || "-";
   };
+
+  const activeProjects = projects.filter(
+    (p) => p.status === 'scheduled' || p.status === 'in_progress'
+  );
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this expense?")) {
@@ -435,9 +439,9 @@ export default function ExpensesManager() {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
-                        {projects.map((project) => (
+                        {activeProjects.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
-                            {project.title}
+                            {project.projectName}
                           </SelectItem>
                         ))}
                       </SelectContent>

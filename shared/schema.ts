@@ -1377,18 +1377,26 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  createdById: true,
 }).extend({
   date: z.coerce.date(),
   amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+  vendor: z.string().transform(val => val === '' ? undefined : val).optional(),
+  receipt: z.string().transform(val => val === '' ? undefined : val).optional(),
+  projectId: z.string().transform(val => val === '' ? undefined : val).optional(),
 });
 
 export const updateExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  createdById: true,
 }).partial().extend({
   date: z.coerce.date().optional(),
   amount: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+  vendor: z.string().transform(val => val === '' ? undefined : val).optional(),
+  receipt: z.string().transform(val => val === '' ? undefined : val).optional(),
+  projectId: z.string().transform(val => val === '' ? undefined : val).optional(),
 });
 
 export type Expense = typeof expenses.$inferSelect;
