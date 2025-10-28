@@ -1377,12 +1377,13 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  createdById: true,
 }).extend({
   date: z.coerce.date(),
   amount: z.union([z.string(), z.number()]).transform(val => String(val)),
   vendor: z.string().transform(val => val === '' ? undefined : val).optional(),
   receipt: z.string().transform(val => val === '' ? undefined : val).optional(),
-  projectId: z.string().transform(val => val === '' ? undefined : val).optional(),
+  projectId: z.string().transform(val => (val === '' || val === 'none') ? undefined : val).optional(),
 });
 
 export const updateExpenseSchema = createInsertSchema(expenses).omit({
@@ -1395,7 +1396,7 @@ export const updateExpenseSchema = createInsertSchema(expenses).omit({
   amount: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
   vendor: z.string().transform(val => val === '' ? undefined : val).optional(),
   receipt: z.string().transform(val => val === '' ? undefined : val).optional(),
-  projectId: z.string().transform(val => val === '' ? undefined : val).optional(),
+  projectId: z.string().transform(val => (val === '' || val === 'none') ? undefined : val).optional(),
 });
 
 export type Expense = typeof expenses.$inferSelect;
@@ -1407,18 +1408,24 @@ export const insertRevenueSchema = createInsertSchema(revenue).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  createdById: true,
 }).extend({
   date: z.coerce.date(),
   amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+  clientId: z.string().transform(val => (val === '' || val === 'none') ? undefined : val).optional(),
+  invoiceId: z.string().transform(val => (val === '' || val === 'none') ? undefined : val).optional(),
 });
 
 export const updateRevenueSchema = createInsertSchema(revenue).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  createdById: true,
 }).partial().extend({
   date: z.coerce.date().optional(),
   amount: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+  clientId: z.string().transform(val => (val === '' || val === 'none') ? undefined : val).optional(),
+  invoiceId: z.string().transform(val => (val === '' || val === 'none') ? undefined : val).optional(),
 });
 
 export type Revenue = typeof revenue.$inferSelect;

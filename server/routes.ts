@@ -4047,12 +4047,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Permission denied' });
       }
       
-      const validatedData = insertExpenseSchema.parse({
-        ...req.body,
+      const validatedData = insertExpenseSchema.parse(req.body);
+      
+      const expense = await storage.createExpense({
+        ...validatedData,
         createdById: userId,
       });
-      
-      const expense = await storage.createExpense(validatedData);
       
       await logActivity(
         userId,
@@ -4177,12 +4177,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: 'Permission denied' });
       }
       
-      const validatedData = insertRevenueSchema.parse({
-        ...req.body,
+      const validatedData = insertRevenueSchema.parse(req.body);
+      
+      const rev = await storage.createRevenue({
+        ...validatedData,
         createdById: userId,
       });
-      
-      const rev = await storage.createRevenue(validatedData);
       
       await logActivity(
         userId,
