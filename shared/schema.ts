@@ -1044,6 +1044,7 @@ export const expenses = pgTable("expenses", {
   description: text("description").notNull(),
   vendor: varchar("vendor"),
   receipt: varchar("receipt"), // URL to receipt/attachment stored in object storage
+  projectId: varchar("project_id").references(() => projects.id), // optional link to project
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

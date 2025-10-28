@@ -43,7 +43,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Plus, Edit, Trash2, Download, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { insertExpenseSchema, updateExpenseSchema, type Expense, type InsertExpenseType } from "@shared/schema";
+import { insertExpenseSchema, updateExpenseSchema, type Expense, type InsertExpenseType, type Project } from "@shared/schema";
 import { exportToCSV } from "@/lib/exportUtils";
 
 const expenseCategories = [
@@ -70,6 +70,10 @@ export default function ExpensesManager() {
     queryKey: ["/api/expenses"],
   });
 
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+  });
+
   const form = useForm<InsertExpenseType>({
     resolver: zodResolver(editingExpense ? updateExpenseSchema : insertExpenseSchema),
     defaultValues: {
@@ -79,6 +83,7 @@ export default function ExpensesManager() {
       description: "",
       vendor: "",
       receipt: "",
+      projectId: "none",
     },
   });
 
@@ -127,10 +132,15 @@ export default function ExpensesManager() {
   });
 
   const onSubmit = (data: InsertExpenseType) => {
+    const submitData = {
+      ...data,
+      projectId: data.projectId && data.projectId !== 'none' ? data.projectId : undefined,
+    };
+
     if (editingExpense) {
-      updateExpenseMutation.mutate({ id: editingExpense.id, ...data });
+      updateExpenseMutation.mutate({ id: editingExpense.id, ...submitData });
     } else {
-      createExpenseMutation.mutate(data);
+      createExpenseMutation.mutate(submitData);
     }
   };
 
@@ -143,6 +153,7 @@ export default function ExpensesManager() {
       description: expense.description,
       vendor: expense.vendor || "",
       receipt: expense.receipt || "",
+      projectId: expense.projectId || "none",
     });
     setIsDialogOpen(true);
   };
@@ -156,8 +167,15 @@ export default function ExpensesManager() {
       description: "",
       vendor: "",
       receipt: "",
+      projectId: "none",
     });
     setIsDialogOpen(true);
+  };
+
+  const getProjectName = (projectId?: string | null) => {
+    if (!projectId) return "-";
+    const project = projects.find((p) => p.id === projectId);
+    return project?.title || "-";
   };
 
   const handleDelete = (id: string) => {
@@ -398,6 +416,32 @@ export default function ExpensesManager() {
                         data-testid="input-expense-receipt"
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="projectId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-expense-project">
+                          <SelectValue placeholder="Select project" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
