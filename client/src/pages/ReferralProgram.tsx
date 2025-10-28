@@ -203,7 +203,7 @@ export default function ReferralProgram() {
             </CardContent>
           </Card>
 
-          <Card className="bg-accent/5 border-accent/20">
+          <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-8 pb-8">
               <h2 className="text-2xl font-bold mb-4">Send a Referral Now</h2>
               <p className="text-muted-foreground mb-6">
