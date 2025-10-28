@@ -55,6 +55,10 @@ import {
   updateServiceRateSchema,
   insertSupportPlanSchema,
   updateSupportPlanSchema,
+  insertReferralCodeSchema,
+  updateReferralCodeSchema,
+  insertReferralSchema,
+  updateReferralSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -3542,6 +3546,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error serving favicon:", error);
       return res.sendStatus(500);
+    }
+  });
+
+  // Referral system routes
+
+  // Generate unique referral code helper
+  const generateUniqueReferralCode = async (): Promise<string> => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const maxRetries = 5;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      
+      const existingCode = await storage.getReferralCodeByCode(code);
+      if (!existingCode) {
+        return code;
+      }
+    }
+    
+    throw new Error('Failed to generate unique referral code after maximum retries');
+  };
+
+  // POST /api/referral-codes - Generate new referral code (authenticated)
+  app.post('/api/referral-codes', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const code = await generateUniqueReferralCode();
+      
+      const referralCode = await storage.createReferralCode({
+        userId,
+        code,
+        isActive: true,
+      });
+
+      await logActivity(
+        userId,
+        'created',
+        'referral_code',
+        referralCode.id,
+        code,
+        `Created referral code: ${code}`,
+        req
+      );
+
+      res.status(201).json(referralCode);
+    } catch (error) {
+      console.error('Error creating referral code:', error);
+      res.status(500).json({ message: 'Failed to create referral code' });
+    }
+  });
+
+  // GET /api/referral-codes - Get current user's referral codes (authenticated)
+  app.get('/api/referral-codes', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const referralCodes = await storage.getReferralCodesByUserId(userId);
+      res.json(referralCodes);
+    } catch (error) {
+      console.error('Error fetching referral codes:', error);
+      res.status(500).json({ message: 'Failed to fetch referral codes' });
+    }
+  });
+
+  // PATCH /api/referral-codes/:id - Toggle code active status (authenticated)
+  app.patch('/api/referral-codes/:id', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { id } = req.params;
+      
+      const validatedData = updateReferralCodeSchema.parse(req.body);
+      
+      const existingCodes = await storage.getReferralCodesByUserId(userId);
+      const codeToUpdate = existingCodes.find(code => code.id === id);
+      
+      if (!codeToUpdate) {
+        return res.status(404).json({ message: 'Referral code not found or unauthorized' });
+      }
+
+      const updatedCode = await storage.updateReferralCode(id, validatedData);
+
+      await logActivity(
+        userId,
+        'updated',
+        'referral_code',
+        id,
+        updatedCode.code,
+        `Updated referral code: ${updatedCode.code}`,
+        req
+      );
+
+      res.json(updatedCode);
+    } catch (error) {
+      console.error('Error updating referral code:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to update referral code' });
+    }
+  });
+
+  // POST /api/referrals - Create new referral (public route, validates referral code)
+  app.post('/api/referrals', async (req: any, res) => {
+    try {
+      const validatedData = insertReferralSchema.parse(req.body);
+      
+      const referralCode = await storage.getReferralCodeByCode(
+        req.body.referralCode || ''
+      );
+      
+      if (!referralCode) {
+        return res.status(404).json({ message: 'Invalid referral code' });
+      }
+      
+      if (!referralCode.isActive) {
+        return res.status(400).json({ message: 'Referral code is not active' });
+      }
+
+      const referral = await storage.createReferral({
+        ...validatedData,
+        referralCodeId: referralCode.id,
+      });
+
+      await logActivity(
+        referralCode.userId,
+        'created',
+        'referral',
+        referral.id,
+        validatedData.referredName,
+        `New referral: ${validatedData.referredName}`,
+        req
+      );
+
+      res.status(201).json(referral);
+    } catch (error) {
+      console.error('Error creating referral:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create referral' });
+    }
+  });
+
+  // GET /api/referrals - Get referrals for current user's codes (authenticated)
+  app.get('/api/referrals', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const referrals = await storage.getReferralsByUserId(userId);
+      res.json(referrals);
+    } catch (error) {
+      console.error('Error fetching referrals:', error);
+      res.status(500).json({ message: 'Failed to fetch referrals' });
+    }
+  });
+
+  // PATCH /api/referrals/:id - Update referral status/reward (manageLeads permission)
+  app.patch('/api/referrals/:id', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      if (!hasPermission(user.role, 'manageLeads')) {
+        return res.status(403).json({ message: 'Insufficient permissions' });
+      }
+
+      const { id } = req.params;
+      const validatedData = updateReferralSchema.parse(req.body);
+
+      const updatedReferral = await storage.updateReferral(id, validatedData);
+
+      await logActivity(
+        userId,
+        'updated',
+        'referral',
+        id,
+        updatedReferral.referredName,
+        `Updated referral: ${updatedReferral.referredName}`,
+        req
+      );
+
+      res.json(updatedReferral);
+    } catch (error) {
+      console.error('Error updating referral:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to update referral' });
+    }
+  });
+
+  // GET /api/referral-stats - Get referral statistics for current user (authenticated)
+  app.get('/api/referral-stats', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const stats = await storage.getReferralStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching referral stats:', error);
+      res.status(500).json({ message: 'Failed to fetch referral statistics' });
     }
   });
 

@@ -28,6 +28,8 @@ import {
   rateTypes,
   serviceRates,
   supportPlans,
+  referralCodes,
+  referrals,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -103,6 +105,12 @@ import {
   type SupportPlan,
   type InsertSupportPlanType,
   type UpdateSupportPlanType,
+  type ReferralCode,
+  type InsertReferralCodeType,
+  type UpdateReferralCodeType,
+  type Referral,
+  type InsertReferralType,
+  type UpdateReferralType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, asc } from "drizzle-orm";
@@ -315,6 +323,19 @@ export interface IStorage {
   getSupportPlans(): Promise<SupportPlan[]>;
   updateSupportPlan(id: string, updates: UpdateSupportPlanType): Promise<SupportPlan | undefined>;
   deleteSupportPlan(id: string): Promise<void>;
+
+  // Referral Code operations
+  createReferralCode(data: InsertReferralCodeType): Promise<ReferralCode>;
+  getReferralCodesByUserId(userId: string): Promise<ReferralCode[]>;
+  getReferralCodeByCode(code: string): Promise<ReferralCode | undefined>;
+  updateReferralCode(id: string, updates: UpdateReferralCodeType): Promise<ReferralCode>;
+
+  // Referral operations
+  createReferral(data: InsertReferralType): Promise<Referral>;
+  getReferralsByCodeId(codeId: string): Promise<Referral[]>;
+  getReferralsByUserId(userId: string): Promise<Referral[]>;
+  updateReferral(id: string, updates: UpdateReferralType): Promise<Referral>;
+  getReferralStats(userId: string): Promise<{totalReferrals: number, converted: number, totalRewards: string}>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1852,6 +1873,95 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupportPlan(id: string): Promise<void> {
     await db.delete(supportPlans).where(eq(supportPlans.id, id));
+  }
+
+  // Referral Code operations
+  async createReferralCode(data: InsertReferralCodeType): Promise<ReferralCode> {
+    const [result] = await db.insert(referralCodes).values(data).returning();
+    return result;
+  }
+
+  async getReferralCodesByUserId(userId: string): Promise<ReferralCode[]> {
+    return db.select().from(referralCodes)
+      .where(eq(referralCodes.userId, userId))
+      .orderBy(desc(referralCodes.createdAt));
+  }
+
+  async getReferralCodeByCode(code: string): Promise<ReferralCode | undefined> {
+    const [result] = await db.select().from(referralCodes)
+      .where(eq(referralCodes.code, code));
+    return result;
+  }
+
+  async updateReferralCode(id: string, updates: UpdateReferralCodeType): Promise<ReferralCode> {
+    const [result] = await db
+      .update(referralCodes)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(referralCodes.id, id))
+      .returning();
+    return result;
+  }
+
+  // Referral operations
+  async createReferral(data: InsertReferralType): Promise<Referral> {
+    const [result] = await db.insert(referrals).values(data).returning();
+    return result;
+  }
+
+  async getReferralsByCodeId(codeId: string): Promise<Referral[]> {
+    return db.select().from(referrals)
+      .where(eq(referrals.referralCodeId, codeId))
+      .orderBy(desc(referrals.createdAt));
+  }
+
+  async getReferralsByUserId(userId: string): Promise<Referral[]> {
+    const userCodes = await db.select({ id: referralCodes.id })
+      .from(referralCodes)
+      .where(eq(referralCodes.userId, userId));
+    
+    if (userCodes.length === 0) {
+      return [];
+    }
+    
+    const codeIds = userCodes.map(code => code.id);
+    return db.select().from(referrals)
+      .where(sql`${referrals.referralCodeId} = ANY(${codeIds})`)
+      .orderBy(desc(referrals.createdAt));
+  }
+
+  async updateReferral(id: string, updates: UpdateReferralType): Promise<Referral> {
+    const [result] = await db
+      .update(referrals)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(referrals.id, id))
+      .returning();
+    return result;
+  }
+
+  async getReferralStats(userId: string): Promise<{totalReferrals: number, converted: number, totalRewards: string}> {
+    const userCodes = await db.select({ id: referralCodes.id })
+      .from(referralCodes)
+      .where(eq(referralCodes.userId, userId));
+    
+    if (userCodes.length === 0) {
+      return { totalReferrals: 0, converted: 0, totalRewards: '0.00' };
+    }
+    
+    const codeIds = userCodes.map(code => code.id);
+    const allReferrals = await db.select().from(referrals)
+      .where(sql`${referrals.referralCodeId} = ANY(${codeIds})`);
+    
+    const converted = allReferrals.filter(r => r.status === 'converted').length;
+    const totalRewards = allReferrals.reduce((sum, r) => {
+      const amount = parseFloat(r.rewardAmount || '0');
+      return sum + amount;
+    }, 0);
+    
+    return {
+      totalReferrals: allReferrals.length,
+      converted,
+      totalRewards: totalRewards.toFixed(2)
+    };
   }
 }
 
