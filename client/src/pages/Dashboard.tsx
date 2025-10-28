@@ -48,6 +48,7 @@ import QuoteBuilder from "@/components/QuoteBuilder";
 import QuotesManager from "@/components/QuotesManager";
 import InvoiceBuilder from "@/components/InvoiceBuilder";
 import InvoicesManager from "@/components/InvoicesManager";
+import ReferralTracker from "@/components/ReferralTracker";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -630,6 +631,9 @@ export default function Dashboard() {
                     Leads
                   </TabsTrigger>
                 )}
+                <TabsTrigger value="referrals" data-testid="tab-sales-referrals">
+                  Referrals
+                </TabsTrigger>
               </TabsList>
 
               {/* Quotes Sub-Tab with nested Create/Manage */}
@@ -732,6 +736,11 @@ export default function Dashboard() {
                   </Tabs>
                 </TabsContent>
               )}
+
+              {/* Referrals Sub-Tab - Direct access */}
+              <TabsContent value="referrals" className="mt-4">
+                <ReferralTracker />
+              </TabsContent>
             </Tabs>
           </TabsContent>
 
