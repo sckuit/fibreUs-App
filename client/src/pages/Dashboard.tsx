@@ -400,58 +400,58 @@ export default function Dashboard() {
             gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
           }}>
             <TabsTrigger value="overview" data-testid="tab-overview">
-              <Home className="w-4 h-4 mr-2" />
+              <Home className="w-5 h-5 mr-2" />
               Overview
             </TabsTrigger>
             {hasPermission(userRole, 'viewUsers') && userRole !== 'project_manager' && (
               <TabsTrigger value="users" data-testid="tab-users">
-                <Users className="w-4 h-4 mr-2" />
+                <Users className="w-5 h-5 mr-2" />
                 Users
               </TabsTrigger>
             )}
             {(hasPermission(userRole, 'viewClients') || hasPermission(userRole, 'viewLeads') || hasPermission(userRole, 'viewOwnMessages')) && (
               <TabsTrigger value="sales" data-testid="tab-sales">
-                <TrendingUp className="w-4 h-4 mr-2" />
+                <TrendingUp className="w-5 h-5 mr-2" />
                 Sales
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewOwnProjects') && (
               <TabsTrigger value="projects" data-testid="tab-projects">
-                <Wrench className="w-4 h-4 mr-2" />
+                <Wrench className="w-5 h-5 mr-2" />
                 Projects
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewActivities') && (
               <TabsTrigger value="activities" data-testid="tab-activities">
-                <Activity className="w-4 h-4 mr-2" />
+                <Activity className="w-5 h-5 mr-2" />
                 Activities
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewInventory') && (
               <TabsTrigger value="inventory" data-testid="tab-inventory">
-                <Package className="w-4 h-4 mr-2" />
+                <Package className="w-5 h-5 mr-2" />
                 Inventory
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewSuppliers') && (
               <TabsTrigger value="suppliers" data-testid="tab-suppliers">
-                <Truck className="w-4 h-4 mr-2" />
+                <Truck className="w-5 h-5 mr-2" />
                 Suppliers
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewFinancial') && (
               <TabsTrigger value="financial" data-testid="tab-financial">
-                <DollarSign className="w-4 h-4 mr-2" />
+                <DollarSign className="w-5 h-5 mr-2" />
                 Financial
               </TabsTrigger>
             )}
             <TabsTrigger value="settings" data-testid="tab-settings">
-              <Settings className="w-4 h-4 mr-2" />
+              <Settings className="w-5 h-5 mr-2" />
               Settings
             </TabsTrigger>
             {userRole === 'admin' && (
               <TabsTrigger value="system" data-testid="tab-system">
-                <Server className="w-4 h-4 mr-2" />
+                <Server className="w-5 h-5 mr-2" />
                 System
               </TabsTrigger>
             )}
@@ -651,31 +651,31 @@ export default function Dashboard() {
             <Tabs defaultValue="quotes" className="w-full">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="quotes" data-testid="tab-sales-quotes">
-                  <FileText className="w-4 h-4 mr-2" />
+                  <FileText className="w-5 h-5 mr-2" />
                   Quotes
                 </TabsTrigger>
                 <TabsTrigger value="invoices" data-testid="tab-sales-invoices">
-                  <DollarSign className="w-4 h-4 mr-2" />
+                  <DollarSign className="w-5 h-5 mr-2" />
                   Invoices
                 </TabsTrigger>
                 <TabsTrigger value="services" data-testid="tab-sales-services">
-                  <Wrench className="w-4 h-4 mr-2" />
+                  <Wrench className="w-5 h-5 mr-2" />
                   Services
                 </TabsTrigger>
                 {hasPermission(userRole, 'viewClients') && (
                   <TabsTrigger value="clients" data-testid="tab-sales-clients">
-                    <UserCircle className="w-4 h-4 mr-2" />
+                    <UserCircle className="w-5 h-5 mr-2" />
                     Clients
                   </TabsTrigger>
                 )}
                 {hasPermission(userRole, 'viewLeads') && (
                   <TabsTrigger value="leads" data-testid="tab-sales-leads">
-                    <UserPlus className="w-4 h-4 mr-2" />
+                    <UserPlus className="w-5 h-5 mr-2" />
                     Leads
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="referrals" data-testid="tab-sales-referrals">
-                  <Gift className="w-4 h-4 mr-2" />
+                  <Gift className="w-5 h-5 mr-2" />
                   Referrals
                 </TabsTrigger>
               </TabsList>
@@ -685,11 +685,11 @@ export default function Dashboard() {
                 <Tabs defaultValue="manage-quotes" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="create-quote" data-testid="tab-sales-quotes-create">
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-5 h-5 mr-2" />
                       Create Quote
                     </TabsTrigger>
                     <TabsTrigger value="manage-quotes" data-testid="tab-sales-quotes-manage">
-                      <ClipboardList className="w-4 h-4 mr-2" />
+                      <ClipboardList className="w-5 h-5 mr-2" />
                       Manage Quotes
                     </TabsTrigger>
                   </TabsList>
@@ -709,11 +709,11 @@ export default function Dashboard() {
                 <Tabs defaultValue="manage-invoices" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="create-invoice" data-testid="tab-sales-invoices-create">
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="w-5 h-5 mr-2" />
                       Create Invoice
                     </TabsTrigger>
                     <TabsTrigger value="manage-invoices" data-testid="tab-sales-invoices-manage">
-                      <ClipboardList className="w-4 h-4 mr-2" />
+                      <ClipboardList className="w-5 h-5 mr-2" />
                       Manage Invoices
                     </TabsTrigger>
                   </TabsList>
@@ -733,11 +733,11 @@ export default function Dashboard() {
                 <Tabs defaultValue="service-types" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="service-types" data-testid="tab-sales-services-types">
-                      <Wrench className="w-4 h-4 mr-2" />
+                      <Wrench className="w-5 h-5 mr-2" />
                       Service Types
                     </TabsTrigger>
                     <TabsTrigger value="price-matrix" data-testid="tab-sales-services-matrix">
-                      <DollarSign className="w-4 h-4 mr-2" />
+                      <DollarSign className="w-5 h-5 mr-2" />
                       Price Matrix
                     </TabsTrigger>
                   </TabsList>
@@ -765,12 +765,12 @@ export default function Dashboard() {
                   <Tabs defaultValue="overview" className="w-full">
                     <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                       <TabsTrigger value="overview" data-testid="tab-sales-leads-overview">
-                        <Eye className="w-4 h-4 mr-2" />
+                        <Eye className="w-5 h-5 mr-2" />
                         Overview
                       </TabsTrigger>
                       {hasPermission(userRole, 'viewOwnMessages') && (
                         <TabsTrigger value="messages" data-testid="tab-sales-leads-messages">
-                          <MessageSquare className="w-4 h-4 mr-2" />
+                          <MessageSquare className="w-5 h-5 mr-2" />
                           Messages
                         </TabsTrigger>
                       )}
@@ -867,17 +867,17 @@ export default function Dashboard() {
                 <Tabs defaultValue="track-referrals" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="track-referrals" data-testid="tab-sales-referrals-track">
-                      <TrendingUp className="w-4 h-4 mr-2" />
+                      <TrendingUp className="w-5 h-5 mr-2" />
                       Track Referrals
                     </TabsTrigger>
                     {hasPermission(userRole, 'manageLeads') && (
                       <>
                         <TabsTrigger value="referrees" data-testid="tab-sales-referrals-referrees">
-                          <Users className="w-4 h-4 mr-2" />
+                          <Users className="w-5 h-5 mr-2" />
                           Referrees
                         </TabsTrigger>
                         <TabsTrigger value="manage-programs" data-testid="tab-sales-referrals-programs">
-                          <Settings className="w-4 h-4 mr-2" />
+                          <Settings className="w-5 h-5 mr-2" />
                           Manage Programs
                         </TabsTrigger>
                       </>
@@ -909,18 +909,18 @@ export default function Dashboard() {
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="overview" data-testid="tab-projects-overview">
-                  <Eye className="w-4 h-4 mr-2" />
+                  <Eye className="w-5 h-5 mr-2" />
                   Overview
                 </TabsTrigger>
                 {hasPermission(userRole, 'viewOwnTasks') && (
                   <TabsTrigger value="tasks" data-testid="tab-projects-tasks">
-                    <ClipboardList className="w-4 h-4 mr-2" />
+                    <ClipboardList className="w-5 h-5 mr-2" />
                     Tasks
                   </TabsTrigger>
                 )}
                 {hasPermission(userRole, 'viewOwnReports') && (
                   <TabsTrigger value="reports" data-testid="tab-projects-reports">
-                    <FileText className="w-4 h-4 mr-2" />
+                    <FileText className="w-5 h-5 mr-2" />
                     Reports
                   </TabsTrigger>
                 )}
@@ -1015,12 +1015,12 @@ export default function Dashboard() {
             <Tabs defaultValue="logs" className="w-full">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="logs" data-testid="tab-activities-logs">
-                  <Activity className="w-4 h-4 mr-2" />
+                  <Activity className="w-5 h-5 mr-2" />
                   Logs
                 </TabsTrigger>
                 {hasPermission(userRole, 'viewVisitors') && (
                   <TabsTrigger value="visitors" data-testid="tab-activities-visitors">
-                    <BarChart className="w-4 h-4 mr-2" />
+                    <BarChart className="w-5 h-5 mr-2" />
                     Visitors
                   </TabsTrigger>
                 )}
@@ -1276,29 +1276,29 @@ export default function Dashboard() {
             <Tabs defaultValue="profile" className="space-y-4">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="profile" data-testid="subtab-profile">
-                  <UserCircle className="w-4 h-4 mr-2" />
+                  <UserCircle className="w-5 h-5 mr-2" />
                   Profile
                 </TabsTrigger>
                 {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
                   <>
                     <TabsTrigger value="company" data-testid="subtab-company">
-                      <Settings className="w-4 h-4 mr-2" />
+                      <Settings className="w-5 h-5 mr-2" />
                       Company Settings
                     </TabsTrigger>
                     <TabsTrigger value="logos" data-testid="subtab-logos">
-                      <Upload className="w-4 h-4 mr-2" />
+                      <Upload className="w-5 h-5 mr-2" />
                       Logos
                     </TabsTrigger>
                     <TabsTrigger value="certifications" data-testid="subtab-certifications">
-                      <FileText className="w-4 h-4 mr-2" />
+                      <FileText className="w-5 h-5 mr-2" />
                       Certifications
                     </TabsTrigger>
                     <TabsTrigger value="team" data-testid="subtab-team">
-                      <Users className="w-4 h-4 mr-2" />
+                      <Users className="w-5 h-5 mr-2" />
                       Team Members
                     </TabsTrigger>
                     <TabsTrigger value="legal" data-testid="subtab-legal">
-                      <FileText className="w-4 h-4 mr-2" />
+                      <FileText className="w-5 h-5 mr-2" />
                       Legal
                     </TabsTrigger>
                   </>
