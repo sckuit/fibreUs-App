@@ -132,8 +132,8 @@ export default function RevenueManager() {
   const onSubmit = (data: InsertRevenueType) => {
     const submitData = {
       ...data,
-      clientId: data.clientId || undefined,
-      invoiceId: data.invoiceId || undefined,
+      clientId: data.clientId && data.clientId !== 'none' ? data.clientId : undefined,
+      invoiceId: data.invoiceId && data.invoiceId !== 'none' ? data.invoiceId : undefined,
     };
 
     if (editingRevenue) {
@@ -150,8 +150,8 @@ export default function RevenueManager() {
       source: rev.source as any,
       amount: rev.amount,
       description: rev.description,
-      clientId: rev.clientId || "",
-      invoiceId: rev.invoiceId || "",
+      clientId: rev.clientId || "none",
+      invoiceId: rev.invoiceId || "none",
     });
     setIsDialogOpen(true);
   };
@@ -163,8 +163,8 @@ export default function RevenueManager() {
       source: "service",
       amount: "",
       description: "",
-      clientId: "",
-      invoiceId: "",
+      clientId: "none",
+      invoiceId: "none",
     });
     setIsDialogOpen(true);
   };
@@ -405,7 +405,7 @@ export default function RevenueManager() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.name}
@@ -431,7 +431,7 @@ export default function RevenueManager() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {invoices.map((invoice) => (
                           <SelectItem key={invoice.id} value={invoice.id}>
                             {invoice.invoiceNumber}
