@@ -36,6 +36,7 @@ import Certifications from "@/pages/company/Certifications";
 import CaseStudies from "@/pages/company/CaseStudies";
 import Careers from "@/pages/company/Careers";
 import NewsUpdates from "@/pages/company/NewsUpdates";
+import ReferralProgram from "@/pages/ReferralProgram";
 
 // Support pages
 import SystemStatus from "@/pages/support/SystemStatus";
@@ -226,6 +227,11 @@ function Router() {
       <Route path="/company/news-updates" component={() => (
         <PublicLayout>
           <NewsUpdates />
+        </PublicLayout>
+      )} />
+      <Route path="/referral-program" component={() => (
+        <PublicLayout>
+          <ReferralProgram />
         </PublicLayout>
       )} />
       
