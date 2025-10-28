@@ -2,10 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Gift, Users, DollarSign, TrendingUp, ArrowRight } from "lucide-react";
 import LoginDialog from "@/components/LoginDialog";
-import { useState } from "react";
 
 export default function ReferralProgram() {
-  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const benefits = [
     {
@@ -113,24 +111,20 @@ export default function ReferralProgram() {
               <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
                 Join our referral program today and start earning rewards for sharing professional security services with your network.
               </p>
-              <Button 
-                size="lg" 
-                onClick={() => setShowLoginDialog(true)}
-                className="text-lg px-8"
-                data-testid="button-get-referral-code"
-              >
-                Get Your Referral Code
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+              <LoginDialog>
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8"
+                  data-testid="button-get-referral-code"
+                >
+                  Get Your Referral Code
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </LoginDialog>
             </CardContent>
           </Card>
         </div>
       </div>
-
-      <LoginDialog 
-        open={showLoginDialog} 
-        onOpenChange={setShowLoginDialog}
-      />
     </div>
   );
 }
