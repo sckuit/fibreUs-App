@@ -241,26 +241,6 @@ export default function LeadsManager() {
             <Send className="w-4 h-4 mr-2" />
             Reach Out
           </TabsTrigger>
-          <TabsTrigger value="quotes" data-testid="tab-quotes">
-            <FileText className="w-4 h-4 mr-2" />
-            Create Quote
-          </TabsTrigger>
-          <TabsTrigger value="manage-quotes" data-testid="tab-manage-quotes">
-            <FolderKanban className="w-4 h-4 mr-2" />
-            Manage Quotes
-          </TabsTrigger>
-          {user && user.role && hasPermission(user.role, 'manageFinancial') && (
-            <TabsTrigger value="create-invoice" data-testid="tab-create-invoice">
-              <FileText className="w-4 h-4 mr-2" />
-              Create Invoice
-            </TabsTrigger>
-          )}
-          {user && user.role && hasPermission(user.role, 'viewFinancial') && (
-            <TabsTrigger value="manage-invoices" data-testid="tab-manage-invoices">
-              <FolderKanban className="w-4 h-4 mr-2" />
-              Manage Invoices
-            </TabsTrigger>
-          )}
         </TabsList>
 
         <TabsContent value="current" className="space-y-4">
