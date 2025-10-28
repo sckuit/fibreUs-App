@@ -414,12 +414,6 @@ export default function Dashboard() {
                 Financial
               </TabsTrigger>
             )}
-            {hasPermission(userRole, 'manageSettings') && (
-              <TabsTrigger value="referrals" data-testid="tab-referrals">
-                <Gift className="w-4 h-4 mr-2" />
-                Manage Referral
-              </TabsTrigger>
-            )}
             <TabsTrigger value="settings" data-testid="tab-settings">
               <Settings className="w-4 h-4 mr-2" />
               Settings
@@ -744,9 +738,30 @@ export default function Dashboard() {
                 </TabsContent>
               )}
 
-              {/* Referrals Sub-Tab - Direct access */}
+              {/* Referrals Sub-Tab with nested Track/Manage */}
               <TabsContent value="referrals" className="mt-4">
-                <ReferralTracker />
+                <Tabs defaultValue="track-referrals" className="w-full">
+                  <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                    <TabsTrigger value="track-referrals" data-testid="tab-sales-referrals-track">
+                      Track Referrals
+                    </TabsTrigger>
+                    {hasPermission(userRole, 'viewSalesRecords') && (
+                      <TabsTrigger value="manage-programs" data-testid="tab-sales-referrals-programs">
+                        Manage Programs
+                      </TabsTrigger>
+                    )}
+                  </TabsList>
+
+                  <TabsContent value="track-referrals" className="mt-4">
+                    <ReferralTracker />
+                  </TabsContent>
+
+                  {hasPermission(userRole, 'viewSalesRecords') && (
+                    <TabsContent value="manage-programs" className="mt-4">
+                      <ReferralProgramManager />
+                    </TabsContent>
+                  )}
+                </Tabs>
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -1112,13 +1127,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </TabsContent>
-
-          {/* Manage Referral Tab */}
-          {hasPermission(userRole, 'manageSettings') && (
-            <TabsContent value="referrals" className="space-y-4">
-              <ReferralProgramManager />
-            </TabsContent>
-          )}
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-4">
