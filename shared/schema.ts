@@ -983,6 +983,18 @@ export const supportPlans = pgTable("support_plans", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Referral Programs table (stores different referral program types with reward structures)
+export const referralPrograms = pgTable("referral_programs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  rewardAmount: decimal("reward_amount", { precision: 10, scale: 2 }).notNull(),
+  rewardType: varchar("reward_type", { length: 50 }).notNull(), // 'fixed' or 'percentage'
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Referral Codes table (stores unique referral codes for users)
 export const referralCodes = pgTable("referral_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -996,7 +1008,11 @@ export const referralCodes = pgTable("referral_codes", {
 // Referrals table (tracks people referred using referral codes)
 export const referrals = pgTable("referrals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  referralCodeId: varchar("referral_code_id").notNull().references(() => referralCodes.id, { onDelete: 'cascade' }),
+  referralCodeId: varchar("referral_code_id").references(() => referralCodes.id, { onDelete: 'cascade' }),
+  referralProgramId: varchar("referral_program_id").references(() => referralPrograms.id),
+  referrerName: varchar("referrer_name", { length: 255 }),
+  referrerEmail: varchar("referrer_email", { length: 255 }),
+  referrerPhone: varchar("referrer_phone", { length: 50 }),
   referredName: varchar("referred_name", { length: 255 }).notNull(),
   referredEmail: varchar("referred_email", { length: 255 }).notNull(),
   referredPhone: varchar("referred_phone", { length: 50 }),
@@ -1005,6 +1021,7 @@ export const referrals = pgTable("referrals", {
   convertedClientId: varchar("converted_client_id").references(() => clients.id),
   status: referralStatusEnum("status").default('pending').notNull(),
   rewardAmount: decimal("reward_amount", { precision: 10, scale: 2 }).default('0'),
+  pointsEarned: integer("points_earned").default(0),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -1252,6 +1269,23 @@ export const updateSupportPlanSchema = createInsertSchema(supportPlans).omit({
 export type SupportPlan = typeof supportPlans.$inferSelect;
 export type InsertSupportPlanType = z.infer<typeof insertSupportPlanSchema>;
 export type UpdateSupportPlanType = z.infer<typeof updateSupportPlanSchema>;
+
+// Referral Programs schemas
+export const insertReferralProgramSchema = createInsertSchema(referralPrograms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateReferralProgramSchema = createInsertSchema(referralPrograms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
+
+export type ReferralProgram = typeof referralPrograms.$inferSelect;
+export type InsertReferralProgramType = z.infer<typeof insertReferralProgramSchema>;
+export type UpdateReferralProgramType = z.infer<typeof updateReferralProgramSchema>;
 
 // Referral Codes schemas
 export const insertReferralCodeSchema = createInsertSchema(referralCodes).omit({
