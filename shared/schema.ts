@@ -1377,7 +1377,6 @@ export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  createdById: true,
 }).extend({
   date: z.coerce.date(),
   amount: z.union([z.string(), z.number()]).transform(val => String(val)),
