@@ -144,6 +144,27 @@ export default function LeadsManager() {
     },
   });
 
+  const convertToClient = useMutation({
+    mutationFn: async (leadId: string) => {
+      return apiRequest("POST", `/api/clients/convert-from-lead/${leadId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "Lead Converted",
+        description: "Lead has been converted to a client successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Conversion Failed",
+        description: error.message || "Failed to convert lead to client",
+        variant: "destructive",
+      });
+    },
+  });
+
   const getStatusColor = (status?: string) => {
     switch (status) {
       case "new":
@@ -343,11 +364,12 @@ export default function LeadsManager() {
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={lead.status === "converted"}
+                              disabled={lead.status === "converted" || convertToClient.isPending}
+                              onClick={() => convertToClient.mutate(lead.id)}
                               data-testid={`button-convert-lead-${lead.id}`}
                             >
                               <TrendingUp className="w-4 h-4 mr-1" />
-                              Convert to Client
+                              {convertToClient.isPending ? "Converting..." : "Convert to Client"}
                             </Button>
                           </div>
                         </TableCell>
