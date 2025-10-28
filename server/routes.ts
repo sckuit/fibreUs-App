@@ -3884,6 +3884,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/referrals/all - Get all referrals (manageLeads permission)
+  app.get('/api/referrals/all', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'manageLeads')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const referrals = await storage.getAllReferrals();
+      res.json(referrals);
+    } catch (error) {
+      console.error('Error fetching all referrals:', error);
+      res.status(500).json({ message: 'Failed to fetch referrals' });
+    }
+  });
+
   // PATCH /api/referrals/:id - Update referral status/reward (manageLeads permission)
   app.patch('/api/referrals/:id', isSessionAuthenticated, async (req: any, res) => {
     try {

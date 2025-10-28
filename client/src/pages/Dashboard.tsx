@@ -50,6 +50,7 @@ import InvoiceBuilder from "@/components/InvoiceBuilder";
 import InvoicesManager from "@/components/InvoicesManager";
 import ReferralTracker from "@/components/ReferralTracker";
 import ReferralProgramManager from "@/components/ReferralProgramManager";
+import ReferreesManager from "@/components/ReferreesManager";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -746,9 +747,14 @@ export default function Dashboard() {
                       Track Referrals
                     </TabsTrigger>
                     {hasPermission(userRole, 'manageLeads') && (
-                      <TabsTrigger value="manage-programs" data-testid="tab-sales-referrals-programs">
-                        Manage Programs
-                      </TabsTrigger>
+                      <>
+                        <TabsTrigger value="referrees" data-testid="tab-sales-referrals-referrees">
+                          Referrees
+                        </TabsTrigger>
+                        <TabsTrigger value="manage-programs" data-testid="tab-sales-referrals-programs">
+                          Manage Programs
+                        </TabsTrigger>
+                      </>
                     )}
                   </TabsList>
 
@@ -757,9 +763,15 @@ export default function Dashboard() {
                   </TabsContent>
 
                   {hasPermission(userRole, 'manageLeads') && (
-                    <TabsContent value="manage-programs" className="mt-4">
-                      <ReferralProgramManager />
-                    </TabsContent>
+                    <>
+                      <TabsContent value="referrees" className="mt-4">
+                        <ReferreesManager />
+                      </TabsContent>
+                      
+                      <TabsContent value="manage-programs" className="mt-4">
+                        <ReferralProgramManager />
+                      </TabsContent>
+                    </>
                   )}
                 </Tabs>
               </TabsContent>

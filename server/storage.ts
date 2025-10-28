@@ -344,6 +344,7 @@ export interface IStorage {
 
   // Referral operations
   createReferral(data: InsertReferralType): Promise<Referral>;
+  getAllReferrals(): Promise<Referral[]>;
   getReferralsByCodeId(codeId: string): Promise<Referral[]>;
   getReferralsByUserId(userId: string): Promise<Referral[]>;
   updateReferral(id: string, updates: UpdateReferralType): Promise<Referral>;
@@ -1964,6 +1965,11 @@ export class DatabaseStorage implements IStorage {
   async createReferral(data: InsertReferralType): Promise<Referral> {
     const [result] = await db.insert(referrals).values(data).returning();
     return result;
+  }
+
+  async getAllReferrals(): Promise<Referral[]> {
+    return db.select().from(referrals)
+      .orderBy(desc(referrals.createdAt));
   }
 
   async getReferralsByCodeId(codeId: string): Promise<Referral[]> {
