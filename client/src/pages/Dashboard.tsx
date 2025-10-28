@@ -1214,7 +1214,7 @@ export default function Dashboard() {
                 </TabsContent>
               )}
 
-              {/* Logos Tab */}}
+              {/* Logos Tab */}
               {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
                 <TabsContent value="logos" className="space-y-4">
                   <LogoUploadManager />
