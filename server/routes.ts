@@ -62,6 +62,10 @@ import {
   insertReferralSchema,
   updateReferralSchema,
   publicReferralSubmissionSchema,
+  insertExpenseSchema,
+  updateExpenseSchema,
+  insertRevenueSchema,
+  updateRevenueSchema,
   type ServiceRequest, 
   type Communication 
 } from "@shared/schema";
@@ -3990,6 +3994,288 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching referral stats:', error);
       res.status(500).json({ message: 'Failed to fetch referral statistics' });
+    }
+  });
+
+  // ==============================
+  // FINANCIAL ROUTES (Expenses & Revenue)
+  // ==============================
+
+  // GET /api/financial/metrics - Get financial metrics (viewFinancial permission)
+  app.get('/api/financial/metrics', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'viewFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const metrics = await storage.getFinancialMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('Error fetching financial metrics:', error);
+      res.status(500).json({ message: 'Failed to fetch financial metrics' });
+    }
+  });
+
+  // GET /api/expenses - Get all expenses (viewFinancial permission)
+  app.get('/api/expenses', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'viewFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const expenses = await storage.getExpenses();
+      res.json(expenses);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      res.status(500).json({ message: 'Failed to fetch expenses' });
+    }
+  });
+
+  // POST /api/expenses - Create expense (manageFinancial permission)
+  app.post('/api/expenses', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'manageFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const validatedData = insertExpenseSchema.parse({
+        ...req.body,
+        createdById: userId,
+      });
+      
+      const expense = await storage.createExpense(validatedData);
+      
+      await logActivity(
+        userId,
+        'created',
+        'expense',
+        expense.id,
+        expense.description,
+        `Created expense: ${expense.description} - $${expense.amount}`,
+        req
+      );
+      
+      res.status(201).json(expense);
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create expense' });
+    }
+  });
+
+  // PUT /api/expenses/:id - Update expense (manageFinancial permission)
+  app.put('/api/expenses/:id', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'manageFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const { id } = req.params;
+      const validatedData = updateExpenseSchema.parse(req.body);
+      
+      const expense = await storage.updateExpense(id, validatedData);
+      
+      if (!expense) {
+        return res.status(404).json({ message: 'Expense not found' });
+      }
+      
+      await logActivity(
+        userId,
+        'updated',
+        'expense',
+        expense.id,
+        expense.description,
+        `Updated expense: ${expense.description}`,
+        req
+      );
+      
+      res.json(expense);
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to update expense' });
+    }
+  });
+
+  // DELETE /api/expenses/:id - Delete expense (manageFinancial permission)
+  app.delete('/api/expenses/:id', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'manageFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const { id } = req.params;
+      const expense = await storage.getExpense(id);
+      
+      if (!expense) {
+        return res.status(404).json({ message: 'Expense not found' });
+      }
+      
+      await storage.deleteExpense(id);
+      
+      await logActivity(
+        userId,
+        'deleted',
+        'expense',
+        id,
+        expense.description,
+        `Deleted expense: ${expense.description}`,
+        req
+      );
+      
+      res.json({ message: 'Expense deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      res.status(500).json({ message: 'Failed to delete expense' });
+    }
+  });
+
+  // GET /api/revenue - Get all revenue (viewFinancial permission)
+  app.get('/api/revenue', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'viewFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const revenue = await storage.getRevenue();
+      res.json(revenue);
+    } catch (error) {
+      console.error('Error fetching revenue:', error);
+      res.status(500).json({ message: 'Failed to fetch revenue' });
+    }
+  });
+
+  // POST /api/revenue - Create revenue (manageFinancial permission)
+  app.post('/api/revenue', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'manageFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const validatedData = insertRevenueSchema.parse({
+        ...req.body,
+        createdById: userId,
+      });
+      
+      const rev = await storage.createRevenue(validatedData);
+      
+      await logActivity(
+        userId,
+        'created',
+        'revenue',
+        rev.id,
+        rev.description,
+        `Created revenue: ${rev.description} - $${rev.amount}`,
+        req
+      );
+      
+      res.status(201).json(rev);
+    } catch (error) {
+      console.error('Error creating revenue:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create revenue' });
+    }
+  });
+
+  // PUT /api/revenue/:id - Update revenue (manageFinancial permission)
+  app.put('/api/revenue/:id', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'manageFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const { id } = req.params;
+      const validatedData = updateRevenueSchema.parse(req.body);
+      
+      const rev = await storage.updateRevenue(id, validatedData);
+      
+      if (!rev) {
+        return res.status(404).json({ message: 'Revenue not found' });
+      }
+      
+      await logActivity(
+        userId,
+        'updated',
+        'revenue',
+        rev.id,
+        rev.description,
+        `Updated revenue: ${rev.description}`,
+        req
+      );
+      
+      res.json(rev);
+    } catch (error) {
+      console.error('Error updating revenue:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to update revenue' });
+    }
+  });
+
+  // DELETE /api/revenue/:id - Delete revenue (manageFinancial permission)
+  app.delete('/api/revenue/:id', isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !hasPermission(user.role, 'manageFinancial')) {
+        return res.status(403).json({ message: 'Permission denied' });
+      }
+      
+      const { id } = req.params;
+      const rev = await storage.getRevenueById(id);
+      
+      if (!rev) {
+        return res.status(404).json({ message: 'Revenue not found' });
+      }
+      
+      await storage.deleteRevenue(id);
+      
+      await logActivity(
+        userId,
+        'deleted',
+        'revenue',
+        id,
+        rev.description,
+        `Deleted revenue: ${rev.description}`,
+        req
+      );
+      
+      res.json({ message: 'Revenue deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting revenue:', error);
+      res.status(500).json({ message: 'Failed to delete revenue' });
     }
   });
 

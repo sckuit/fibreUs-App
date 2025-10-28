@@ -31,6 +31,8 @@ import {
   referralPrograms,
   referralCodes,
   referrals,
+  expenses,
+  revenue,
   type User,
   type UpsertUser,
   type ServiceRequest,
@@ -115,6 +117,12 @@ import {
   type Referral,
   type InsertReferralType,
   type UpdateReferralType,
+  type Expense,
+  type InsertExpenseType,
+  type UpdateExpenseType,
+  type Revenue,
+  type InsertRevenueType,
+  type UpdateRevenueType,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql, asc } from "drizzle-orm";
@@ -887,6 +895,143 @@ export class DatabaseStorage implements IStorage {
       pendingReferrals,
       convertedReferrals,
       conversionRate,
+    };
+  }
+
+  // Expense operations
+  async createExpense(expense: InsertExpenseType): Promise<Expense> {
+    const [newExpense] = await db
+      .insert(expenses)
+      .values({
+        ...expense,
+        amount: expense.amount?.toString() || '0',
+      })
+      .returning();
+    return newExpense;
+  }
+
+  async getExpenses(): Promise<Expense[]> {
+    return db.select().from(expenses)
+      .orderBy(desc(expenses.date));
+  }
+
+  async getExpense(id: string): Promise<Expense | undefined> {
+    const [expense] = await db.select().from(expenses)
+      .where(eq(expenses.id, id));
+    return expense;
+  }
+
+  async updateExpense(id: string, updates: UpdateExpenseType): Promise<Expense | undefined> {
+    const updateData: any = { ...updates, updatedAt: new Date() };
+    if (updates.amount !== undefined) {
+      updateData.amount = updates.amount.toString();
+    }
+    
+    const [expense] = await db
+      .update(expenses)
+      .set(updateData)
+      .where(eq(expenses.id, id))
+      .returning();
+    return expense;
+  }
+
+  async deleteExpense(id: string): Promise<void> {
+    await db.delete(expenses).where(eq(expenses.id, id));
+  }
+
+  // Revenue operations
+  async createRevenue(rev: InsertRevenueType): Promise<Revenue> {
+    const [newRevenue] = await db
+      .insert(revenue)
+      .values({
+        ...rev,
+        amount: rev.amount?.toString() || '0',
+      })
+      .returning();
+    return newRevenue;
+  }
+
+  async getRevenue(): Promise<Revenue[]> {
+    return db.select().from(revenue)
+      .orderBy(desc(revenue.date));
+  }
+
+  async getRevenueById(id: string): Promise<Revenue | undefined> {
+    const [rev] = await db.select().from(revenue)
+      .where(eq(revenue.id, id));
+    return rev;
+  }
+
+  async updateRevenue(id: string, updates: UpdateRevenueType): Promise<Revenue | undefined> {
+    const updateData: any = { ...updates, updatedAt: new Date() };
+    if (updates.amount !== undefined) {
+      updateData.amount = updates.amount.toString();
+    }
+    
+    const [rev] = await db
+      .update(revenue)
+      .set(updateData)
+      .where(eq(revenue.id, id))
+      .returning();
+    return rev;
+  }
+
+  async deleteRevenue(id: string): Promise<void> {
+    await db.delete(revenue).where(eq(revenue.id, id));
+  }
+
+  async getFinancialMetrics(): Promise<{
+    totalExpenses: number;
+    totalRevenue: number;
+    netProfit: number;
+    expensesByCategory: Record<string, number>;
+    revenueBySource: Record<string, number>;
+  }> {
+    // Get total expenses
+    const expensesResult = await db.select({
+      total: sql<string>`COALESCE(SUM(${expenses.amount}::numeric), 0)`
+    }).from(expenses);
+    const totalExpenses = Number(expensesResult[0]?.total || 0);
+
+    // Get total revenue
+    const revenueResult = await db.select({
+      total: sql<string>`COALESCE(SUM(${revenue.amount}::numeric), 0)`
+    }).from(revenue);
+    const totalRevenue = Number(revenueResult[0]?.total || 0);
+
+    // Calculate net profit
+    const netProfit = totalRevenue - totalExpenses;
+
+    // Get expenses by category
+    const expensesByCategoryResult = await db.select({
+      category: expenses.category,
+      total: sql<string>`COALESCE(SUM(${expenses.amount}::numeric), 0)`
+    }).from(expenses)
+      .groupBy(expenses.category);
+
+    const expensesByCategory: Record<string, number> = {};
+    for (const row of expensesByCategoryResult) {
+      expensesByCategory[row.category] = Number(row.total);
+    }
+
+    // Get revenue by source
+    const revenueBySourceResult = await db.select({
+      source: revenue.source,
+      total: sql<string>`COALESCE(SUM(${revenue.amount}::numeric), 0)`
+    }).from(revenue)
+      .groupBy(revenue.source);
+
+    const revenueBySource: Record<string, number> = {};
+    for (const row of revenueBySourceResult) {
+      revenueBySource[row.source] = Number(row.total);
+    }
+
+    return {
+      totalExpenses,
+      totalRevenue,
+      netProfit,
+      expensesByCategory,
+      revenueBySource,
     };
   }
 

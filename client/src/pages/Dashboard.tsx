@@ -19,7 +19,7 @@ import {
   Plus, FileText, Wrench, Clock, Users, ClipboardList, 
   DollarSign, MessageSquare, BarChart, Package, Truck,
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
-  UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, Gift,
+  UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, TrendingDown, Gift,
   Server, Database, Users2, Gauge
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
@@ -27,6 +27,7 @@ import { hasPermission } from "@shared/permissions";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, downloadInventoryTemplate, parseCSV } from "@/lib/exportUtils";
+import { cn } from "@/lib/utils";
 import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import { ProjectDialog } from "@/components/ProjectDialog";
@@ -52,6 +53,9 @@ import InvoicesManager from "@/components/InvoicesManager";
 import ReferralTracker from "@/components/ReferralTracker";
 import ReferralProgramManager from "@/components/ReferralProgramManager";
 import ReferreesManager from "@/components/ReferreesManager";
+import ExpensesManager from "@/components/ExpensesManager";
+import RevenueManager from "@/components/RevenueManager";
+import FinancialLogs from "@/components/FinancialLogs";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -73,6 +77,15 @@ interface ReferralMetrics {
   pendingReferrals: number;
   convertedReferrals: number;
   conversionRate: number;
+}
+
+interface FinancialMetrics {
+  totalExpenses: number;
+  totalRevenue: number;
+  netProfit: number;
+  monthlyTrend: number;
+  expensesByCategory: { category: string; amount: number }[];
+  revenueBySource: { source: string; amount: number }[];
 }
 
 export default function Dashboard() {
@@ -145,6 +158,13 @@ export default function Dashboard() {
   const { data: referralMetrics, isLoading: referralMetricsLoading } = useQuery<ReferralMetrics>({
     queryKey: ["/api/referrals/metrics"],
     enabled: typedUser?.role === 'admin',
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  // Fetch financial metrics
+  const { data: financialMetrics, isLoading: financialMetricsLoading } = useQuery<FinancialMetrics>({
+    queryKey: ["/api/financial/metrics"],
+    enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewFinancial'),
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
@@ -400,58 +420,58 @@ export default function Dashboard() {
             gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
           }}>
             <TabsTrigger value="overview" data-testid="tab-overview">
-              <Home className="w-5 h-5 mr-2" />
+              <Home className="w-4 h-4 mr-2" />
               Overview
             </TabsTrigger>
             {hasPermission(userRole, 'viewUsers') && userRole !== 'project_manager' && (
               <TabsTrigger value="users" data-testid="tab-users">
-                <Users className="w-5 h-5 mr-2" />
+                <Users className="w-4 h-4 mr-2" />
                 Users
               </TabsTrigger>
             )}
             {(hasPermission(userRole, 'viewClients') || hasPermission(userRole, 'viewLeads') || hasPermission(userRole, 'viewOwnMessages')) && (
               <TabsTrigger value="sales" data-testid="tab-sales">
-                <TrendingUp className="w-5 h-5 mr-2" />
+                <TrendingUp className="w-4 h-4 mr-2" />
                 Sales
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewOwnProjects') && (
               <TabsTrigger value="projects" data-testid="tab-projects">
-                <Wrench className="w-5 h-5 mr-2" />
+                <Wrench className="w-4 h-4 mr-2" />
                 Projects
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewActivities') && (
               <TabsTrigger value="activities" data-testid="tab-activities">
-                <Activity className="w-5 h-5 mr-2" />
+                <Activity className="w-4 h-4 mr-2" />
                 Activities
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewInventory') && (
               <TabsTrigger value="inventory" data-testid="tab-inventory">
-                <Package className="w-5 h-5 mr-2" />
+                <Package className="w-4 h-4 mr-2" />
                 Inventory
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewSuppliers') && (
               <TabsTrigger value="suppliers" data-testid="tab-suppliers">
-                <Truck className="w-5 h-5 mr-2" />
+                <Truck className="w-4 h-4 mr-2" />
                 Suppliers
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewFinancial') && (
               <TabsTrigger value="financial" data-testid="tab-financial">
-                <DollarSign className="w-5 h-5 mr-2" />
-                Financial
+                <DollarSign className="w-4 h-4 mr-2" />
+                Financials
               </TabsTrigger>
             )}
             <TabsTrigger value="settings" data-testid="tab-settings">
-              <Settings className="w-5 h-5 mr-2" />
+              <Settings className="w-4 h-4 mr-2" />
               Settings
             </TabsTrigger>
             {userRole === 'admin' && (
               <TabsTrigger value="system" data-testid="tab-system">
-                <Server className="w-5 h-5 mr-2" />
+                <Server className="w-4 h-4 mr-2" />
                 System
               </TabsTrigger>
             )}
@@ -651,31 +671,31 @@ export default function Dashboard() {
             <Tabs defaultValue="quotes" className="w-full">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="quotes" data-testid="tab-sales-quotes">
-                  <FileText className="w-5 h-5 mr-2" />
+                  <FileText className="w-4 h-4 mr-2" />
                   Quotes
                 </TabsTrigger>
                 <TabsTrigger value="invoices" data-testid="tab-sales-invoices">
-                  <DollarSign className="w-5 h-5 mr-2" />
+                  <DollarSign className="w-4 h-4 mr-2" />
                   Invoices
                 </TabsTrigger>
                 <TabsTrigger value="services" data-testid="tab-sales-services">
-                  <Wrench className="w-5 h-5 mr-2" />
+                  <Wrench className="w-4 h-4 mr-2" />
                   Services
                 </TabsTrigger>
                 {hasPermission(userRole, 'viewClients') && (
                   <TabsTrigger value="clients" data-testid="tab-sales-clients">
-                    <UserCircle className="w-5 h-5 mr-2" />
+                    <UserCircle className="w-4 h-4 mr-2" />
                     Clients
                   </TabsTrigger>
                 )}
                 {hasPermission(userRole, 'viewLeads') && (
                   <TabsTrigger value="leads" data-testid="tab-sales-leads">
-                    <UserPlus className="w-5 h-5 mr-2" />
+                    <UserPlus className="w-4 h-4 mr-2" />
                     Leads
                   </TabsTrigger>
                 )}
                 <TabsTrigger value="referrals" data-testid="tab-sales-referrals">
-                  <Gift className="w-5 h-5 mr-2" />
+                  <Gift className="w-4 h-4 mr-2" />
                   Referrals
                 </TabsTrigger>
               </TabsList>
@@ -685,11 +705,11 @@ export default function Dashboard() {
                 <Tabs defaultValue="manage-quotes" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="create-quote" data-testid="tab-sales-quotes-create">
-                      <Plus className="w-5 h-5 mr-2" />
+                      <Plus className="w-4 h-4 mr-2" />
                       Create Quote
                     </TabsTrigger>
                     <TabsTrigger value="manage-quotes" data-testid="tab-sales-quotes-manage">
-                      <ClipboardList className="w-5 h-5 mr-2" />
+                      <ClipboardList className="w-4 h-4 mr-2" />
                       Manage Quotes
                     </TabsTrigger>
                   </TabsList>
@@ -709,11 +729,11 @@ export default function Dashboard() {
                 <Tabs defaultValue="manage-invoices" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="create-invoice" data-testid="tab-sales-invoices-create">
-                      <Plus className="w-5 h-5 mr-2" />
+                      <Plus className="w-4 h-4 mr-2" />
                       Create Invoice
                     </TabsTrigger>
                     <TabsTrigger value="manage-invoices" data-testid="tab-sales-invoices-manage">
-                      <ClipboardList className="w-5 h-5 mr-2" />
+                      <ClipboardList className="w-4 h-4 mr-2" />
                       Manage Invoices
                     </TabsTrigger>
                   </TabsList>
@@ -733,11 +753,11 @@ export default function Dashboard() {
                 <Tabs defaultValue="service-types" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="service-types" data-testid="tab-sales-services-types">
-                      <Wrench className="w-5 h-5 mr-2" />
+                      <Wrench className="w-4 h-4 mr-2" />
                       Service Types
                     </TabsTrigger>
                     <TabsTrigger value="price-matrix" data-testid="tab-sales-services-matrix">
-                      <DollarSign className="w-5 h-5 mr-2" />
+                      <DollarSign className="w-4 h-4 mr-2" />
                       Price Matrix
                     </TabsTrigger>
                   </TabsList>
@@ -765,12 +785,12 @@ export default function Dashboard() {
                   <Tabs defaultValue="overview" className="w-full">
                     <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                       <TabsTrigger value="overview" data-testid="tab-sales-leads-overview">
-                        <Eye className="w-5 h-5 mr-2" />
+                        <Eye className="w-4 h-4 mr-2" />
                         Overview
                       </TabsTrigger>
                       {hasPermission(userRole, 'viewOwnMessages') && (
                         <TabsTrigger value="messages" data-testid="tab-sales-leads-messages">
-                          <MessageSquare className="w-5 h-5 mr-2" />
+                          <MessageSquare className="w-4 h-4 mr-2" />
                           Messages
                         </TabsTrigger>
                       )}
@@ -867,17 +887,17 @@ export default function Dashboard() {
                 <Tabs defaultValue="track-referrals" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="track-referrals" data-testid="tab-sales-referrals-track">
-                      <TrendingUp className="w-5 h-5 mr-2" />
+                      <TrendingUp className="w-4 h-4 mr-2" />
                       Track Referrals
                     </TabsTrigger>
                     {hasPermission(userRole, 'manageLeads') && (
                       <>
                         <TabsTrigger value="referrees" data-testid="tab-sales-referrals-referrees">
-                          <Users className="w-5 h-5 mr-2" />
+                          <Users className="w-4 h-4 mr-2" />
                           Referrees
                         </TabsTrigger>
                         <TabsTrigger value="manage-programs" data-testid="tab-sales-referrals-programs">
-                          <Settings className="w-5 h-5 mr-2" />
+                          <Settings className="w-4 h-4 mr-2" />
                           Manage Programs
                         </TabsTrigger>
                       </>
@@ -909,18 +929,18 @@ export default function Dashboard() {
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="overview" data-testid="tab-projects-overview">
-                  <Eye className="w-5 h-5 mr-2" />
+                  <Eye className="w-4 h-4 mr-2" />
                   Overview
                 </TabsTrigger>
                 {hasPermission(userRole, 'viewOwnTasks') && (
                   <TabsTrigger value="tasks" data-testid="tab-projects-tasks">
-                    <ClipboardList className="w-5 h-5 mr-2" />
+                    <ClipboardList className="w-4 h-4 mr-2" />
                     Tasks
                   </TabsTrigger>
                 )}
                 {hasPermission(userRole, 'viewOwnReports') && (
                   <TabsTrigger value="reports" data-testid="tab-projects-reports">
-                    <FileText className="w-5 h-5 mr-2" />
+                    <FileText className="w-4 h-4 mr-2" />
                     Reports
                   </TabsTrigger>
                 )}
@@ -1015,12 +1035,12 @@ export default function Dashboard() {
             <Tabs defaultValue="logs" className="w-full">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="logs" data-testid="tab-activities-logs">
-                  <Activity className="w-5 h-5 mr-2" />
+                  <Activity className="w-4 h-4 mr-2" />
                   Logs
                 </TabsTrigger>
                 {hasPermission(userRole, 'viewVisitors') && (
                   <TabsTrigger value="visitors" data-testid="tab-activities-visitors">
-                    <BarChart className="w-5 h-5 mr-2" />
+                    <BarChart className="w-4 h-4 mr-2" />
                     Visitors
                   </TabsTrigger>
                 )}
@@ -1220,55 +1240,94 @@ export default function Dashboard() {
             <SuppliersManager />
           </TabsContent>
 
-          {/* Financial Tab */}
+          {/* Financial Tab - Nested structure */}
           <TabsContent value="financial" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Logs (Read-Only)</CardTitle>
-                <CardDescription>Audit trail of all financial transactions</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {financialLogsLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading financial logs...</p>
-                ) : financialLogs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No financial logs found</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Ticket #</TableHead>
-                        <TableHead>User</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {financialLogs.slice(0, 10).map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>{log.createdAt ? new Date(log.createdAt).toLocaleDateString() : '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{log.logType}</Badge>
-                          </TableCell>
-                          <TableCell className="font-mono">
-                            {log.previousValue && log.newValue 
-                              ? `$${log.previousValue} → $${log.newValue}`
-                              : log.newValue 
-                                ? `$${log.newValue}`
-                                : '-'
-                            }
-                          </TableCell>
-                          <TableCell>{log.description}</TableCell>
-                          <TableCell className="font-mono">{log.entityId || '-'}</TableCell>
-                          <TableCell>{log.userId}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+            {/* Financial Metrics Dashboard */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card data-testid="card-total-expenses">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                  <TrendingDown className="w-4 h-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-total-expenses">
+                    {financialMetricsLoading ? "..." : `$${(financialMetrics?.totalExpenses || 0).toFixed(2)}`}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-total-revenue">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  <TrendingUp className="w-4 h-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-total-revenue">
+                    {financialMetricsLoading ? "..." : `$${(financialMetrics?.totalRevenue || 0).toFixed(2)}`}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-net-profit">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+                  <DollarSign className="w-4 h-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className={cn(
+                    "text-2xl font-bold",
+                    (financialMetrics?.netProfit || 0) >= 0 ? "text-green-600" : "text-red-600"
+                  )} data-testid="text-net-profit">
+                    {financialMetricsLoading ? "..." : `$${(financialMetrics?.netProfit || 0).toFixed(2)}`}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-monthly-trend">
+                <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Monthly Trend</CardTitle>
+                  <BarChart className="w-4 h-4 text-blue-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-monthly-trend">
+                    {financialMetricsLoading ? "..." : `${(financialMetrics?.monthlyTrend || 0) >= 0 ? "+" : ""}${(financialMetrics?.monthlyTrend || 0).toFixed(1)}%`}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Nested Tabs for Expenses, Revenue, and Logs */}
+            <Tabs defaultValue="expenses" className="w-full">
+              <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="expenses" data-testid="tab-financial-expenses">
+                  <TrendingDown className="w-4 h-4 mr-2" />
+                  Expenses
+                </TabsTrigger>
+                <TabsTrigger value="revenue" data-testid="tab-financial-revenue">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Revenue
+                </TabsTrigger>
+                <TabsTrigger value="logs" data-testid="tab-financial-logs">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Logs
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Expenses Sub-Tab */}
+              <TabsContent value="expenses" className="mt-4">
+                <ExpensesManager />
+              </TabsContent>
+
+              {/* Revenue Sub-Tab */}
+              <TabsContent value="revenue" className="mt-4">
+                <RevenueManager />
+              </TabsContent>
+
+              {/* Financial Logs Sub-Tab */}
+              <TabsContent value="logs" className="mt-4">
+                <FinancialLogs />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Settings Tab */}
@@ -1276,29 +1335,29 @@ export default function Dashboard() {
             <Tabs defaultValue="profile" className="space-y-4">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                 <TabsTrigger value="profile" data-testid="subtab-profile">
-                  <UserCircle className="w-5 h-5 mr-2" />
+                  <UserCircle className="w-4 h-4 mr-2" />
                   Profile
                 </TabsTrigger>
                 {typedUser?.role && hasPermission(typedUser.role, 'manageSettings') && (
                   <>
                     <TabsTrigger value="company" data-testid="subtab-company">
-                      <Settings className="w-5 h-5 mr-2" />
+                      <Settings className="w-4 h-4 mr-2" />
                       Company Settings
                     </TabsTrigger>
                     <TabsTrigger value="logos" data-testid="subtab-logos">
-                      <Upload className="w-5 h-5 mr-2" />
+                      <Upload className="w-4 h-4 mr-2" />
                       Logos
                     </TabsTrigger>
                     <TabsTrigger value="certifications" data-testid="subtab-certifications">
-                      <FileText className="w-5 h-5 mr-2" />
+                      <FileText className="w-4 h-4 mr-2" />
                       Certifications
                     </TabsTrigger>
                     <TabsTrigger value="team" data-testid="subtab-team">
-                      <Users className="w-5 h-5 mr-2" />
+                      <Users className="w-4 h-4 mr-2" />
                       Team Members
                     </TabsTrigger>
                     <TabsTrigger value="legal" data-testid="subtab-legal">
-                      <FileText className="w-5 h-5 mr-2" />
+                      <FileText className="w-4 h-4 mr-2" />
                       Legal
                     </TabsTrigger>
                   </>

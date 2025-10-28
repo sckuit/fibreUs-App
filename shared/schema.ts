@@ -53,6 +53,13 @@ export const quoteStatusEnum = pgEnum('quote_status', ['draft', 'sent', 'accepte
 export const invoiceStatusEnum = pgEnum('invoice_status', ['draft', 'sent', 'paid', 'partial', 'cancelled', 'overdue']);
 export const paymentStatusEnum = pgEnum('payment_status', ['unpaid', 'partial', 'paid']);
 export const referralStatusEnum = pgEnum('referral_status', ['pending', 'contacted', 'qualified', 'converted', 'declined']);
+export const expenseCategoryEnum = pgEnum('expense_category', [
+  'operations', 'equipment', 'payroll', 'marketing', 'utilities', 
+  'rent', 'insurance', 'maintenance', 'supplies', 'transportation', 'professional_services', 'other'
+]);
+export const revenueSourceEnum = pgEnum('revenue_source', [
+  'contract', 'service', 'installation', 'maintenance', 'consultation', 'recurring', 'other'
+]);
 
 // Session storage table (mandatory for Replit Auth)
 export const sessions = pgTable(
@@ -1028,6 +1035,34 @@ export const referrals = pgTable("referrals", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Expenses table (tracks business expenses)
+export const expenses = pgTable("expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull().defaultNow(),
+  category: expenseCategoryEnum("category").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  vendor: varchar("vendor"),
+  receipt: varchar("receipt"), // URL to receipt/attachment stored in object storage
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Revenue table (tracks business revenue)
+export const revenue = pgTable("revenue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull().defaultNow(),
+  source: revenueSourceEnum("source").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  clientId: varchar("client_id").references(() => clients.id),
+  invoiceId: varchar("invoice_id").references(() => invoices.id),
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertSystemConfigSchema = createInsertSchema(systemConfig).omit({
   id: true,
   createdAt: true,
@@ -1335,6 +1370,52 @@ export const publicReferralSubmissionSchema = z.object({
 });
 
 export type PublicReferralSubmissionType = z.infer<typeof publicReferralSubmissionSchema>;
+
+// Expenses schemas
+export const insertExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  date: z.coerce.date(),
+  amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+});
+
+export const updateExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial().extend({
+  date: z.coerce.date().optional(),
+  amount: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+});
+
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpenseType = z.infer<typeof insertExpenseSchema>;
+export type UpdateExpenseType = z.infer<typeof updateExpenseSchema>;
+
+// Revenue schemas
+export const insertRevenueSchema = createInsertSchema(revenue).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  date: z.coerce.date(),
+  amount: z.union([z.string(), z.number()]).transform(val => String(val)),
+});
+
+export const updateRevenueSchema = createInsertSchema(revenue).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial().extend({
+  date: z.coerce.date().optional(),
+  amount: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+});
+
+export type Revenue = typeof revenue.$inferSelect;
+export type InsertRevenueType = z.infer<typeof insertRevenueSchema>;
+export type UpdateRevenueType = z.infer<typeof updateRevenueSchema>;
 
 // Authentication types
 export type RegisterType = z.infer<typeof registerSchema>;
