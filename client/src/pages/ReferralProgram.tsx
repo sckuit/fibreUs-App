@@ -211,7 +211,6 @@ export default function ReferralProgram() {
               </p>
               <Button 
                 size="lg" 
-                variant="outline"
                 className="text-lg px-8"
                 onClick={() => setIsReferralDialogOpen(true)}
                 data-testid="button-send-referral"
