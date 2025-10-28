@@ -26,6 +26,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -37,12 +38,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash2, DollarSign, Percent } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertReferralProgramSchema, type ReferralProgram, type InsertReferralProgramType } from "@shared/schema";
+import { insertReferralProgramSchema, type ReferralProgram, type InsertReferralProgramType, type ServiceType } from "@shared/schema";
 
 export default function ReferralProgramManager() {
   const { toast } = useToast();
@@ -54,6 +56,10 @@ export default function ReferralProgramManager() {
     queryKey: ["/api/referral-programs"],
   });
 
+  const { data: serviceTypes = [] } = useQuery<ServiceType[]>({
+    queryKey: ["/api/service-types"],
+  });
+
   const form = useForm<InsertReferralProgramType>({
     resolver: zodResolver(insertReferralProgramSchema),
     defaultValues: {
@@ -61,6 +67,7 @@ export default function ReferralProgramManager() {
       description: "",
       rewardAmount: "",
       rewardType: "fixed",
+      servicesReferred: [],
       isActive: true,
     },
   });
@@ -139,6 +146,7 @@ export default function ReferralProgramManager() {
       description: program.description || "",
       rewardAmount: program.rewardAmount || "",
       rewardType: program.rewardType as "fixed" | "percentage",
+      servicesReferred: program.servicesReferred || [],
       isActive: program.isActive,
     });
     setIsDialogOpen(true);
@@ -165,6 +173,7 @@ export default function ReferralProgramManager() {
       description: "",
       rewardAmount: "",
       rewardType: "fixed",
+      servicesReferred: [],
       isActive: true,
     });
     setIsDialogOpen(true);
@@ -354,6 +363,58 @@ export default function ReferralProgramManager() {
                         value={field.value || ""}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="servicesReferred"
+                render={() => (
+                  <FormItem>
+                    <div className="mb-4">
+                      <FormLabel className="text-base">Services Referred</FormLabel>
+                      <FormDescription>
+                        Select which services can be referred through this program
+                      </FormDescription>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {serviceTypes.map((service) => (
+                        <FormField
+                          key={service.id}
+                          control={form.control}
+                          name="servicesReferred"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={service.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(service.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), service.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== service.id
+                                            )
+                                          )
+                                    }}
+                                    data-testid={`checkbox-service-${service.id}`}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal cursor-pointer">
+                                  {service.name}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
