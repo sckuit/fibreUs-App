@@ -990,6 +990,7 @@ export const referralPrograms = pgTable("referral_programs", {
   description: text("description"),
   rewardAmount: decimal("reward_amount", { precision: 10, scale: 2 }).notNull(),
   rewardType: varchar("reward_type", { length: 50 }).notNull(), // 'fixed' or 'percentage'
+  servicesReferred: text("services_referred").array(), // Array of service type IDs that can be referred
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

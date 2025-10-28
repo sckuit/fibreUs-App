@@ -745,7 +745,7 @@ export default function Dashboard() {
                     <TabsTrigger value="track-referrals" data-testid="tab-sales-referrals-track">
                       Track Referrals
                     </TabsTrigger>
-                    {hasPermission(userRole, 'viewSalesRecords') && (
+                    {hasPermission(userRole, 'manageLeads') && (
                       <TabsTrigger value="manage-programs" data-testid="tab-sales-referrals-programs">
                         Manage Programs
                       </TabsTrigger>
@@ -756,7 +756,7 @@ export default function Dashboard() {
                     <ReferralTracker />
                   </TabsContent>
 
-                  {hasPermission(userRole, 'viewSalesRecords') && (
+                  {hasPermission(userRole, 'manageLeads') && (
                     <TabsContent value="manage-programs" className="mt-4">
                       <ReferralProgramManager />
                     </TabsContent>
