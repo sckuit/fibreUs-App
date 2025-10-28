@@ -307,7 +307,7 @@ export default function ReferralProgram() {
                   name="referredName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Their Name *</FormLabel>
+                      <FormLabel>Name (Referree) *</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Jane Smith"
@@ -325,7 +325,7 @@ export default function ReferralProgram() {
                   name="referredEmail"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Their Email *</FormLabel>
+                      <FormLabel>Email (Referree) *</FormLabel>
                       <FormControl>
                         <Input
                           type="email"
@@ -344,7 +344,7 @@ export default function ReferralProgram() {
                   name="referredPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Their Phone (Optional)</FormLabel>
+                      <FormLabel>Phone (Referree) (Optional)</FormLabel>
                       <FormControl>
                         <Input
                           type="tel"
@@ -364,7 +364,7 @@ export default function ReferralProgram() {
                   name="referredCompany"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Their Company (Optional)</FormLabel>
+                      <FormLabel>Company (Referree) (Optional)</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Acme Corp"
