@@ -147,7 +147,7 @@ export default function AdminProjectsDialog({ project, onSuccess }: AdminProject
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Project Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-project-status">
                         <SelectValue placeholder="Select status" />

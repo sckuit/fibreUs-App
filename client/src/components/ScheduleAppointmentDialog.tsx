@@ -223,7 +223,7 @@ export default function ScheduleAppointmentDialog({ children }: ScheduleAppointm
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Appointment Type *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-appointment-type">
                             <SelectValue placeholder="Select type" />
@@ -276,7 +276,7 @@ export default function ScheduleAppointmentDialog({ children }: ScheduleAppointm
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Preferred Time *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-appointment-time">
                             <SelectValue placeholder="Select time" />

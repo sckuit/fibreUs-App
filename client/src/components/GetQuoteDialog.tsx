@@ -209,7 +209,7 @@ export default function GetQuoteDialog({ children }: GetQuoteDialogProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Service Type *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-quote-service">
                             <SelectValue placeholder="Select service" />
@@ -237,7 +237,7 @@ export default function GetQuoteDialog({ children }: GetQuoteDialogProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Property Type *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-quote-property">
                             <SelectValue placeholder="Select property type" />
@@ -294,7 +294,7 @@ export default function GetQuoteDialog({ children }: GetQuoteDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Timeline</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-quote-urgency">
                           <SelectValue placeholder="Select timeline" />

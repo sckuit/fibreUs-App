@@ -296,7 +296,7 @@ function ServiceRequestForm({ onSuccess }: { onSuccess: () => void }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Service Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-service-type">
                           <SelectValue placeholder="Select a service" />
@@ -321,7 +321,7 @@ function ServiceRequestForm({ onSuccess }: { onSuccess: () => void }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-priority">
                           <SelectValue placeholder="Select priority" />
