@@ -19,7 +19,7 @@ import {
   Plus, FileText, Wrench, Clock, Users, ClipboardList, 
   DollarSign, MessageSquare, BarChart, Package, Truck,
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
-  UserPlus, Download, AlertTriangle, FileDown, Upload
+  UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
@@ -44,6 +44,10 @@ import { CertificationsManager } from "@/components/CertificationsManager";
 import { TeamMembersManager } from "@/components/TeamMembersManager";
 import { PriceMatrixManager } from "@/components/PriceMatrixManager";
 import { LegalManager } from "@/components/LegalManager";
+import QuoteBuilder from "@/components/QuoteBuilder";
+import QuotesManager from "@/components/QuotesManager";
+import InvoiceBuilder from "@/components/InvoiceBuilder";
+import InvoicesManager from "@/components/InvoicesManager";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -357,105 +361,62 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        {/* Role-based Tabular Navigation - Two Rows */}
+        {/* Main Navigation - Single Row with Hierarchical Structure */}
         <Tabs defaultValue="overview" className="w-full">
-          <div className="space-y-2 mb-6">
-            {/* Row 1 */}
-            <TabsList className="w-full h-auto p-1 grid gap-1" style={{
-              gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
-            }}>
-              {hasPermission(userRole, 'viewUsers') && userRole !== 'project_manager' && (
-                <TabsTrigger value="users" data-testid="tab-users">
-                  <Users className="w-4 h-4 mr-2" />
-                  Users
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewOwnTasks') && (
-                <TabsTrigger value="tasks" data-testid="tab-tasks">
-                  <ClipboardList className="w-4 h-4 mr-2" />
-                  Tasks
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewOwnProjects') && (
-                <TabsTrigger value="projects" data-testid="tab-projects">
-                  <Wrench className="w-4 h-4 mr-2" />
-                  Projects
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewOwnReports') && (
-                <TabsTrigger value="reports" data-testid="tab-reports">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Reports
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewInventory') && (
-                <TabsTrigger value="inventory" data-testid="tab-inventory">
-                  <Package className="w-4 h-4 mr-2" />
-                  Inventory
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewSuppliers') && (
-                <TabsTrigger value="suppliers" data-testid="tab-suppliers">
-                  <Truck className="w-4 h-4 mr-2" />
-                  Suppliers
-                </TabsTrigger>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setLocation('/')}
-                className="h-9"
-                data-testid="button-goto-home"
-              >
-                <Home className="w-4 h-4" />
-              </Button>
-            </TabsList>
-
-            {/* Row 2 */}
-            <TabsList className="w-full h-auto p-1 grid gap-1" style={{
-              gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
-            }}>
-              {hasPermission(userRole, 'viewOwnMessages') && (
-                <TabsTrigger value="messages" data-testid="tab-messages">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Messages
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewClients') && (
-                <TabsTrigger value="clients" data-testid="tab-clients">
-                  <UserCircle className="w-4 h-4 mr-2" />
-                  Clients
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewLeads') && (
-                <TabsTrigger value="leads" data-testid="tab-leads">
-                  <BarChart className="w-4 h-4 mr-2" />
-                  Leads
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewVisitors') && (
-                <TabsTrigger value="visitors" data-testid="tab-visitors">
-                  <Eye className="w-4 h-4 mr-2" />
-                  Visitors
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewFinancial') && (
-                <TabsTrigger value="financial" data-testid="tab-financial">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Financial
-                </TabsTrigger>
-              )}
-              {hasPermission(userRole, 'viewActivities') && (
-                <TabsTrigger value="activities" data-testid="tab-activities">
-                  <Activity className="w-4 h-4 mr-2" />
-                  Activities
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="settings" data-testid="tab-settings" className="px-3">
-                <Settings className="w-4 h-4" />
+          <TabsList className="w-full h-auto p-1 grid gap-1" style={{
+            gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
+          }}>
+            <TabsTrigger value="overview" data-testid="tab-overview">
+              <Home className="w-4 h-4 mr-2" />
+              Overview
+            </TabsTrigger>
+            {hasPermission(userRole, 'viewUsers') && userRole !== 'project_manager' && (
+              <TabsTrigger value="users" data-testid="tab-users">
+                <Users className="w-4 h-4 mr-2" />
+                Users
               </TabsTrigger>
-            </TabsList>
-          </div>
+            )}
+            {(hasPermission(userRole, 'viewClients') || hasPermission(userRole, 'viewLeads') || hasPermission(userRole, 'viewOwnMessages')) && (
+              <TabsTrigger value="sales" data-testid="tab-sales">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Sales
+              </TabsTrigger>
+            )}
+            {hasPermission(userRole, 'viewOwnProjects') && (
+              <TabsTrigger value="projects" data-testid="tab-projects">
+                <Wrench className="w-4 h-4 mr-2" />
+                Projects
+              </TabsTrigger>
+            )}
+            {hasPermission(userRole, 'viewActivities') && (
+              <TabsTrigger value="activities" data-testid="tab-activities">
+                <Activity className="w-4 h-4 mr-2" />
+                Activities
+              </TabsTrigger>
+            )}
+            {hasPermission(userRole, 'viewInventory') && (
+              <TabsTrigger value="inventory" data-testid="tab-inventory">
+                <Package className="w-4 h-4 mr-2" />
+                Inventory
+              </TabsTrigger>
+            )}
+            {hasPermission(userRole, 'viewSuppliers') && (
+              <TabsTrigger value="suppliers" data-testid="tab-suppliers">
+                <Truck className="w-4 h-4 mr-2" />
+                Suppliers
+              </TabsTrigger>
+            )}
+            {hasPermission(userRole, 'viewFinancial') && (
+              <TabsTrigger value="financial" data-testid="tab-financial">
+                <DollarSign className="w-4 h-4 mr-2" />
+                Financial
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="settings" data-testid="tab-settings">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
           {/* Overview Tab Content */}
           <TabsContent value="overview" className="mt-6 space-y-6">
@@ -646,82 +607,351 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          {/* Tasks Tab */}
-          <TabsContent value="tasks" className="space-y-4">
-            {typedUser && (
-              <TasksManager role={userRole as "manager" | "admin"} userId={typedUser.id} />
-            )}
+          {/* Sales Tab - Nested structure */}
+          <TabsContent value="sales" className="space-y-4">
+            <Tabs defaultValue="quotes" className="w-full">
+              <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="quotes" data-testid="tab-sales-quotes">
+                  Quotes
+                </TabsTrigger>
+                <TabsTrigger value="invoices" data-testid="tab-sales-invoices">
+                  Invoices
+                </TabsTrigger>
+                <TabsTrigger value="services" data-testid="tab-sales-services">
+                  Services
+                </TabsTrigger>
+                {hasPermission(userRole, 'viewClients') && (
+                  <TabsTrigger value="clients" data-testid="tab-sales-clients">
+                    Clients
+                  </TabsTrigger>
+                )}
+                {hasPermission(userRole, 'viewLeads') && (
+                  <TabsTrigger value="leads" data-testid="tab-sales-leads">
+                    Leads
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              {/* Quotes Sub-Tab with nested Create/Manage */}
+              <TabsContent value="quotes" className="mt-4">
+                <Tabs defaultValue="manage-quotes" className="w-full">
+                  <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                    <TabsTrigger value="create-quote" data-testid="tab-sales-quotes-create">
+                      Create Quote
+                    </TabsTrigger>
+                    <TabsTrigger value="manage-quotes" data-testid="tab-sales-quotes-manage">
+                      Manage Quotes
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="create-quote" className="mt-4">
+                    <QuoteBuilder />
+                  </TabsContent>
+
+                  <TabsContent value="manage-quotes" className="mt-4">
+                    <QuotesManager />
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+
+              {/* Invoices Sub-Tab with nested Create/Manage */}
+              <TabsContent value="invoices" className="mt-4">
+                <Tabs defaultValue="manage-invoices" className="w-full">
+                  <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                    <TabsTrigger value="create-invoice" data-testid="tab-sales-invoices-create">
+                      Create Invoice
+                    </TabsTrigger>
+                    <TabsTrigger value="manage-invoices" data-testid="tab-sales-invoices-manage">
+                      Manage Invoices
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="create-invoice" className="mt-4">
+                    <InvoiceBuilder />
+                  </TabsContent>
+
+                  <TabsContent value="manage-invoices" className="mt-4">
+                    <InvoicesManager />
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+
+              {/* Services Sub-Tab with nested Service Types/Price Matrix */}
+              <TabsContent value="services" className="mt-4">
+                <Tabs defaultValue="service-types" className="w-full">
+                  <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                    <TabsTrigger value="service-types" data-testid="tab-sales-services-types">
+                      Service Types
+                    </TabsTrigger>
+                    <TabsTrigger value="price-matrix" data-testid="tab-sales-services-matrix">
+                      Price Matrix
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="service-types" className="mt-4">
+                    <ServiceTypesManager />
+                  </TabsContent>
+
+                  <TabsContent value="price-matrix" className="mt-4">
+                    <PriceMatrixManager />
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+
+              {/* Clients Sub-Tab - Direct access */}
+              {hasPermission(userRole, 'viewClients') && (
+                <TabsContent value="clients" className="mt-4">
+                  <ClientsManager />
+                </TabsContent>
+              )}
+
+              {/* Leads Sub-Tab with nested Overview/Messages */}
+              {hasPermission(userRole, 'viewLeads') && (
+                <TabsContent value="leads" className="mt-4">
+                  <Tabs defaultValue="overview" className="w-full">
+                    <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                      <TabsTrigger value="overview" data-testid="tab-sales-leads-overview">
+                        Overview
+                      </TabsTrigger>
+                      {hasPermission(userRole, 'viewOwnMessages') && (
+                        <TabsTrigger value="messages" data-testid="tab-sales-leads-messages">
+                          Messages
+                        </TabsTrigger>
+                      )}
+                    </TabsList>
+
+                    <TabsContent value="overview" className="mt-4">
+                      <LeadsManager />
+                    </TabsContent>
+
+                    {hasPermission(userRole, 'viewOwnMessages') && (
+                      <TabsContent value="messages" className="mt-4">
+                        <MessagesManager />
+                      </TabsContent>
+                    )}
+                  </Tabs>
+                </TabsContent>
+              )}
+            </Tabs>
           </TabsContent>
 
-          {/* Projects Tab */}
+          {/* Projects Tab - Nested structure */}
           <TabsContent value="projects" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap space-y-0 pb-4">
-                <div>
-                  <CardTitle>Projects Overview</CardTitle>
-                  <CardDescription>
-                    {hasPermission(userRole, 'viewAllProjects') ? 'All project records' : 'Your assigned projects'}
-                  </CardDescription>
-                </div>
-                {hasPermission(userRole, 'manageAllProjects') && (
-                  <Button onClick={() => { setEditingProject(undefined); setIsProjectDialogOpen(true); }} data-testid="button-create-project">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Project
-                  </Button>
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="overview" data-testid="tab-projects-overview">
+                  Overview
+                </TabsTrigger>
+                {hasPermission(userRole, 'viewOwnTasks') && (
+                  <TabsTrigger value="tasks" data-testid="tab-projects-tasks">
+                    Tasks
+                  </TabsTrigger>
                 )}
-              </CardHeader>
-              <CardContent>
-                {projects.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No projects found</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Ticket #</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        {hasPermission(userRole, 'manageAllProjects') && <TableHead className="text-right">Actions</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {projects.slice(0, 10).map((project) => (
-                        <TableRow key={project.id}>
-                          <TableCell className="font-mono">{project.ticketNumber}</TableCell>
-                          <TableCell>{project.projectName || '-'}</TableCell>
-                          <TableCell>{(project as any).clientName || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{project.status}</Badge>
-                          </TableCell>
-                          <TableCell>{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</TableCell>
-                          {hasPermission(userRole, 'manageAllProjects') && (
-                            <TableCell className="text-right">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => { 
-                                  setEditingProject(project); 
-                                  setIsProjectDialogOpen(true); 
-                                }} 
-                                data-testid={`button-edit-project-${project.id}`}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                {hasPermission(userRole, 'viewOwnReports') && (
+                  <TabsTrigger value="reports" data-testid="tab-projects-reports">
+                    Reports
+                  </TabsTrigger>
                 )}
-              </CardContent>
-            </Card>
+              </TabsList>
+
+              {/* Projects Overview Sub-Tab */}
+              <TabsContent value="overview" className="mt-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap space-y-0 pb-4">
+                    <div>
+                      <CardTitle>Projects Overview</CardTitle>
+                      <CardDescription>
+                        {hasPermission(userRole, 'viewAllProjects') ? 'All project records' : 'Your assigned projects'}
+                      </CardDescription>
+                    </div>
+                    {hasPermission(userRole, 'manageAllProjects') && (
+                      <Button onClick={() => { setEditingProject(undefined); setIsProjectDialogOpen(true); }} data-testid="button-create-project">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create New Project
+                      </Button>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    {projects.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No projects found</p>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Ticket #</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Client</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Start Date</TableHead>
+                            {hasPermission(userRole, 'manageAllProjects') && <TableHead className="text-right">Actions</TableHead>}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {projects.slice(0, 10).map((project) => (
+                            <TableRow key={project.id}>
+                              <TableCell className="font-mono">{project.ticketNumber}</TableCell>
+                              <TableCell>{project.projectName || '-'}</TableCell>
+                              <TableCell>{(project as any).clientName || '-'}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">{project.status}</Badge>
+                              </TableCell>
+                              <TableCell>{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</TableCell>
+                              {hasPermission(userRole, 'manageAllProjects') && (
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => { 
+                                      setEditingProject(project); 
+                                      setIsProjectDialogOpen(true); 
+                                    }} 
+                                    data-testid={`button-edit-project-${project.id}`}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Tasks Sub-Tab */}
+              {hasPermission(userRole, 'viewOwnTasks') && (
+                <TabsContent value="tasks" className="mt-4">
+                  {typedUser && (
+                    <TasksManager role={userRole as "manager" | "admin"} userId={typedUser.id} />
+                  )}
+                </TabsContent>
+              )}
+
+              {/* Reports Sub-Tab */}
+              {hasPermission(userRole, 'viewOwnReports') && (
+                <TabsContent value="reports" className="mt-4">
+                  {typedUser && <ReportsManager role={userRole as "manager" | "admin"} userId={typedUser.id} />}
+                </TabsContent>
+              )}
+            </Tabs>
           </TabsContent>
 
-          {/* Reports Tab */}
-          <TabsContent value="reports" className="space-y-4">
-            {typedUser && <ReportsManager role={userRole as "manager" | "admin"} userId={typedUser.id} />}
+          {/* Activities Tab - Nested structure */}
+          <TabsContent value="activities" className="space-y-4">
+            <Tabs defaultValue="logs" className="w-full">
+              <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="logs" data-testid="tab-activities-logs">
+                  Logs
+                </TabsTrigger>
+                {hasPermission(userRole, 'viewVisitors') && (
+                  <TabsTrigger value="visitors" data-testid="tab-activities-visitors">
+                    Visitors
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              {/* Activity Logs Sub-Tab */}
+              <TabsContent value="logs" className="mt-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between gap-2">
+                    <div>
+                      <CardTitle>System Activity Logs</CardTitle>
+                      <CardDescription>Track all system activities and changes for audit purposes</CardDescription>
+                    </div>
+                    <Button variant="outline" onClick={() => exportToCSV(activities, 'activities')} data-testid="button-export-activities">
+                      <Download className="w-4 h-4 mr-2" />Export
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {activitiesLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading activities...</p>
+                    ) : activities.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No activities recorded yet</p>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Timestamp</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead>Action</TableHead>
+                            <TableHead>Entity</TableHead>
+                            <TableHead>Details</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {activities.map((activity) => (
+                            <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
+                              <TableCell className="whitespace-nowrap">
+                                {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : '-'}
+                              </TableCell>
+                              <TableCell>{activity.userId || 'System'}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" data-testid={`badge-action-${activity.id}`}>
+                                  {activity.action}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{activity.entityType}</span>
+                                  {activity.entityName && (
+                                    <span className="text-sm text-muted-foreground">{activity.entityName}</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="max-w-md truncate" title={activity.details || ''}>
+                                {activity.details || '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Visitors Sub-Tab */}
+              {hasPermission(userRole, 'viewVisitors') && (
+                <TabsContent value="visitors" className="mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Visitor Analytics</CardTitle>
+                      <CardDescription>Recent visitor activity</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {visitorsLoading ? (
+                        <p className="text-sm text-muted-foreground">Loading visitors...</p>
+                      ) : visitors.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No visitor data available</p>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>IP Address</TableHead>
+                              <TableHead>Path</TableHead>
+                              <TableHead>Referrer</TableHead>
+                              <TableHead>Timestamp</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {visitors.slice(0, 10).map((visitor) => (
+                              <TableRow key={visitor.id}>
+                                <TableCell className="font-mono">{visitor.ipAddress || '-'}</TableCell>
+                                <TableCell>{visitor.landingPage || '-'}</TableCell>
+                                <TableCell>{visitor.referrer || '-'}</TableCell>
+                                <TableCell>{visitor.visitedAt ? new Date(visitor.visitedAt).toLocaleString() : '-'}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+            </Tabs>
           </TabsContent>
 
           {/* Inventory Tab */}
@@ -816,59 +1046,6 @@ export default function Dashboard() {
             <SuppliersManager />
           </TabsContent>
 
-          {/* Messages Tab */}
-          <TabsContent value="messages" className="space-y-4">
-            <MessagesManager />
-          </TabsContent>
-
-          {/* Clients Tab */}
-          <TabsContent value="clients" className="space-y-4">
-            <ClientsManager />
-          </TabsContent>
-
-          {/* Leads Tab */}
-          <TabsContent value="leads" className="space-y-4">
-            <LeadsManager />
-          </TabsContent>
-
-          {/* Visitors Tab */}
-          <TabsContent value="visitors" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Visitor Analytics</CardTitle>
-                <CardDescription>Recent visitor activity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {visitorsLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading visitors...</p>
-                ) : visitors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No visitor data available</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>IP Address</TableHead>
-                        <TableHead>Path</TableHead>
-                        <TableHead>Referrer</TableHead>
-                        <TableHead>Timestamp</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visitors.slice(0, 10).map((visitor) => (
-                        <TableRow key={visitor.id}>
-                          <TableCell className="font-mono">{visitor.ipAddress || '-'}</TableCell>
-                          <TableCell>{visitor.landingPage || '-'}</TableCell>
-                          <TableCell>{visitor.referrer || '-'}</TableCell>
-                          <TableCell>{visitor.visitedAt ? new Date(visitor.visitedAt).toLocaleString() : '-'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Financial Tab */}
           <TabsContent value="financial" className="space-y-4">
             <Card>
@@ -911,66 +1088,6 @@ export default function Dashboard() {
                           <TableCell>{log.description}</TableCell>
                           <TableCell className="font-mono">{log.entityId || '-'}</TableCell>
                           <TableCell>{log.userId}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Activities Tab */}
-          <TabsContent value="activities" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <div>
-                  <CardTitle>System Activity Logs</CardTitle>
-                  <CardDescription>Track all system activities and changes for audit purposes</CardDescription>
-                </div>
-                <Button variant="outline" onClick={() => exportToCSV(activities, 'activities')} data-testid="button-export-activities">
-                  <Download className="w-4 h-4 mr-2" />Export
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {activitiesLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading activities...</p>
-                ) : activities.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No activities recorded yet</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Action</TableHead>
-                        <TableHead>Entity</TableHead>
-                        <TableHead>Details</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {activities.map((activity) => (
-                        <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
-                          <TableCell className="whitespace-nowrap">
-                            {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : '-'}
-                          </TableCell>
-                          <TableCell>{activity.userId || 'System'}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" data-testid={`badge-action-${activity.id}`}>
-                              {activity.action}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{activity.entityType}</span>
-                              {activity.entityName && (
-                                <span className="text-sm text-muted-foreground">{activity.entityName}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="max-w-md truncate" title={activity.details || ''}>
-                            {activity.details || '-'}
-                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
