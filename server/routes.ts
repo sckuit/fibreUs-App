@@ -614,6 +614,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // System metrics route (admin-only)
+  app.get("/api/system/metrics", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      if (user.role !== 'admin') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const metrics = await storage.getSystemMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching system metrics:", error);
+      res.status(500).json({ message: "Failed to fetch system metrics" });
+    }
+  });
+
   // Projects routes
   app.get("/api/projects", isSessionAuthenticated, async (req: any, res) => {
     try {

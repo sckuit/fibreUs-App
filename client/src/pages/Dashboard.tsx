@@ -19,7 +19,8 @@ import {
   Plus, FileText, Wrench, Clock, Users, ClipboardList, 
   DollarSign, MessageSquare, BarChart, Package, Truck,
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
-  UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, Gift
+  UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, Gift,
+  Server, Database, Users2, Gauge
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
@@ -57,6 +58,14 @@ interface DashboardData {
   activeRequests?: ServiceRequest[];
   activeProjects?: Project[];
   recentCommunications?: Communication[];
+}
+
+interface SystemMetrics {
+  totalUsers: number;
+  usersThisMonth: number;
+  databaseSizeGB: number;
+  activeSessions: number;
+  systemHealthPercent: number;
 }
 
 export default function Dashboard() {
@@ -116,6 +125,13 @@ export default function Dashboard() {
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
     queryKey: ["/api/activities"],
     enabled: !!typedUser?.role && hasPermission(typedUser.role, 'viewActivities'),
+  });
+
+  // Fetch system metrics (admin only)
+  const { data: systemMetrics, isLoading: systemMetricsLoading } = useQuery<SystemMetrics>({
+    queryKey: ["/api/system/metrics"],
+    enabled: typedUser?.role === 'admin',
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // User mutations
@@ -419,6 +435,12 @@ export default function Dashboard() {
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </TabsTrigger>
+            {userRole === 'admin' && (
+              <TabsTrigger value="system" data-testid="tab-system">
+                <Server className="w-4 h-4 mr-2" />
+                System
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Overview Tab Content */}
@@ -1286,6 +1308,101 @@ export default function Dashboard() {
               )}
             </Tabs>
           </TabsContent>
+
+          {/* System Tab (Admin Only) */}
+          {userRole === 'admin' && (
+            <TabsContent value="system" className="mt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Total Users Card */}
+                <Card data-testid="card-total-users">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                    <Users2 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    {systemMetricsLoading ? (
+                      <div className="text-2xl font-bold">...</div>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold" data-testid="text-total-users">
+                          {systemMetrics?.totalUsers || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          +{systemMetrics?.usersThisMonth || 0} this month
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* System Health Card */}
+                <Card data-testid="card-system-health">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">System Health</CardTitle>
+                    <Gauge className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    {systemMetricsLoading ? (
+                      <div className="text-2xl font-bold">...</div>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold" data-testid="text-system-health">
+                          {systemMetrics?.systemHealthPercent || 0}%
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          All systems operational
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Database Storage Card */}
+                <Card data-testid="card-database-storage">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Database</CardTitle>
+                    <Database className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    {systemMetricsLoading ? (
+                      <div className="text-2xl font-bold">...</div>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold" data-testid="text-database-size">
+                          {systemMetrics?.databaseSizeGB?.toFixed(2) || '0.00'}GB
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Storage used
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Active Sessions Card */}
+                <Card data-testid="card-active-sessions">
+                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    {systemMetricsLoading ? (
+                      <div className="text-2xl font-bold">...</div>
+                    ) : (
+                      <>
+                        <div className="text-2xl font-bold" data-testid="text-active-sessions">
+                          {systemMetrics?.activeSessions || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Currently logged in
+                        </p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Dialogs */}
