@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Gift, Users, DollarSign, TrendingUp, ArrowRight } from "lucide-react";
-import { LoginDialog } from "./LoginDialog";
+import LoginDialog from "./LoginDialog";
 import { useState } from "react";
 
 export default function ReferralProgram() {
