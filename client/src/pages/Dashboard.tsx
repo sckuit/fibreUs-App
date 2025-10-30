@@ -47,6 +47,7 @@ import { TeamMembersManager } from "@/components/TeamMembersManager";
 import { PriceMatrixManager } from "@/components/PriceMatrixManager";
 import { LegalManager } from "@/components/LegalManager";
 import QuoteBuilder from "@/components/QuoteBuilder";
+import PromoQuoteBuilder from "@/components/PromoQuoteBuilder";
 import QuotesManager from "@/components/QuotesManager";
 import InvoiceBuilder from "@/components/InvoiceBuilder";
 import InvoicesManager from "@/components/InvoicesManager";
@@ -700,13 +701,17 @@ export default function Dashboard() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Quotes Sub-Tab with nested Create/Manage */}
+              {/* Quotes Sub-Tab with nested Create/Manage/Promo */}
               <TabsContent value="quotes" className="mt-4">
                 <Tabs defaultValue="manage-quotes" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
                     <TabsTrigger value="create-quote" data-testid="tab-sales-quotes-create">
                       <Plus className="w-4 h-4 mr-2" />
                       Create Quote
+                    </TabsTrigger>
+                    <TabsTrigger value="promo-quote" data-testid="tab-sales-quotes-promo">
+                      <Gift className="w-4 h-4 mr-2" />
+                      Promo Quote
                     </TabsTrigger>
                     <TabsTrigger value="manage-quotes" data-testid="tab-sales-quotes-manage">
                       <ClipboardList className="w-4 h-4 mr-2" />
@@ -716,6 +721,10 @@ export default function Dashboard() {
 
                   <TabsContent value="create-quote" className="mt-4">
                     <QuoteBuilder />
+                  </TabsContent>
+
+                  <TabsContent value="promo-quote" className="mt-4">
+                    <PromoQuoteBuilder />
                   </TabsContent>
 
                   <TabsContent value="manage-quotes" className="mt-4">

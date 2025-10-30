@@ -20,6 +20,9 @@ interface QuoteItem {
   unitPrice: string;
   quantity: number;
   total: number;
+  promoEnabled?: boolean;      // Optional: for promotional quotes
+  promoPercent?: number;        // Optional: discount percentage
+  originalTotal?: number;       // Optional: total before discount
 }
 
 interface QuotePreviewProps {
@@ -81,6 +84,9 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const validUntilDate = validUntil ? new Date(validUntil).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+  
+  // Check if any items have promotional pricing enabled
+  const hasPromoItems = items.some(item => item.promoEnabled);
 
   return (
     <Card className="mt-6" ref={ref}>
@@ -143,27 +149,55 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                   <th className="text-left py-2 font-semibold">Description</th>
                   <th className="text-right py-2 font-semibold">Unit Price</th>
                   <th className="text-center py-2 font-semibold">Qty</th>
+                  {hasPromoItems && <th className="text-right py-2 font-semibold">Discount</th>}
                   <th className="text-right py-2 font-semibold">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <td colSpan={hasPromoItems ? 6 : 5} className="text-center py-8 text-muted-foreground">
                       No items added yet
                     </td>
                   </tr>
                 ) : (
                   items.map((item, index) => (
                     <tr key={index} className="border-b">
-                      <td className="py-3 align-top">{item.itemName}</td>
+                      <td className="py-3 align-top">
+                        {item.itemName}
+                        {item.promoEnabled && (
+                          <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">PROMO</span>
+                        )}
+                      </td>
                       <td className="py-3 align-top text-muted-foreground">
                         {item.description}
                         <span className="text-xs block mt-1">Unit: {item.unit}</span>
                       </td>
                       <td className="py-3 text-right align-top">{formatCurrency(item.unitPrice)}</td>
                       <td className="py-3 text-center align-top">{item.quantity}</td>
-                      <td className="py-3 text-right align-top font-medium">{formatCurrency(item.total)}</td>
+                      {hasPromoItems && (
+                        <td className="py-3 text-right align-top">
+                          {item.promoEnabled && item.promoPercent ? (
+                            <span className="text-green-600 font-medium">{item.promoPercent}% OFF</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      )}
+                      <td className="py-3 text-right align-top font-medium">
+                        {item.promoEnabled && item.originalTotal ? (
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground line-through text-sm">
+                              {formatCurrency(item.originalTotal)}
+                            </div>
+                            <div className="text-green-600 font-bold">
+                              {formatCurrency(item.total)}
+                            </div>
+                          </div>
+                        ) : (
+                          formatCurrency(item.total)
+                        )}
+                      </td>
                     </tr>
                   ))
                 )}
