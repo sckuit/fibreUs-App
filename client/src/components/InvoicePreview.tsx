@@ -114,7 +114,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
         </div>
       </div>
 
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="py-6 px-[10%] space-y-6">
         {/* Invoice Metadata Section */}
         <div className="flex justify-between items-start pb-4 border-b">
           <div>
