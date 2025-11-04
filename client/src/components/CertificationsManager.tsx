@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { CompanyCertification, InsertCompanyCertificationType, UpdateCompanyCertificationType } from "@shared/schema";
@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertCompanyCertificationSchema, updateCompanyCertificationSchema } from "@shared/schema";
-import { Plus, Edit, Trash2, Shield } from "lucide-react";
+import { Plus, Edit, Trash2, Shield, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import * as LucideIcons from "lucide-react";
 
@@ -23,11 +24,48 @@ export function CertificationsManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCertification, setEditingCertification] = useState<CompanyCertification | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
+  
+  // Search and pagination state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const { data: certifications = [], isLoading } = useQuery<CompanyCertification[]>({
     queryKey: ['/api/certifications', includeInactive],
     queryFn: () => fetch(`/api/certifications?includeInactive=${includeInactive}`).then(res => res.json()),
   });
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filtered certifications based on search
+  const filteredCertifications = useMemo(() => {
+    if (!searchTerm.trim()) return certifications;
+    
+    const search = searchTerm.toLowerCase();
+    return certifications.filter((cert) => {
+      // Search across: name, description, iconName, category
+      return (
+        cert.name.toLowerCase().includes(search) ||
+        (cert.description?.toLowerCase().includes(search) || false) ||
+        (cert.iconName?.toLowerCase().includes(search) || false) ||
+        (cert.category?.toLowerCase().includes(search) || false)
+      );
+    });
+  }, [certifications, searchTerm]);
+
+  // Paginated certifications
+  const paginatedCertifications = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredCertifications.slice(startIndex, endIndex);
+  }, [filteredCertifications, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredCertifications.length / itemsPerPage);
+  const startResult = filteredCertifications.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endResult = Math.min(currentPage * itemsPerPage, filteredCertifications.length);
 
   const form = useForm<InsertCompanyCertificationType>({
     resolver: zodResolver(editingCertification ? updateCompanyCertificationSchema : insertCompanyCertificationSchema),
@@ -158,6 +196,20 @@ export function CertificationsManager() {
           </Button>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search certifications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-certifications"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Switch
@@ -171,25 +223,27 @@ export function CertificationsManager() {
 
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading certifications...</div>
-          ) : certifications.length === 0 ? (
+          ) : filteredCertifications.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No certifications found. Add one to get started.
+              {searchTerm ? "No certifications match your search." : "No certifications found. Add one to get started."}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Icon</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Icon Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {certifications.map((cert) => (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Icon</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Icon Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedCertifications.map((cert) => (
                   <TableRow key={cert.id} data-testid={`row-certification-${cert.id}`}>
                     <TableCell>
                       {renderIcon(cert.iconName)}
@@ -238,6 +292,54 @@ export function CertificationsManager() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between gap-4 mt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {startResult}-{endResult} of {filteredCertifications.length} results
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[120px]" data-testid="select-items-per-page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="20">20 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                  <SelectItem value="100">100 per page</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                data-testid="button-prev-page"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                data-testid="button-next-page"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </>
           )}
         </CardContent>
       </Card>

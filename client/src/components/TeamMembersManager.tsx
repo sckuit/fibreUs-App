@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { TeamMember, InsertTeamMemberType, UpdateTeamMemberType, User } from "@shared/schema";
@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertTeamMemberSchema, updateTeamMemberSchema } from "@shared/schema";
-import { Plus, Edit, Trash2, Users } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function TeamMembersManager() {
@@ -23,6 +23,11 @@ export function TeamMembersManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTeamMember, setEditingTeamMember] = useState<TeamMember | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
+  
+  // Search and pagination state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const { data: teamMembers = [], isLoading } = useQuery<TeamMember[]>({
     queryKey: ['/api/team-members', includeInactive],
@@ -32,6 +37,39 @@ export function TeamMembersManager() {
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
   });
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filtered team members based on search
+  const filteredTeamMembers = useMemo(() => {
+    if (!searchTerm.trim()) return teamMembers;
+    
+    const search = searchTerm.toLowerCase();
+    return teamMembers.filter((member) => {
+      // Search across: name, position (role), bio, specialties (certifications)
+      const certificationsStr = Array.isArray(member.certifications) ? member.certifications.join(' ') : '';
+      return (
+        member.name.toLowerCase().includes(search) ||
+        member.role.toLowerCase().includes(search) ||
+        (member.bio?.toLowerCase().includes(search) || false) ||
+        certificationsStr.toLowerCase().includes(search)
+      );
+    });
+  }, [teamMembers, searchTerm]);
+
+  // Paginated team members
+  const paginatedTeamMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredTeamMembers.slice(startIndex, endIndex);
+  }, [filteredTeamMembers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredTeamMembers.length / itemsPerPage);
+  const startResult = filteredTeamMembers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endResult = Math.min(currentPage * itemsPerPage, filteredTeamMembers.length);
 
   const form = useForm<InsertTeamMemberType>({
     resolver: zodResolver(editingTeamMember ? updateTeamMemberSchema : insertTeamMemberSchema),
@@ -181,6 +219,20 @@ export function TeamMembersManager() {
           </Button>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search team members..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-team-members"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Switch
@@ -194,24 +246,26 @@ export function TeamMembersManager() {
 
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading team members...</div>
-          ) : teamMembers.length === 0 ? (
+          ) : filteredTeamMembers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No team members found. Add one to get started.
+              {searchTerm ? "No team members match your search." : "No team members found. Add one to get started."}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Bio Preview</TableHead>
-                  <TableHead>Order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamMembers.map((member) => (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Bio Preview</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedTeamMembers.map((member) => (
                   <TableRow key={member.id} data-testid={`row-team-member-${member.id}`}>
                     <TableCell className="font-medium" data-testid={`text-name-${member.id}`}>
                       {member.name}
@@ -257,6 +311,54 @@ export function TeamMembersManager() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between gap-4 mt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {startResult}-{endResult} of {filteredTeamMembers.length} results
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[120px]" data-testid="select-items-per-page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="20">20 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                  <SelectItem value="100">100 per page</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                data-testid="button-prev-page"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                data-testid="button-next-page"
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </>
           )}
         </CardContent>
       </Card>
