@@ -1,6 +1,16 @@
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -9,11 +19,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { FileText, TrendingUp, TrendingDown, DollarSign, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import type { FinancialLog } from "@shared/schema";
 
 export default function FinancialLogs() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+
   const { data: logs = [], isLoading } = useQuery<FinancialLog[]>({
     queryKey: ["/api/financial-logs"],
   });
@@ -54,6 +68,38 @@ export default function FinancialLogs() {
     return isNaN(num) ? "-" : `$${num.toFixed(2)}`;
   };
 
+  // Filter logs based on search term
+  const filteredLogs = useMemo(() => {
+    if (!searchTerm) return financialLogs;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return financialLogs.filter((log) => {
+      const logTypeLabel = getLogTypeLabel(log.logType);
+      
+      return (
+        logTypeLabel.toLowerCase().includes(searchLower) ||
+        log.description.toLowerCase().includes(searchLower) ||
+        (log.previousValue && log.previousValue.toLowerCase().includes(searchLower)) ||
+        (log.newValue && log.newValue.toLowerCase().includes(searchLower)) ||
+        (log.performedBy && log.performedBy.toLowerCase().includes(searchLower))
+      );
+    });
+  }, [financialLogs, searchTerm]);
+
+  // Paginate filtered logs
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredLogs.slice(startIndex, endIndex);
+  }, [filteredLogs, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   return (
     <Card>
       <CardHeader>
@@ -66,6 +112,20 @@ export default function FinancialLogs() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search financial logs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-financial-logs"
+            />
+          </div>
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading financial logs...</p>
         ) : financialLogs.length === 0 ? (
@@ -75,6 +135,11 @@ export default function FinancialLogs() {
             <p className="text-xs text-muted-foreground mt-1">
               Logs will appear here when expenses or revenue are created or updated
             </p>
+          </div>
+        ) : filteredLogs.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">No logs match your search</p>
+            <p className="text-xs text-muted-foreground mt-1">Try adjusting your search terms</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -90,7 +155,7 @@ export default function FinancialLogs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {financialLogs.map((log) => (
+                {paginatedLogs.map((log) => (
                   <TableRow key={log.id} data-testid={`row-log-${log.id}`}>
                     <TableCell>{getLogIcon(log.logType)}</TableCell>
                     <TableCell className="whitespace-nowrap" data-testid={`text-log-timestamp-${log.id}`}>
@@ -114,6 +179,58 @@ export default function FinancialLogs() {
                 ))}
               </TableBody>
             </Table>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between gap-2 flex-wrap mt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredLogs.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
+                {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of {filteredLogs.length} results
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Items per page:</span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={(value) => {
+                      setItemsPerPage(Number(value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-20" data-testid="select-items-per-page">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

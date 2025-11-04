@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/form";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Edit, Trash2, Download, CalendarIcon } from "lucide-react";
+import { Plus, Edit, Trash2, Download, CalendarIcon, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { insertRevenueSchema, updateRevenueSchema, type Revenue, type InsertRevenueType, type Client, type Invoice } from "@shared/schema";
@@ -59,6 +59,9 @@ const revenueSources = [
 export default function RevenueManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRevenue, setEditingRevenue] = useState<Revenue | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
 
   const { data: revenue = [], isLoading } = useQuery<Revenue[]>({
@@ -187,6 +190,40 @@ export default function RevenueManager() {
     return invoice?.invoiceNumber || "-";
   };
 
+  // Filter revenue based on search term
+  const filteredRevenue = useMemo(() => {
+    if (!searchTerm) return revenue;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return revenue.filter((rev) => {
+      const sourceLabel = revenueSources.find(s => s.value === rev.source)?.label || rev.source;
+      const clientName = getClientName(rev.clientId);
+      const invoiceNumber = getInvoiceNumber(rev.invoiceId);
+      
+      return (
+        rev.description.toLowerCase().includes(searchLower) ||
+        sourceLabel.toLowerCase().includes(searchLower) ||
+        rev.amount.toLowerCase().includes(searchLower) ||
+        clientName.toLowerCase().includes(searchLower) ||
+        invoiceNumber.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [revenue, searchTerm, clients, invoices]);
+
+  // Paginate filtered revenue
+  const paginatedRevenue = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredRevenue.slice(startIndex, endIndex);
+  }, [filteredRevenue, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredRevenue.length / itemsPerPage);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap space-y-0">
@@ -206,6 +243,20 @@ export default function RevenueManager() {
         </div>
       </CardHeader>
       <CardContent>
+        {/* Search Input */}
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search revenue records..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-revenue"
+            />
+          </div>
+        </div>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading revenue...</p>
         ) : revenue.length === 0 ? (
@@ -213,8 +264,14 @@ export default function RevenueManager() {
             <p className="text-sm text-muted-foreground">No revenue recorded yet</p>
             <p className="text-xs text-muted-foreground mt-1">Add your first revenue entry to start tracking</p>
           </div>
+        ) : filteredRevenue.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">No revenue matches your search</p>
+            <p className="text-xs text-muted-foreground mt-1">Try adjusting your search terms</p>
+          </div>
         ) : (
-          <Table>
+          <>
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
@@ -227,7 +284,7 @@ export default function RevenueManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {revenue.map((rev) => (
+              {paginatedRevenue.map((rev) => (
                 <TableRow key={rev.id} data-testid={`row-revenue-${rev.id}`}>
                   <TableCell data-testid={`text-revenue-date-${rev.id}`}>
                     {format(new Date(rev.date), "MMM dd, yyyy")}
@@ -273,6 +330,59 @@ export default function RevenueManager() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between gap-2 flex-wrap mt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredRevenue.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
+              {Math.min(currentPage * itemsPerPage, filteredRevenue.length)} of {filteredRevenue.length} results
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-20" data-testid="select-items-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  data-testid="button-next-page"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          </>
         )}
       </CardContent>
 
