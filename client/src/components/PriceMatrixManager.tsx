@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPriceMatrixSchema, updatePriceMatrixSchema } from "@shared/schema";
-import { Plus, Edit, Trash2, DollarSign, Upload, Download } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, Upload, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function PriceMatrixManager() {
@@ -22,19 +23,41 @@ export function PriceMatrixManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PriceMatrix | null>(null);
   const [includeInactive, setIncludeInactive] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const { data: allPriceMatrixItems = [], isLoading } = useQuery<PriceMatrix[]>({
     queryKey: ['/api/price-matrix'],
     queryFn: () => fetch('/api/price-matrix').then(res => res.json()),
   });
 
-  // Filter items based on the toggle using useMemo
-  const priceMatrixItems = useMemo(() => {
-    if (includeInactive) {
-      return allPriceMatrixItems;
+  // Filter items based on active status and search term
+  const filteredItems = useMemo(() => {
+    let items = includeInactive ? allPriceMatrixItems : allPriceMatrixItems.filter(item => item.isActive);
+    
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      items = items.filter(item => 
+        item.item.toLowerCase().includes(search) ||
+        (item.description && item.description.toLowerCase().includes(search)) ||
+        item.unit.toLowerCase().includes(search)
+      );
     }
-    return allPriceMatrixItems.filter(item => item.isActive);
-  }, [allPriceMatrixItems, includeInactive]);
+    
+    return items;
+  }, [allPriceMatrixItems, includeInactive, searchTerm]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search term or filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, includeInactive, itemsPerPage]);
 
   const form = useForm<InsertPriceMatrixType>({
     resolver: zodResolver(editingItem ? updatePriceMatrixSchema : insertPriceMatrixSchema),
@@ -161,7 +184,7 @@ export function PriceMatrixManager() {
   };
 
   const handleExportCSV = () => {
-    if (priceMatrixItems.length === 0) {
+    if (filteredItems.length === 0) {
       toast({
         title: "No data to export",
         description: "Add items to the price matrix before exporting",
@@ -171,7 +194,7 @@ export function PriceMatrixManager() {
     }
 
     const headers = ['Item', 'Description', 'Unit', 'Unit Price', 'Cost Price', 'Customer Price', 'Year', 'Status'];
-    const rows = priceMatrixItems.map(item => [
+    const rows = filteredItems.map(item => [
       item.item,
       item.description || '',
       item.unit,
@@ -304,22 +327,39 @@ export function PriceMatrixManager() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={includeInactive}
-                onCheckedChange={setIncludeInactive}
-                data-testid="switch-include-inactive"
+          <div className="space-y-4 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by item name, description, or unit..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+                data-testid="input-search"
               />
-              <span className="text-sm text-muted-foreground">Show inactive items</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={includeInactive}
+                  onCheckedChange={setIncludeInactive}
+                  data-testid="switch-include-inactive"
+                />
+                <span className="text-sm text-muted-foreground">Show inactive items</span>
+              </div>
+              {filteredItems.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1}-{Math.min(endIndex, filteredItems.length)} of {filteredItems.length} items
+                </div>
+              )}
             </div>
           </div>
 
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading price matrix...</div>
-          ) : priceMatrixItems.length === 0 ? (
+          ) : filteredItems.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No price matrix items found. Add one to get started.
+              {searchTerm ? 'No items match your search.' : 'No price matrix items found. Add one to get started.'}
             </div>
           ) : (
             <div className="rounded-md border">
@@ -338,7 +378,7 @@ export function PriceMatrixManager() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {priceMatrixItems.map((item) => (
+                  {paginatedItems.map((item) => (
                     <TableRow key={item.id} data-testid={`row-item-${item.id}`}>
                       <TableCell className="font-medium">{item.item}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{item.description}</TableCell>
@@ -400,6 +440,83 @@ export function PriceMatrixManager() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {filteredItems.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => setItemsPerPage(parseInt(value))}
+                >
+                  <SelectTrigger className="w-20" data-testid="select-items-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNumber}
+                          variant={currentPage === pageNumber ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className="w-9"
+                          data-testid={`button-page-${pageNumber}`}
+                        >
+                          {pageNumber}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
