@@ -51,6 +51,10 @@ import TermsOfService from "@/pages/legal/TermsOfService";
 import ServiceAgreement from "@/pages/legal/ServiceAgreement";
 import WarrantyInformation from "@/pages/legal/WarrantyInformation";
 
+// Public view pages (for share links)
+import PublicQuoteView from "@/pages/PublicQuoteView";
+import PublicInvoiceView from "@/pages/PublicInvoiceView";
+
 // Public layout with PublicHeader for non-authenticated pages
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -159,6 +163,10 @@ function Router() {
   // Public routes that don't require authentication
   return (
     <Switch>
+      {/* Public view pages (share links - no header/footer) */}
+      <Route path="/public/quote/:token" component={PublicQuoteView} />
+      <Route path="/public/invoice/:token" component={PublicInvoiceView} />
+      
       {/* Public pages */}
       <Route path="/logos" component={() => (
         <PublicLayout>
