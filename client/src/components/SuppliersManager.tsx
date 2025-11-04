@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Building2, Mail, Phone, MapPin, Calendar, FileText, Plus, Pencil } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, Calendar, FileText, Plus, Pencil, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { insertSupplierSchema, type Supplier, type InsertSupplierType } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
 
@@ -48,6 +48,9 @@ export default function SuppliersManager() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -138,11 +141,53 @@ export default function SuppliersManager() {
     });
   };
 
-  const filteredSuppliers = suppliers.filter((supplier) => {
-    if (filterType !== "all" && supplier.type !== filterType) return false;
-    if (filterStatus !== "all" && supplier.status !== filterStatus) return false;
-    return true;
-  });
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const filteredSuppliers = useMemo(() => {
+    let filtered = suppliers.filter((supplier) => {
+      if (filterType !== "all" && supplier.type !== filterType) return false;
+      if (filterStatus !== "all" && supplier.status !== filterStatus) return false;
+      return true;
+    });
+
+    if (searchTerm.trim()) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter((supplier) => {
+        const nameMatch = supplier.companyName?.toLowerCase().includes(lowerSearch);
+        const emailMatch = supplier.email?.toLowerCase().includes(lowerSearch);
+        const phoneMatch = supplier.phone?.toLowerCase().includes(lowerSearch);
+        const websiteMatch = supplier.website?.toLowerCase().includes(lowerSearch);
+        const addressMatch = supplier.address?.toLowerCase().includes(lowerSearch);
+        const contactPersonMatch = supplier.contactPerson?.toLowerCase().includes(lowerSearch);
+        const notesMatch = supplier.notes?.toLowerCase().includes(lowerSearch);
+        
+        return nameMatch || emailMatch || phoneMatch || websiteMatch || 
+               addressMatch || contactPersonMatch || notesMatch;
+      });
+    }
+
+    return filtered;
+  }, [suppliers, filterType, filterStatus, searchTerm]);
+
+  const paginatedSuppliers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredSuppliers.slice(startIndex, endIndex);
+  }, [filteredSuppliers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
+  const startRecord = filteredSuppliers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endRecord = Math.min(currentPage * itemsPerPage, filteredSuppliers.length);
+
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+  };
 
   const addForm = useForm<InsertSupplierType>({
     resolver: zodResolver(insertSupplierSchema),
@@ -406,24 +451,39 @@ export default function SuppliersManager() {
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search suppliers by name, email, phone, website, address, contact person, or notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+              data-testid="input-search-suppliers"
+            />
+          </div>
+
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading suppliers...</p>
           ) : filteredSuppliers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No suppliers found. Add your first supplier to get started.</p>
+            <p className="text-sm text-muted-foreground text-center py-8">
+              {searchTerm ? "No suppliers found matching your search" : "No suppliers found. Add your first supplier to get started."}
+            </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSuppliers.map((supplier) => (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedSuppliers.map((supplier) => (
                   <TableRow key={supplier.id} data-testid={`row-supplier-${supplier.id}`}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -491,6 +551,52 @@ export default function SuppliersManager() {
                 ))}
               </TableBody>
             </Table>
+
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="text-sm text-muted-foreground">
+                Showing {startRecord}-{endRecord} of {filteredSuppliers.length} results
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-32" data-testid="select-items-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 per page</SelectItem>
+                    <SelectItem value="20">20 per page</SelectItem>
+                    <SelectItem value="50">50 per page</SelectItem>
+                    <SelectItem value="100">100 per page</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  data-testid="button-next-page"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </>
           )}
         </CardContent>
       </Card>

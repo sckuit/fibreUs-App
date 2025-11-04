@@ -39,6 +39,8 @@ import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
 import UsersManager from "@/components/UsersManager";
 import SuppliersManager from "@/components/SuppliersManager";
+import ActivitiesManager from "@/components/ActivitiesManager";
+import VisitorsManager from "@/components/VisitorsManager";
 import { ServiceTypesManager } from "@/components/ServiceTypesManager";
 import { AppConfigDialog } from "@/components/AppConfigDialog";
 import { LogoUploadDialog } from "@/components/LogoUploadDialog";
@@ -988,101 +990,13 @@ export default function Dashboard() {
 
               {/* Activity Logs Sub-Tab */}
               <TabsContent value="logs" className="mt-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between gap-2">
-                    <div>
-                      <CardTitle>System Activity Logs</CardTitle>
-                      <CardDescription>Track all system activities and changes for audit purposes</CardDescription>
-                    </div>
-                    <Button variant="outline" onClick={() => exportToCSV(activities, 'activities')} data-testid="button-export-activities">
-                      <Download className="w-4 h-4 mr-2" />Export
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    {activitiesLoading ? (
-                      <p className="text-sm text-muted-foreground">Loading activities...</p>
-                    ) : activities.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-8">No activities recorded yet</p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Timestamp</TableHead>
-                            <TableHead>User</TableHead>
-                            <TableHead>Action</TableHead>
-                            <TableHead>Entity</TableHead>
-                            <TableHead>Details</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {activities.map((activity) => (
-                            <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
-                              <TableCell className="whitespace-nowrap">
-                                {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : '-'}
-                              </TableCell>
-                              <TableCell>{activity.userId || 'System'}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" data-testid={`badge-action-${activity.id}`}>
-                                  {activity.action}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{activity.entityType}</span>
-                                  {activity.entityName && (
-                                    <span className="text-sm text-muted-foreground">{activity.entityName}</span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell className="max-w-md truncate" title={activity.details || ''}>
-                                {activity.details || '-'}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
+                <ActivitiesManager />
               </TabsContent>
 
               {/* Visitors Sub-Tab */}
               {hasPermission(userRole, 'viewVisitors') && (
                 <TabsContent value="visitors" className="mt-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Visitor Analytics</CardTitle>
-                      <CardDescription>Recent visitor activity</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {visitorsLoading ? (
-                        <p className="text-sm text-muted-foreground">Loading visitors...</p>
-                      ) : visitors.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">No visitor data available</p>
-                      ) : (
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>IP Address</TableHead>
-                              <TableHead>Path</TableHead>
-                              <TableHead>Referrer</TableHead>
-                              <TableHead>Timestamp</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {visitors.slice(0, 10).map((visitor) => (
-                              <TableRow key={visitor.id}>
-                                <TableCell className="font-mono">{visitor.ipAddress || '-'}</TableCell>
-                                <TableCell>{visitor.landingPage || '-'}</TableCell>
-                                <TableCell>{visitor.referrer || '-'}</TableCell>
-                                <TableCell>{visitor.visitedAt ? new Date(visitor.visitedAt).toLocaleString() : '-'}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <VisitorsManager />
                 </TabsContent>
               )}
             </Tabs>
