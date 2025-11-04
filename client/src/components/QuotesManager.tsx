@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import type { Quote, Lead, Client, PriceMatrix, SystemConfig, UpdateQuoteType } from "@shared/schema";
 import { updateQuoteSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Download, FileText, DollarSign, Trash2, Search } from "lucide-react";
+import { Plus, Edit, Download, FileText, DollarSign, Trash2, Search, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -35,6 +36,7 @@ interface QuoteItem {
 
 export default function QuotesManager() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
@@ -477,12 +479,12 @@ export default function QuotesManager() {
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(quote)}
-                          data-testid={`button-edit-${quote.id}`}
+                          onClick={() => setLocation(`/portal/admin/quotes/${quote.id}/edit`)}
+                          data-testid={`button-edit-quote-${quote.id}`}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"

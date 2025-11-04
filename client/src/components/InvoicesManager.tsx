@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import type { Invoice, Lead, Client, PriceMatrix, SystemConfig, UpdateInvoiceType } from "@shared/schema";
 import { updateInvoiceSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Download, FileText, Trash2 } from "lucide-react";
+import { Edit, Download, FileText, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -34,6 +35,7 @@ interface InvoiceItem {
 
 export default function InvoicesManager() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -376,11 +378,11 @@ export default function InvoicesManager() {
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(invoice)}
-                          data-testid={`button-edit-${invoice.id}`}
+                          size="sm"
+                          onClick={() => setLocation(`/portal/admin/invoices/${invoice.id}/edit`)}
+                          data-testid={`button-edit-invoice-${invoice.id}`}
                         >
-                          <Edit className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
