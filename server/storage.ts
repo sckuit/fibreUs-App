@@ -311,6 +311,7 @@ export interface IStorage {
   createQuote(data: InsertQuoteType): Promise<Quote>;
   getQuotes(filters?: { leadId?: string; clientId?: string; status?: string }): Promise<Quote[]>;
   getQuote(id: string): Promise<Quote | undefined>;
+  getQuoteByShareToken(token: string): Promise<Quote | undefined>;
   updateQuote(id: string, updates: UpdateQuoteType): Promise<Quote | undefined>;
   deleteQuote(id: string): Promise<void>;
 
@@ -318,6 +319,7 @@ export interface IStorage {
   createInvoice(data: InsertInvoiceType): Promise<Invoice>;
   getInvoices(filters?: { leadId?: string; clientId?: string; quoteId?: string; paymentStatus?: string }): Promise<Invoice[]>;
   getInvoice(id: string): Promise<Invoice | undefined>;
+  getInvoiceByShareToken(token: string): Promise<Invoice | undefined>;
   updateInvoice(id: string, updates: UpdateInvoiceType): Promise<Invoice | undefined>;
   deleteInvoice(id: string): Promise<void>;
 
@@ -1831,6 +1833,11 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  async getQuoteByShareToken(token: string): Promise<Quote | undefined> {
+    const [result] = await db.select().from(quotes).where(eq(quotes.shareToken, token));
+    return result;
+  }
+
   async updateQuote(id: string, updates: UpdateQuoteType): Promise<Quote | undefined> {
     // Transform validUntil string to Date object or null
     const transformedUpdates = {
@@ -1933,6 +1940,11 @@ export class DatabaseStorage implements IStorage {
 
   async getInvoice(id: string): Promise<Invoice | undefined> {
     const [result] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return result;
+  }
+
+  async getInvoiceByShareToken(token: string): Promise<Invoice | undefined> {
+    const [result] = await db.select().from(invoices).where(eq(invoices.shareToken, token));
     return result;
   }
 

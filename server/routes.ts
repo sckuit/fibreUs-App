@@ -4542,6 +4542,194 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===========================
+  // PUBLIC API ENDPOINTS (No Authentication Required)
+  // ===========================
+
+  // GET /api/public/quote/:token - Fetch quote by shareToken
+  app.get('/api/public/quote/:token', async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      
+      const quote = await storage.getQuoteByShareToken(token);
+      
+      if (!quote) {
+        return res.status(404).json({ message: 'Quote not found' });
+      }
+      
+      // Check if token is expired (30 days from creation)
+      if (quote.shareTokenCreatedAt) {
+        const tokenAge = Date.now() - new Date(quote.shareTokenCreatedAt).getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+        
+        if (tokenAge > thirtyDaysInMs) {
+          return res.status(404).json({ message: 'Quote link has expired' });
+        }
+      }
+      
+      // Fetch related data
+      const systemConfig = await storage.getSystemConfig();
+      let clientInfo = null;
+      let leadInfo = null;
+      
+      if (quote.clientId) {
+        clientInfo = await storage.getClient(quote.clientId);
+      }
+      
+      if (quote.leadId) {
+        leadInfo = await storage.getLead(quote.leadId);
+      }
+      
+      res.json({
+        quote,
+        clientInfo,
+        leadInfo,
+        systemConfig,
+      });
+    } catch (error) {
+      console.error('Error fetching public quote:', error);
+      res.status(500).json({ message: 'Failed to fetch quote' });
+    }
+  });
+
+  // POST /api/public/quote/:token/approve - Approve quote
+  app.post('/api/public/quote/:token/approve', async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      const { comments } = req.body;
+      
+      const quote = await storage.getQuoteByShareToken(token);
+      
+      if (!quote) {
+        return res.status(404).json({ message: 'Quote not found' });
+      }
+      
+      // Check if token is expired (30 days from creation)
+      if (quote.shareTokenCreatedAt) {
+        const tokenAge = Date.now() - new Date(quote.shareTokenCreatedAt).getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+        
+        if (tokenAge > thirtyDaysInMs) {
+          return res.status(404).json({ message: 'Quote link has expired' });
+        }
+      }
+      
+      // Update quote status to accepted
+      const updatedQuote = await storage.updateQuote(quote.id, {
+        status: 'accepted',
+        notes: comments ? `${quote.notes || ''}\n\nClient Comments: ${comments}`.trim() : quote.notes,
+      });
+      
+      // Log activity
+      await logActivity(
+        null,
+        'quote_approved_via_link',
+        'quote',
+        quote.id,
+        quote.quoteNumber,
+        `Quote ${quote.quoteNumber} approved via public link${comments ? ` with comments: ${comments}` : ''}`,
+        req
+      );
+      
+      res.json(updatedQuote);
+    } catch (error) {
+      console.error('Error approving quote:', error);
+      res.status(500).json({ message: 'Failed to approve quote' });
+    }
+  });
+
+  // POST /api/public/quote/:token/reject - Reject quote
+  app.post('/api/public/quote/:token/reject', async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      const { reason } = req.body;
+      
+      const quote = await storage.getQuoteByShareToken(token);
+      
+      if (!quote) {
+        return res.status(404).json({ message: 'Quote not found' });
+      }
+      
+      // Check if token is expired (30 days from creation)
+      if (quote.shareTokenCreatedAt) {
+        const tokenAge = Date.now() - new Date(quote.shareTokenCreatedAt).getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+        
+        if (tokenAge > thirtyDaysInMs) {
+          return res.status(404).json({ message: 'Quote link has expired' });
+        }
+      }
+      
+      // Update quote status to rejected
+      const updatedQuote = await storage.updateQuote(quote.id, {
+        status: 'rejected',
+        notes: reason ? `${quote.notes || ''}\n\nRejection Reason: ${reason}`.trim() : quote.notes,
+      });
+      
+      // Log activity
+      await logActivity(
+        null,
+        'quote_rejected_via_link',
+        'quote',
+        quote.id,
+        quote.quoteNumber,
+        `Quote ${quote.quoteNumber} rejected via public link${reason ? ` with reason: ${reason}` : ''}`,
+        req
+      );
+      
+      res.json(updatedQuote);
+    } catch (error) {
+      console.error('Error rejecting quote:', error);
+      res.status(500).json({ message: 'Failed to reject quote' });
+    }
+  });
+
+  // GET /api/public/invoice/:token - Fetch invoice by shareToken
+  app.get('/api/public/invoice/:token', async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      
+      const invoice = await storage.getInvoiceByShareToken(token);
+      
+      if (!invoice) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+      
+      // Check if token is expired (30 days from creation)
+      if (invoice.shareTokenCreatedAt) {
+        const tokenAge = Date.now() - new Date(invoice.shareTokenCreatedAt).getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+        
+        if (tokenAge > thirtyDaysInMs) {
+          return res.status(404).json({ message: 'Invoice link has expired' });
+        }
+      }
+      
+      // Fetch related data
+      const systemConfig = await storage.getSystemConfig();
+      let clientInfo = null;
+      let leadInfo = null;
+      
+      if (invoice.clientId) {
+        clientInfo = await storage.getClient(invoice.clientId);
+      }
+      
+      if (invoice.leadId) {
+        leadInfo = await storage.getLead(invoice.leadId);
+      }
+      
+      res.json({
+        invoice,
+        clientInfo,
+        leadInfo,
+        systemConfig,
+      });
+    } catch (error) {
+      console.error('Error fetching public invoice:', error);
+      res.status(500).json({ message: 'Failed to fetch invoice' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
