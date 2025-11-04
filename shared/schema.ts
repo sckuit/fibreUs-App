@@ -906,6 +906,8 @@ export const quotes = pgTable("quotes", {
   validUntil: timestamp("valid_until"),
   notes: text("notes"),
   termsAndConditions: text("terms_and_conditions"),
+  shareToken: varchar("share_token").unique(),
+  shareTokenCreatedAt: timestamp("share_token_created_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -931,6 +933,8 @@ export const invoices = pgTable("invoices", {
   dueDate: timestamp("due_date"),
   notes: text("notes"),
   termsAndConditions: text("terms_and_conditions"),
+  shareToken: varchar("share_token").unique(),
+  shareTokenCreatedAt: timestamp("share_token_created_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1145,6 +1149,8 @@ export const insertQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  shareToken: true,
+  shareTokenCreatedAt: true,
 }).extend({
   quoteNumber: z.string().optional(),
   validUntil: z.string().optional(),
@@ -1154,6 +1160,8 @@ export const updateQuoteSchema = createInsertSchema(quotes).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  shareToken: true,
+  shareTokenCreatedAt: true,
 }).partial().extend({
   validUntil: z.string().optional(),
 });
@@ -1166,6 +1174,8 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  shareToken: true,
+  shareTokenCreatedAt: true,
 }).extend({
   invoiceNumber: z.string().optional(),
   dueDate: z.string().optional(),
@@ -1175,6 +1185,8 @@ export const updateInvoiceSchema = createInsertSchema(invoices).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  shareToken: true,
+  shareTokenCreatedAt: true,
 }).partial().extend({
   dueDate: z.string().optional(),
 });
