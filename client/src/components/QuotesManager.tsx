@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Download, FileText, DollarSign, Trash2, Search, Pencil } from "lucide-react";
+import { Plus, Edit, Download, FileText, DollarSign, Trash2, Search, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -43,6 +43,9 @@ export default function QuotesManager() {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [downloadingQuote, setDownloadingQuote] = useState<Quote | null>(null);
   const downloadPreviewRef = useRef<HTMLDivElement>(null);
 
@@ -124,9 +127,10 @@ export default function QuotesManager() {
     },
   });
 
-  const filteredQuotes = statusFilter === "all"
-    ? quotes
-    : quotes.filter(q => q.status === statusFilter);
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const getRecipientName = (quote: Quote) => {
     if (quote.leadId) {
@@ -139,6 +143,37 @@ export default function QuotesManager() {
     }
     return 'No Recipient';
   };
+
+  // Filter quotes based on status and search term
+  const filteredQuotes = useMemo(() => {
+    let filtered = statusFilter === "all" ? quotes : quotes.filter(q => q.status === statusFilter);
+    
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(quote => {
+        const recipientName = getRecipientName(quote).toLowerCase();
+        const quoteNumber = quote.quoteNumber.toLowerCase();
+        const status = quote.status.toLowerCase();
+        const total = quote.total.toString();
+        
+        return quoteNumber.includes(search) ||
+               recipientName.includes(search) ||
+               status.includes(search) ||
+               total.includes(search);
+      });
+    }
+    
+    return filtered;
+  }, [quotes, statusFilter, searchTerm, leads, clients]);
+
+  // Paginate filtered quotes
+  const paginatedQuotes = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredQuotes.slice(startIndex, endIndex);
+  }, [filteredQuotes, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredQuotes.length / itemsPerPage);
 
   const handleEdit = (quote: Quote) => {
     setEditingQuote(quote);
@@ -409,45 +444,55 @@ export default function QuotesManager() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger data-testid="select-status-filter">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="accepted">Accepted</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by quote number, client, or status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-quotes"
+            />
           </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]" data-testid="select-status-filter">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="sent">Sent</SelectItem>
+              <SelectItem value="accepted">Accepted</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {quotesLoading ? (
           <div className="text-center py-8 text-muted-foreground">Loading quotes...</div>
         ) : filteredQuotes.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No quotes found{statusFilter !== "all" ? ` with status "${statusFilter}"` : ""}.
+            No results found{searchTerm ? ` matching "${searchTerm}"` : statusFilter !== "all" ? ` with status "${statusFilter}"` : ""}.
           </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quote #</TableHead>
-                  <TableHead>Recipient</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Active</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredQuotes.map((quote) => (
+          <>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Quote #</TableHead>
+                    <TableHead>Recipient</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Active</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedQuotes.map((quote) => (
                   <TableRow key={quote.id} data-testid={`row-quote-${quote.id}`}>
                     <TableCell className="font-medium" data-testid={`text-quote-number-${quote.id}`}>
                       {quote.quoteNumber}
@@ -509,6 +554,54 @@ export default function QuotesManager() {
               </TableBody>
             </Table>
           </div>
+          
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredQuotes.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredQuotes.length)} of {filteredQuotes.length} results
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                  <SelectTrigger className="w-[80px]" data-testid="select-items-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  data-testid="button-next-page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
         )}
       </CardContent>
 

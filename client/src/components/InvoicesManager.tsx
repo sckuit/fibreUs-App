@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Download, FileText, Trash2, Pencil } from "lucide-react";
+import { Edit, Download, FileText, Trash2, Pencil, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -40,6 +40,9 @@ export default function InvoicesManager() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [selectedItems, setSelectedItems] = useState<InvoiceItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [downloadingInvoice, setDownloadingInvoice] = useState<Invoice | null>(null);
   const downloadPreviewRef = useRef<HTMLDivElement>(null);
 
@@ -117,9 +120,10 @@ export default function InvoicesManager() {
     },
   });
 
-  const filteredInvoices = statusFilter === "all"
-    ? invoices
-    : invoices.filter(i => i.status === statusFilter);
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const getRecipientName = (invoice: Invoice) => {
     if (invoice.leadId) {
@@ -132,6 +136,43 @@ export default function InvoicesManager() {
     }
     return 'No Recipient';
   };
+
+  // Filter invoices based on status and search term
+  const filteredInvoices = useMemo(() => {
+    let filtered = statusFilter === "all" ? invoices : invoices.filter(i => i.status === statusFilter);
+    
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(invoice => {
+        const recipientName = getRecipientName(invoice).toLowerCase();
+        const invoiceNumber = invoice.invoiceNumber.toLowerCase();
+        const status = invoice.status.toLowerCase();
+        const paymentStatus = invoice.paymentStatus.toLowerCase();
+        const total = invoice.total.toString();
+        const amountPaid = (invoice.amountPaid || '0').toString();
+        const balanceDue = (invoice.balanceDue || '0').toString();
+        
+        return invoiceNumber.includes(search) ||
+               recipientName.includes(search) ||
+               status.includes(search) ||
+               paymentStatus.includes(search) ||
+               total.includes(search) ||
+               amountPaid.includes(search) ||
+               balanceDue.includes(search);
+      });
+    }
+    
+    return filtered;
+  }, [invoices, statusFilter, searchTerm, leads, clients]);
+
+  // Paginate filtered invoices
+  const paginatedInvoices = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredInvoices.slice(startIndex, endIndex);
+  }, [filteredInvoices, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
 
   const handleEdit = (invoice: Invoice) => {
     setEditingInvoice(invoice);
@@ -301,15 +342,28 @@ export default function InvoicesManager() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Manage Invoices
-              </CardTitle>
-              <CardDescription>
-                View, edit, and download invoices
-              </CardDescription>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Manage Invoices
+            </CardTitle>
+            <CardDescription>
+              View, edit, and download invoices
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search by invoice number, client, or amount..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+                data-testid="input-search-invoices"
+              />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]" data-testid="select-filter">
@@ -326,14 +380,14 @@ export default function InvoicesManager() {
               </SelectContent>
             </Select>
           </div>
-        </CardHeader>
-        <CardContent>
+
           {filteredInvoices.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No invoices found
+              No results found{searchTerm ? ` matching "${searchTerm}"` : statusFilter !== "all" ? ` with status "${statusFilter}"` : ""}.
             </div>
           ) : (
-            <Table>
+            <>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Invoice #</TableHead>
@@ -349,7 +403,7 @@ export default function InvoicesManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.map(invoice => (
+                {paginatedInvoices.map(invoice => (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium" data-testid={`text-invoice-${invoice.id}`}>
                       {invoice.invoiceNumber}
@@ -406,6 +460,54 @@ export default function InvoicesManager() {
                 ))}
               </TableBody>
             </Table>
+
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredInvoices.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredInvoices.length)} of {filteredInvoices.length} results
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Items per page:</span>
+                  <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                    <SelectTrigger className="w-[80px]" data-testid="select-items-per-page">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages || 1}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    data-testid="button-next-page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
           )}
         </CardContent>
       </Card>
