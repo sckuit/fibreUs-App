@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertReportSchema, updateReportSchema, type Report, type User, type Task, type Project } from "@shared/schema";
 import type { z } from "zod";
-import { Plus, FileText, CheckCircle, XCircle, Clock, Edit, Trash2, Download } from "lucide-react";
+import { Plus, FileText, CheckCircle, XCircle, Clock, Edit, Trash2, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,9 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<Report | null>(null);
   const [approvingReport, setApprovingReport] = useState<Report | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
 
   // Fetch reports based on role
@@ -51,6 +54,57 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
     queryKey: ['/api/users'],
     enabled: role !== 'employee',
   });
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filter reports based on search term
+  const filteredReports = useMemo(() => {
+    if (!searchTerm.trim()) return reports;
+
+    const lowerSearch = searchTerm.toLowerCase();
+    
+    return reports.filter((report) => {
+      // Get related data
+      const submittedByUser = users.find(u => u.id === report.submittedById);
+      const linkedProject = projects.find(p => p.id === report.projectId);
+      const submittedByName = submittedByUser ? `${submittedByUser.firstName || ''} ${submittedByUser.lastName || ''}`.trim() : '';
+      const projectName = linkedProject?.projectName || '';
+
+      return (
+        (report.title?.toLowerCase() || '').includes(lowerSearch) ||
+        (report.content?.toLowerCase() || '').includes(lowerSearch) ||
+        (report.status?.toLowerCase() || '').includes(lowerSearch) ||
+        projectName.toLowerCase().includes(lowerSearch) ||
+        submittedByName.toLowerCase().includes(lowerSearch)
+      );
+    });
+  }, [reports, searchTerm, users, projects]);
+
+  // Paginate filtered reports
+  const paginatedReports = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredReports.slice(startIndex, endIndex);
+  }, [filteredReports, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  const startResult = filteredReports.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endResult = Math.min(currentPage * itemsPerPage, filteredReports.length);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   const createForm = useForm<z.infer<typeof insertReportSchema>>({
     resolver: zodResolver(insertReportSchema),
@@ -192,14 +246,14 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
         <div>
           <h3 className="text-lg font-medium">Work Reports</h3>
           <p className="text-sm text-muted-foreground">
             {role === 'employee' ? 'Submit and manage your work reports' : 'Review and approve team work reports'}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button 
             variant="outline" 
             onClick={() => exportToCSV(reports, 'reports')} 
@@ -329,18 +383,31 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
         </div>
       </div>
 
-      {reports.length === 0 ? (
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by title, description, status, project, or submitted by..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9"
+          data-testid="input-search-reports"
+        />
+      </div>
+
+      {filteredReports.length === 0 ? (
         <Card>
           <CardContent className="py-8">
             <div className="text-center text-muted-foreground">
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No reports found</p>
+              <p>{searchTerm ? "No reports found matching your search" : "No reports found"}</p>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {reports.map((report) => {
+        <>
+          <div className="grid gap-4">
+            {paginatedReports.map((report) => {
             const linkedTask = tasks.find(t => t.id === report.taskId);
             const linkedProject = projects.find(p => p.id === report.projectId);
             
@@ -428,6 +495,53 @@ export default function ReportsManager({ role, userId }: ReportsManagerProps) {
           );
           })}
         </div>
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="text-sm text-muted-foreground">
+            Showing {startResult}-{endResult} of {filteredReports.length} results
+          </div>
+          <div className="flex items-center gap-2">
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(parseInt(value));
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[120px]" data-testid="select-items-per-page">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 per page</SelectItem>
+                <SelectItem value="20">20 per page</SelectItem>
+                <SelectItem value="50">50 per page</SelectItem>
+                <SelectItem value="100">100 per page</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              data-testid="button-prev-page"
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleNextPage}
+              disabled={currentPage >= totalPages}
+              data-testid="button-next-page"
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      </>
       )}
 
       {/* Edit Dialog */}

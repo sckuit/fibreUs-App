@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -47,7 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertTaskSchema, tasks, users, projects, type InsertTask } from "@shared/schema";
-import { Plus, Edit, Trash2, Calendar, User, Briefcase } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, User, Briefcase, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 
 type SelectTask = typeof tasks.$inferSelect;
@@ -63,6 +63,9 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<SelectTask | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery<SelectTask[]>({
     queryKey: ["/api/tasks"],
@@ -77,6 +80,58 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
   });
 
   const employees = usersData.filter(u => u.role === "employee");
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filter tasks based on search term
+  const filteredTasks = useMemo(() => {
+    if (!searchTerm.trim()) return tasks;
+
+    const lowerSearch = searchTerm.toLowerCase();
+    
+    return tasks.filter((task) => {
+      // Get related data
+      const assignedUser = usersData.find(u => u.id === task.assignedToId);
+      const linkedProject = projectsData.find(p => p.id === task.projectId);
+      const assignedUserName = assignedUser ? `${assignedUser.firstName || ''} ${assignedUser.lastName || ''}`.trim() : '';
+      const projectName = linkedProject?.projectName || '';
+
+      return (
+        (task.title?.toLowerCase() || '').includes(lowerSearch) ||
+        (task.description?.toLowerCase() || '').includes(lowerSearch) ||
+        (task.status?.toLowerCase() || '').includes(lowerSearch) ||
+        (task.priority?.toLowerCase() || '').includes(lowerSearch) ||
+        projectName.toLowerCase().includes(lowerSearch) ||
+        assignedUserName.toLowerCase().includes(lowerSearch)
+      );
+    });
+  }, [tasks, searchTerm, usersData, projectsData]);
+
+  // Paginate filtered tasks
+  const paginatedTasks = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredTasks.slice(startIndex, endIndex);
+  }, [filteredTasks, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+  const startResult = filteredTasks.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endResult = Math.min(currentPage * itemsPerPage, filteredTasks.length);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   const form = useForm<InsertTask>({
     resolver: zodResolver(insertTaskSchema),
@@ -238,27 +293,42 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
           Create Task
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by title, description, status, priority, project, or assigned user..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+            data-testid="input-search-tasks"
+          />
+        </div>
+
         {tasksLoading ? (
           <p className="text-sm text-muted-foreground">Loading tasks...</p>
-        ) : tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No tasks yet. Create one to get started.</p>
+        ) : filteredTasks.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            {searchTerm ? "No tasks found matching your search" : "No tasks yet. Create one to get started."}
+          </p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ticket #</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tasks.map((task) => {
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ticket #</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Project</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedTasks.map((task) => {
                 const assignedUser = usersData.find(u => u.id === task.assignedToId);
                 const linkedProject = projectsData.find(p => p.id === task.projectId);
                 
@@ -335,6 +405,53 @@ export function TasksManager({ role, userId }: TasksManagerProps) {
               })}
             </TableBody>
           </Table>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="text-sm text-muted-foreground">
+              Showing {startResult}-{endResult} of {filteredTasks.length} results
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  setItemsPerPage(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[120px]" data-testid="select-items-per-page">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="20">20 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                  <SelectItem value="100">100 per page</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                data-testid="button-prev-page"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages}
+                data-testid="button-next-page"
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </>
         )}
       </CardContent>
 
