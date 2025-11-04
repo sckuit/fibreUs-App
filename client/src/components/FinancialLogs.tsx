@@ -79,9 +79,9 @@ export default function FinancialLogs() {
       return (
         logTypeLabel.toLowerCase().includes(searchLower) ||
         log.description.toLowerCase().includes(searchLower) ||
-        (log.previousValue && log.previousValue.toLowerCase().includes(searchLower)) ||
-        (log.newValue && log.newValue.toLowerCase().includes(searchLower)) ||
-        (log.performedBy && log.performedBy.toLowerCase().includes(searchLower))
+        (log.previousValue ?? "").toLowerCase().includes(searchLower) ||
+        (log.newValue ?? "").toLowerCase().includes(searchLower) ||
+        (log.performedBy ?? "").toLowerCase().includes(searchLower)
       );
     });
   }, [financialLogs, searchTerm]);

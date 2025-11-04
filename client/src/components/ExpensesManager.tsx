@@ -204,8 +204,8 @@ export default function ExpensesManager() {
         expense.description.toLowerCase().includes(searchLower) ||
         categoryLabel.toLowerCase().includes(searchLower) ||
         expense.amount.toLowerCase().includes(searchLower) ||
-        (expense.vendor && expense.vendor.toLowerCase().includes(searchLower)) ||
-        (expense.receipt && expense.receipt.toLowerCase().includes(searchLower)) ||
+        (expense.vendor ?? "").toLowerCase().includes(searchLower) ||
+        (expense.receipt ?? "").toLowerCase().includes(searchLower) ||
         projectName.toLowerCase().includes(searchLower)
       );
     });

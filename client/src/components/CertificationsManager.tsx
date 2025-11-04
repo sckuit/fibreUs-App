@@ -49,9 +49,9 @@ export function CertificationsManager() {
       // Search across: name, description, iconName, category
       return (
         cert.name.toLowerCase().includes(search) ||
-        (cert.description?.toLowerCase().includes(search) || false) ||
-        (cert.iconName?.toLowerCase().includes(search) || false) ||
-        (cert.category?.toLowerCase().includes(search) || false)
+        (cert.description ?? "").toLowerCase().includes(search) ||
+        (cert.iconName ?? "").toLowerCase().includes(search) ||
+        (cert.category ?? "").toLowerCase().includes(search)
       );
     });
   }, [certifications, searchTerm]);

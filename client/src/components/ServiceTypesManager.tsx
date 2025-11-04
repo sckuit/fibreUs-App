@@ -48,7 +48,7 @@ export function ServiceTypesManager() {
       return (
         serviceType.name.toLowerCase().includes(search) ||
         serviceType.displayName.toLowerCase().includes(search) ||
-        (serviceType.description?.toLowerCase().includes(search) || false)
+        (serviceType.description ?? "").toLowerCase().includes(search)
       );
     });
   }, [serviceTypes, searchTerm]);

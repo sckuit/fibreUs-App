@@ -41,11 +41,11 @@ export default function ActivitiesManager() {
     
     const lowerSearch = searchTerm.toLowerCase();
     return activities.filter((activity) => {
-      const actionMatch = activity.action?.toLowerCase().includes(lowerSearch);
-      const entityTypeMatch = activity.entityType?.toLowerCase().includes(lowerSearch);
-      const entityNameMatch = activity.entityName?.toLowerCase().includes(lowerSearch);
-      const detailsMatch = activity.details?.toLowerCase().includes(lowerSearch);
-      const userIdMatch = activity.userId?.toLowerCase().includes(lowerSearch);
+      const actionMatch = (activity.action ?? "").toLowerCase().includes(lowerSearch);
+      const entityTypeMatch = (activity.entityType ?? "").toLowerCase().includes(lowerSearch);
+      const entityNameMatch = (activity.entityName ?? "").toLowerCase().includes(lowerSearch);
+      const detailsMatch = (activity.details ?? "").toLowerCase().includes(lowerSearch);
+      const userIdMatch = (activity.userId ?? "").toLowerCase().includes(lowerSearch);
       
       return actionMatch || entityTypeMatch || entityNameMatch || detailsMatch || userIdMatch;
     });

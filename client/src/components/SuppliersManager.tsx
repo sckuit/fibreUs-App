@@ -155,13 +155,13 @@ export default function SuppliersManager() {
     if (searchTerm.trim()) {
       const lowerSearch = searchTerm.toLowerCase();
       filtered = filtered.filter((supplier) => {
-        const nameMatch = supplier.companyName?.toLowerCase().includes(lowerSearch);
-        const emailMatch = supplier.email?.toLowerCase().includes(lowerSearch);
-        const phoneMatch = supplier.phone?.toLowerCase().includes(lowerSearch);
-        const websiteMatch = supplier.website?.toLowerCase().includes(lowerSearch);
-        const addressMatch = supplier.address?.toLowerCase().includes(lowerSearch);
-        const contactPersonMatch = supplier.contactPerson?.toLowerCase().includes(lowerSearch);
-        const notesMatch = supplier.notes?.toLowerCase().includes(lowerSearch);
+        const nameMatch = (supplier.companyName ?? "").toLowerCase().includes(lowerSearch);
+        const emailMatch = (supplier.email ?? "").toLowerCase().includes(lowerSearch);
+        const phoneMatch = (supplier.phone ?? "").toLowerCase().includes(lowerSearch);
+        const websiteMatch = (supplier.website ?? "").toLowerCase().includes(lowerSearch);
+        const addressMatch = (supplier.address ?? "").toLowerCase().includes(lowerSearch);
+        const contactPersonMatch = (supplier.contactPerson ?? "").toLowerCase().includes(lowerSearch);
+        const notesMatch = (supplier.notes ?? "").toLowerCase().includes(lowerSearch);
         
         return nameMatch || emailMatch || phoneMatch || websiteMatch || 
                addressMatch || contactPersonMatch || notesMatch;

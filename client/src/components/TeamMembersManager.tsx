@@ -54,7 +54,7 @@ export function TeamMembersManager() {
       return (
         member.name.toLowerCase().includes(search) ||
         member.role.toLowerCase().includes(search) ||
-        (member.bio?.toLowerCase().includes(search) || false) ||
+        (member.bio ?? "").toLowerCase().includes(search) ||
         certificationsStr.toLowerCase().includes(search)
       );
     });

@@ -40,14 +40,14 @@ export default function VisitorsManager() {
     
     const lowerSearch = searchTerm.toLowerCase();
     return visitors.filter((visitor) => {
-      const ipMatch = visitor.ipAddress?.toLowerCase().includes(lowerSearch);
-      const userAgentMatch = visitor.userAgent?.toLowerCase().includes(lowerSearch);
-      const referrerMatch = visitor.referrer?.toLowerCase().includes(lowerSearch);
-      const landingPageMatch = visitor.landingPage?.toLowerCase().includes(lowerSearch);
-      const countryMatch = visitor.country?.toLowerCase().includes(lowerSearch);
-      const cityMatch = visitor.city?.toLowerCase().includes(lowerSearch);
-      const browserMatch = visitor.browser?.toLowerCase().includes(lowerSearch);
-      const deviceMatch = visitor.device?.toLowerCase().includes(lowerSearch);
+      const ipMatch = (visitor.ipAddress ?? "").toLowerCase().includes(lowerSearch);
+      const userAgentMatch = (visitor.userAgent ?? "").toLowerCase().includes(lowerSearch);
+      const referrerMatch = (visitor.referrer ?? "").toLowerCase().includes(lowerSearch);
+      const landingPageMatch = (visitor.landingPage ?? "").toLowerCase().includes(lowerSearch);
+      const countryMatch = (visitor.country ?? "").toLowerCase().includes(lowerSearch);
+      const cityMatch = (visitor.city ?? "").toLowerCase().includes(lowerSearch);
+      const browserMatch = (visitor.browser ?? "").toLowerCase().includes(lowerSearch);
+      const deviceMatch = (visitor.device ?? "").toLowerCase().includes(lowerSearch);
       
       return ipMatch || userAgentMatch || referrerMatch || landingPageMatch || 
              countryMatch || cityMatch || browserMatch || deviceMatch;
