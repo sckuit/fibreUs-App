@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -34,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, ExternalLink } from "lucide-react";
+import { Edit, ExternalLink, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -45,6 +46,9 @@ export default function ReferreesManager() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingReferral, setEditingReferral] = useState<Referral | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const { data: referrals = [], isLoading } = useQuery<Referral[]>({
     queryKey: ["/api/referrals/all"],
@@ -119,6 +123,42 @@ export default function ReferreesManager() {
     return program ? program.name : 'Unknown Program';
   };
 
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filter referrals based on search term
+  const filteredReferrals = useMemo(() => {
+    if (!searchTerm.trim()) return referrals;
+    
+    const search = searchTerm.toLowerCase();
+    return referrals.filter(referral => {
+      const referredName = (referral.referredName || '').toLowerCase();
+      const referredEmail = (referral.referredEmail || '').toLowerCase();
+      const referredCompany = (referral.referredCompany || '').toLowerCase();
+      const referredPhone = (referral.referredPhone || '').toLowerCase();
+      const status = (referral.status || '').toLowerCase();
+      const programName = getProgramName(referral.referralProgramId).toLowerCase();
+      
+      return referredName.includes(search) ||
+             referredEmail.includes(search) ||
+             referredCompany.includes(search) ||
+             referredPhone.includes(search) ||
+             status.includes(search) ||
+             programName.includes(search);
+    });
+  }, [referrals, searchTerm, programs]);
+
+  // Paginate filtered referrals
+  const paginatedReferrals = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredReferrals.slice(startIndex, endIndex);
+  }, [filteredReferrals, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredReferrals.length / itemsPerPage);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -126,29 +166,43 @@ export default function ReferreesManager() {
           <CardTitle>Referrees Management</CardTitle>
           <CardDescription>View and manage all people who have been referred</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by referred name, email, company, phone, status, or program..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-referrals"
+            />
+          </div>
+
           {isLoading ? (
-            <div className="text-center py-8">Loading referrals...</div>
-          ) : referrals.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Loading referrals...</div>
+          ) : filteredReferrals.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No referrals found.
+              No results found{searchTerm ? ` matching "${searchTerm}"` : ""}.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Program</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Conversion</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {referrals.map((referral) => (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Program</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Conversion</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedReferrals.map((referral) => (
                   <TableRow key={referral.id}>
                     <TableCell className="font-medium">{referral.referredName}</TableCell>
                     <TableCell>{referral.referredEmail}</TableCell>
@@ -189,6 +243,55 @@ export default function ReferreesManager() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredReferrals.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredReferrals.length)} of {filteredReferrals.length} results
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                  <SelectTrigger className="w-[80px]" data-testid="select-items-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  data-testid="button-next-page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
           )}
         </CardContent>
       </Card>

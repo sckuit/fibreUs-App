@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Mail, Phone, MapPin, Calendar, FileText, ExternalLink, Plus } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, Calendar, FileText, ExternalLink, Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Client } from "@shared/schema";
 import { ClientDialog } from "@/components/ClientDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,6 +43,9 @@ export default function ClientsManager() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | undefined>(undefined);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
   const { user } = useAuth();
   const typedUser = user as User | undefined;
@@ -143,10 +146,48 @@ export default function ClientsManager() {
     setIsClientDialogOpen(true);
   };
 
-  const filteredClients = clients.filter((client) => {
-    if (filterStatus === "all") return true;
-    return client.status === filterStatus;
-  });
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Filter clients based on status and search term
+  const filteredClients = useMemo(() => {
+    let filtered = clients.filter((client) => {
+      if (filterStatus === "all") return true;
+      return client.status === filterStatus;
+    });
+
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(client => {
+        const name = (client.name || '').toLowerCase();
+        const email = (client.email || '').toLowerCase();
+        const phone = (client.phone || '').toLowerCase();
+        const company = (client.company || '').toLowerCase();
+        const address = (client.address || '').toLowerCase();
+        const status = (client.status || '').toLowerCase();
+        
+        return name.includes(search) ||
+               email.includes(search) ||
+               phone.includes(search) ||
+               company.includes(search) ||
+               address.includes(search) ||
+               status.includes(search);
+      });
+    }
+    
+    return filtered;
+  }, [clients, filterStatus, searchTerm]);
+
+  // Paginate filtered clients
+  const paginatedClients = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredClients.slice(startIndex, endIndex);
+  }, [filteredClients, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -176,31 +217,41 @@ export default function ClientsManager() {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by name, email, phone, company, address, or status..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-clients"
+            />
+          </div>
+
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading clients...</p>
+            <div className="text-center py-8 text-muted-foreground">Loading clients...</div>
           ) : filteredClients.length === 0 ? (
-            <div className="text-center py-8">
-              <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-sm text-muted-foreground">No clients found</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Convert qualified leads to add clients
-              </p>
+            <div className="text-center py-8 text-muted-foreground">
+              No results found{searchTerm ? ` matching "${searchTerm}"` : filterStatus !== "all" ? ` with status "${filterStatus}"` : ""}.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Company/Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Service Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Converted On</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClients.map((client) => (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Company/Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Service Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Converted On</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedClients.map((client) => (
                   <TableRow key={client.id} data-testid={`row-client-${client.id}`}>
                     <TableCell>
                       <div>
@@ -365,7 +416,56 @@ export default function ClientsManager() {
                 ))}
               </TableBody>
             </Table>
-          )}
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredClients.length === 0 ? 0 : ((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, filteredClients.length)} of {filteredClients.length} results
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Items per page:</span>
+                <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                  <SelectTrigger className="w-[80px]" data-testid="select-items-per-page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  data-testid="button-next-page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          </>
+        )}
         </CardContent>
       </Card>
 

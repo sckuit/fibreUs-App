@@ -37,6 +37,7 @@ import { TasksManager } from "@/components/TasksManager";
 import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
+import UsersManager from "@/components/UsersManager";
 import SuppliersManager from "@/components/SuppliersManager";
 import { ServiceTypesManager } from "@/components/ServiceTypesManager";
 import { AppConfigDialog } from "@/components/AppConfigDialog";
@@ -594,77 +595,7 @@ export default function Dashboard() {
 
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <div>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>Manage all system users and their roles</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => exportToCSV(users, 'users')} data-testid="button-export-users">
-                    <Download className="w-4 h-4 mr-2" />Export
-                  </Button>
-                  <Button onClick={() => { setEditingUser(undefined); setIsUserDialogOpen(true); }} data-testid="button-add-user">
-                    <UserPlus className="w-4 h-4 mr-2" />Add User
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {usersLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading users...</p>
-                ) : users.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No users found</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Company</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((u) => (
-                        <TableRow key={u.id} data-testid={`row-user-${u.id}`}>
-                          <TableCell className="font-medium">{u.firstName} {u.lastName}</TableCell>
-                          <TableCell data-testid={`text-email-${u.id}`}>{u.email}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" data-testid={`badge-role-${u.id}`}>{u.role}</Badge>
-                          </TableCell>
-                          <TableCell>{u.company || "-"}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Switch 
-                                checked={u.isActive ?? true}
-                                disabled={u.id === typedUser?.id || toggleUserStatusMutation.isPending}
-                                onCheckedChange={() => toggleUserStatusMutation.mutate(u.id)}
-                                data-testid={`switch-status-${u.id}`}
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                {u.isActive ?? true ? "Active" : "Inactive"}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button variant="ghost" size="sm" onClick={() => { setEditingUser(u); setIsUserDialogOpen(true); }} data-testid={`button-edit-${u.id}`}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" disabled={u.id === typedUser?.id} onClick={() => deleteUserMutation.mutate(u.id)} data-testid={`button-delete-${u.id}`}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
+            <UsersManager />
           </TabsContent>
 
           {/* Sales Tab - Nested structure */}
