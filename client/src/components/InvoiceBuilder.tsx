@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useRoute } from "wouter";
 import type { PriceMatrix, Lead, Client, Quote, Invoice, InsertInvoiceType, SystemConfig, LegalDocuments, User } from "@shared/schema";
 import { insertInvoiceSchema } from "@shared/schema";
 import { formatCurrency } from "@/lib/currency";
@@ -17,7 +18,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, FileText, DollarSign, Save, Download, Search } from "lucide-react";
+import { Plus, Trash2, FileText, DollarSign, Save, Download, Search, Share2 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
@@ -35,6 +36,8 @@ interface InvoiceItem {
 
 export default function InvoiceBuilder() {
   const { toast } = useToast();
+  const [, params] = useRoute("/portal/admin/invoices/:id/edit");
+  const invoiceId = params?.id;
   const [selectedItems, setSelectedItems] = useState<InvoiceItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,6 +72,12 @@ export default function InvoiceBuilder() {
     queryKey: ['/api/auth/user'],
   });
 
+  // Fetch existing invoice if editing
+  const { data: existingInvoice, isLoading: isLoadingInvoice } = useQuery<Invoice>({
+    queryKey: ['/api/invoices', invoiceId],
+    enabled: !!invoiceId,
+  });
+
   const form = useForm({
     resolver: zodResolver(insertInvoiceSchema.omit({ createdById: true })),
     defaultValues: {
@@ -91,21 +100,85 @@ export default function InvoiceBuilder() {
     },
   });
 
-  const createInvoiceMutation = useMutation({
-    mutationFn: (data: InsertInvoiceType) => apiRequest('POST', '/api/invoices', data),
+  const saveInvoiceMutation = useMutation({
+    mutationFn: (data: InsertInvoiceType) => {
+      if (invoiceId) {
+        return apiRequest('PATCH', `/api/invoices/${invoiceId}`, data);
+      }
+      return apiRequest('POST', '/api/invoices', data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
-      toast({ title: "Invoice created successfully" });
-      resetForm();
+      if (invoiceId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/invoices', invoiceId] });
+      }
+      toast({ title: invoiceId ? "Invoice updated successfully" : "Invoice created successfully" });
+      if (!invoiceId) {
+        resetForm();
+      }
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to create invoice",
+        title: invoiceId ? "Failed to update invoice" : "Failed to create invoice",
         description: error.message,
         variant: "destructive",
       });
     },
   });
+
+  const generateShareLinkMutation = useMutation({
+    mutationFn: () => apiRequest('POST', `/api/invoices/${invoiceId}/share`, {}),
+    onSuccess: (data: any) => {
+      const shareUrl = `${window.location.origin}/public/invoice/${data.token}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied to clipboard!" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to generate share link",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Populate form when editing existing invoice
+  useEffect(() => {
+    if (existingInvoice && priceMatrixItems.length > 0 && !form.watch('quoteId')) {
+      // Populate form fields
+      form.reset({
+        invoiceNumber: existingInvoice.invoiceNumber || '',
+        quoteId: existingInvoice.quoteId || '',
+        leadId: existingInvoice.leadId || '',
+        clientId: existingInvoice.clientId || '',
+        items: existingInvoice.items as any,
+        subtotal: existingInvoice.subtotal,
+        taxRate: existingInvoice.taxRate || '0.00',
+        taxAmount: existingInvoice.taxAmount || '0.00',
+        total: existingInvoice.total,
+        percentageOfQuote: existingInvoice.percentageOfQuote || '',
+        amountPaid: existingInvoice.amountPaid || '0.00',
+        balanceDue: existingInvoice.balanceDue || '0.00',
+        paymentStatus: existingInvoice.paymentStatus as any,
+        status: existingInvoice.status as any,
+        dueDate: existingInvoice.dueDate || '',
+        notes: existingInvoice.notes || '',
+      });
+
+      // Populate selectedItems from invoice items
+      const invoiceItems = existingInvoice.items as any[];
+      const items: InvoiceItem[] = invoiceItems.map((item: any) => ({
+        priceMatrixId: item.priceMatrixId || '',
+        itemName: item.itemName,
+        description: item.description || '',
+        unit: item.unit,
+        unitPrice: typeof item.unitPrice === 'string' ? item.unitPrice : String(item.unitPrice),
+        quantity: item.quantity,
+        total: typeof item.total === 'number' ? item.total : parseFloat(String(item.total)),
+      }));
+      setSelectedItems(items);
+    }
+  }, [existingInvoice, priceMatrixItems]);
 
   // Update form values when items or tax rate changes
   useEffect(() => {
@@ -285,7 +358,13 @@ export default function InvoiceBuilder() {
       dueDate: values.dueDate || undefined,
     };
 
-    createInvoiceMutation.mutate(invoiceData);
+    saveInvoiceMutation.mutate(invoiceData);
+  };
+
+  const handleGenerateShareLink = () => {
+    if (invoiceId) {
+      generateShareLinkMutation.mutate();
+    }
   };
 
   const handleDownloadPDF = async () => {
@@ -373,16 +452,27 @@ export default function InvoiceBuilder() {
   const amountPaidValue = form.watch('amountPaid');
   const balanceDueValue = form.watch('balanceDue');
 
+  if (isLoadingInvoice) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading invoice...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            Create New Invoice
+            {invoiceId && existingInvoice ? `Edit Invoice #${existingInvoice.invoiceNumber}` : 'Create New Invoice'}
           </CardTitle>
           <CardDescription>
-            Build a professional invoice for your clients
+            {invoiceId ? 'Edit and update this invoice' : 'Build a professional invoice for your clients'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -702,9 +792,9 @@ export default function InvoiceBuilder() {
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                <Button type="submit" disabled={createInvoiceMutation.isPending} data-testid="button-save">
+                <Button type="submit" disabled={saveInvoiceMutation.isPending} data-testid="button-save">
                   <Save className="w-4 h-4 mr-2" />
-                  {createInvoiceMutation.isPending ? "Saving..." : "Save Invoice"}
+                  {saveInvoiceMutation.isPending ? "Saving..." : invoiceId ? "Update Invoice" : "Save Invoice"}
                 </Button>
                 <Button
                   type="button"
@@ -715,6 +805,18 @@ export default function InvoiceBuilder() {
                   <Download className="w-4 h-4 mr-2" />
                   Download PDF
                 </Button>
+                {invoiceId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateShareLink}
+                    disabled={generateShareLinkMutation.isPending}
+                    data-testid="button-generate-share-link"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    {generateShareLinkMutation.isPending ? 'Generating...' : 'Generate Share Link'}
+                  </Button>
+                )}
               </div>
             </form>
           </Form>
