@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { PriceMatrix, InsertPriceMatrixType, UpdatePriceMatrixType } from "@shared/schema";
@@ -55,7 +55,7 @@ export function PriceMatrixManager() {
   const paginatedItems = filteredItems.slice(startIndex, endIndex);
 
   // Reset to page 1 when search term or filters change
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, includeInactive, itemsPerPage]);
 
