@@ -341,10 +341,10 @@ export const rolePermissions: Record<UserRole, Permission> = {
     manageUsers: false,
     viewUserDetails: true,
     
-    // Admin - no admin access
+    // Admin - limited admin access (can manage settings for price matrix, legal docs, etc.)
     manageSystem: false,
     viewSystemReports: false,
-    manageSettings: false,
+    manageSettings: true,
     viewActivities: false,
   },
   
