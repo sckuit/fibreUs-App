@@ -1,21 +1,28 @@
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "wouter";
-import { Calendar, MapPin, DollarSign, Clock, CheckCircle, User } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Clock, CheckCircle, User, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import AdminProjectsDialog from "@/components/AdminProjectsDialog";
 import type { User as UserType, Project } from "@shared/schema";
 
-const projectStatusColors = {
+const projectStatusColors: Record<string, string> = {
   planning: 'bg-blue-100 text-blue-800',
+  pending: 'bg-gray-100 text-gray-800',
+  reviewed: 'bg-blue-100 text-blue-800',
+  quoted: 'bg-purple-100 text-purple-800',
   approved: 'bg-green-100 text-green-800',
   scheduled: 'bg-blue-100 text-blue-800',
   in_progress: 'bg-orange-100 text-orange-800',
   completed: 'bg-gray-100 text-gray-800',
   on_hold: 'bg-yellow-100 text-yellow-800',
+  cancelled: 'bg-red-100 text-red-800',
 };
 
 const getProjectProgress = (status: string): number => {
@@ -34,6 +41,16 @@ export default function Projects() {
   const { user } = useAuth();
   const typedUser = user as UserType | undefined;
 
+  // Search and pagination state for Active Projects
+  const [activeSearchTerm, setActiveSearchTerm] = useState("");
+  const [activeCurrentPage, setActiveCurrentPage] = useState(1);
+  const [activeItemsPerPage, setActiveItemsPerPage] = useState(10);
+
+  // Search and pagination state for Completed Projects
+  const [completedSearchTerm, setCompletedSearchTerm] = useState("");
+  const [completedCurrentPage, setCompletedCurrentPage] = useState(1);
+  const [completedItemsPerPage, setCompletedItemsPerPage] = useState(10);
+
   const { data: projects, isLoading, isError } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
     enabled: !!typedUser,
@@ -41,6 +58,87 @@ export default function Projects() {
 
   const activeProjects = projects?.filter(p => p.status !== 'completed') || [];
   const completedProjects = projects?.filter(p => p.status === 'completed') || [];
+
+  // Filtered active projects based on search
+  const filteredActiveProjects = useMemo(() => {
+    if (!activeSearchTerm.trim()) return activeProjects;
+    
+    const search = activeSearchTerm.toLowerCase();
+    return activeProjects.filter((project) => {
+      return (
+        project.projectName.toLowerCase().includes(search) ||
+        project.ticketNumber.toLowerCase().includes(search) ||
+        (project.workNotes ?? "").toLowerCase().includes(search) ||
+        (project.status ?? "").toLowerCase().includes(search) ||
+        (project.totalCost ?? "").toString().includes(search)
+      );
+    });
+  }, [activeProjects, activeSearchTerm]);
+
+  // Filtered completed projects based on search
+  const filteredCompletedProjects = useMemo(() => {
+    if (!completedSearchTerm.trim()) return completedProjects;
+    
+    const search = completedSearchTerm.toLowerCase();
+    return completedProjects.filter((project) => {
+      return (
+        project.projectName.toLowerCase().includes(search) ||
+        project.ticketNumber.toLowerCase().includes(search) ||
+        (project.workNotes ?? "").toLowerCase().includes(search) ||
+        (project.totalCost ?? "").toString().includes(search)
+      );
+    });
+  }, [completedProjects, completedSearchTerm]);
+
+  // Paginated active projects
+  const paginatedActiveProjects = useMemo(() => {
+    const startIndex = (activeCurrentPage - 1) * activeItemsPerPage;
+    const endIndex = startIndex + activeItemsPerPage;
+    return filteredActiveProjects.slice(startIndex, endIndex);
+  }, [filteredActiveProjects, activeCurrentPage, activeItemsPerPage]);
+
+  // Paginated completed projects
+  const paginatedCompletedProjects = useMemo(() => {
+    const startIndex = (completedCurrentPage - 1) * completedItemsPerPage;
+    const endIndex = startIndex + completedItemsPerPage;
+    return filteredCompletedProjects.slice(startIndex, endIndex);
+  }, [filteredCompletedProjects, completedCurrentPage, completedItemsPerPage]);
+
+  // Pagination calculations for active projects
+  const activeTotalPages = Math.ceil(filteredActiveProjects.length / activeItemsPerPage);
+  const activeStartResult = filteredActiveProjects.length === 0 ? 0 : (activeCurrentPage - 1) * activeItemsPerPage + 1;
+  const activeEndResult = Math.min(activeCurrentPage * activeItemsPerPage, filteredActiveProjects.length);
+
+  // Pagination calculations for completed projects
+  const completedTotalPages = Math.ceil(filteredCompletedProjects.length / completedItemsPerPage);
+  const completedStartResult = filteredCompletedProjects.length === 0 ? 0 : (completedCurrentPage - 1) * completedItemsPerPage + 1;
+  const completedEndResult = Math.min(completedCurrentPage * completedItemsPerPage, filteredCompletedProjects.length);
+
+  // Reset active page when search term changes
+  useEffect(() => {
+    setActiveCurrentPage(1);
+  }, [activeSearchTerm]);
+
+  // Reset completed page when search term changes
+  useEffect(() => {
+    setCompletedCurrentPage(1);
+  }, [completedSearchTerm]);
+
+  // Clamp active page when items per page changes or filtered list changes
+  useEffect(() => {
+    const maxPage = Math.ceil(filteredActiveProjects.length / activeItemsPerPage) || 1;
+    if (activeCurrentPage > maxPage) {
+      setActiveCurrentPage(maxPage);
+    }
+  }, [activeItemsPerPage, filteredActiveProjects.length, activeCurrentPage]);
+
+  // Clamp completed page when items per page changes or filtered list changes
+  useEffect(() => {
+    const maxPage = Math.ceil(filteredCompletedProjects.length / completedItemsPerPage) || 1;
+    if (completedCurrentPage > maxPage) {
+      setCompletedCurrentPage(maxPage);
+    }
+  }, [completedItemsPerPage, filteredCompletedProjects.length, completedCurrentPage]);
 
   if (isLoading) {
     return (
@@ -138,8 +236,27 @@ export default function Projects() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Search input */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search active projects by name, ticket number, status..."
+                    value={activeSearchTerm}
+                    onChange={(e) => setActiveSearchTerm(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search-active-projects"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-6" data-testid="list-active-projects">
-                {activeProjects.map((project) => (
+                {paginatedActiveProjects.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {activeSearchTerm ? `No active projects found matching "${activeSearchTerm}"` : 'No active projects'}
+                  </div>
+                ) : (
+                  paginatedActiveProjects.map((project) => (
                   <div key={project.id} className="p-6 rounded-lg border hover-elevate">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
@@ -205,8 +322,57 @@ export default function Projects() {
                       />
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
+
+              {/* Pagination controls */}
+              {filteredActiveProjects.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {activeStartResult}-{activeEndResult} of {filteredActiveProjects.length} results
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                      value={activeItemsPerPage.toString()}
+                      onValueChange={(value) => setActiveItemsPerPage(Number(value))}
+                    >
+                      <SelectTrigger className="w-[100px]" data-testid="select-items-per-page-active">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 per page</SelectItem>
+                        <SelectItem value="10">10 per page</SelectItem>
+                        <SelectItem value="20">20 per page</SelectItem>
+                        <SelectItem value="50">50 per page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveCurrentPage(activeCurrentPage - 1)}
+                      disabled={activeCurrentPage === 1}
+                      data-testid="button-prev-page-active"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {activeCurrentPage} of {activeTotalPages || 1}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveCurrentPage(activeCurrentPage + 1)}
+                      disabled={activeCurrentPage >= activeTotalPages}
+                      data-testid="button-next-page-active"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -221,8 +387,27 @@ export default function Projects() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Search input */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search completed projects by name, ticket number..."
+                    value={completedSearchTerm}
+                    onChange={(e) => setCompletedSearchTerm(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search-completed-projects"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-4" data-testid="list-completed-projects">
-                {completedProjects.map((project) => (
+                {paginatedCompletedProjects.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {completedSearchTerm ? `No completed projects found matching "${completedSearchTerm}"` : 'No completed projects'}
+                  </div>
+                ) : (
+                  paginatedCompletedProjects.map((project) => (
                   <div key={project.id} className="p-4 rounded-lg border bg-muted/30">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -251,8 +436,57 @@ export default function Projects() {
                       <CheckCircle className="w-6 h-6 text-green-600" />
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
+
+              {/* Pagination controls */}
+              {filteredCompletedProjects.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {completedStartResult}-{completedEndResult} of {filteredCompletedProjects.length} results
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                      value={completedItemsPerPage.toString()}
+                      onValueChange={(value) => setCompletedItemsPerPage(Number(value))}
+                    >
+                      <SelectTrigger className="w-[100px]" data-testid="select-items-per-page-completed">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 per page</SelectItem>
+                        <SelectItem value="10">10 per page</SelectItem>
+                        <SelectItem value="20">20 per page</SelectItem>
+                        <SelectItem value="50">50 per page</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCompletedCurrentPage(completedCurrentPage - 1)}
+                      disabled={completedCurrentPage === 1}
+                      data-testid="button-prev-page-completed"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {completedCurrentPage} of {completedTotalPages || 1}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCompletedCurrentPage(completedCurrentPage + 1)}
+                      disabled={completedCurrentPage >= completedTotalPages}
+                      data-testid="button-next-page-completed"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
