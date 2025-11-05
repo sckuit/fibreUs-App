@@ -36,6 +36,7 @@ interface QuotePreviewProps {
   leadId?: string;
   clientId?: string;
   quoteNumber?: string;
+  renderActions?: () => React.ReactNode;
 }
 
 export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
@@ -49,6 +50,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   leadId,
   clientId,
   quoteNumber,
+  renderActions,
 }, ref) => {
   const { data: systemConfig } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
@@ -238,23 +240,31 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
         <div className="space-y-4">
           <h3 className="font-semibold">ACCEPTANCE</h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <div className="border-b border-foreground/20 pb-1 mb-1">
-                <div className="h-12"></div>
-              </div>
-              <p className="text-xs text-muted-foreground">Customer Signature</p>
+          {renderActions ? (
+            <div className="py-2">
+              {renderActions()}
             </div>
-            <div>
-              <div className="border-b border-foreground/20 pb-1 mb-1">
-                <div className="h-12"></div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <div className="border-b border-foreground/20 pb-1 mb-1">
+                    <div className="h-12"></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Customer Signature</p>
+                </div>
+                <div>
+                  <div className="border-b border-foreground/20 pb-1 mb-1">
+                    <div className="h-12"></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Date</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">Date</p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground italic">
-            By signing above, you accept this quote and authorize {companyName} to proceed with the work as outlined.
-          </p>
+              <p className="text-xs text-muted-foreground italic">
+                By signing above, you accept this quote and authorize {companyName} to proceed with the work as outlined.
+              </p>
+            </>
+          )}
         </div>
 
         {legalDocs?.termsAndConditions && (
