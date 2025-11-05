@@ -762,6 +762,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client feedback endpoint for projects
+  app.post("/api/projects/:id/feedback", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Only clients can submit feedback
+      if (user.role !== 'client') {
+        return res.status(403).json({ message: "Only clients can submit feedback" });
+      }
+      
+      const projectId = req.params.id;
+      const { feedback, rating } = req.body;
+      
+      // Validate feedback and rating
+      if (!feedback || typeof feedback !== 'string' || !feedback.trim()) {
+        return res.status(400).json({ message: "Feedback text is required" });
+      }
+      
+      if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5" });
+      }
+      
+      // Get the project to verify ownership
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Verify client owns this project
+      const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+      const isOwner = (project.clientId && clientIds.includes(project.clientId)) ||
+                      (project.leadId && leadIds.includes(project.leadId));
+      
+      if (!isOwner) {
+        return res.status(403).json({ message: "You can only provide feedback for your own projects" });
+      }
+      
+      // Verify project is completed
+      if (project.status !== 'completed') {
+        return res.status(400).json({ message: "Feedback can only be submitted for completed projects" });
+      }
+      
+      // Update project with feedback
+      const updatedProject = await storage.updateProject(projectId, {
+        clientFeedback: feedback,
+        clientRating: rating,
+      });
+      
+      res.json(updatedProject);
+    } catch (error) {
+      console.error("Error submitting project feedback:", error);
+      res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
   app.get("/api/technicians", isSessionAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
@@ -3689,6 +3749,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error generating share token for quote:", error);
         res.status(500).json({ message: "Failed to generate share token" });
+      }
+    }
+  );
+
+  // Quote approval endpoint (client action)
+  app.post("/api/quotes/:id/approve",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !userId) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Only clients can approve quotes
+        if (user.role !== 'client') {
+          return res.status(403).json({ message: "Only clients can approve quotes" });
+        }
+        
+        const quote = await storage.getQuote(req.params.id);
+        if (!quote) {
+          return res.status(404).json({ message: "Quote not found" });
+        }
+        
+        // Verify client owns this quote
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (quote.clientId && clientIds.includes(quote.clientId)) ||
+                        (quote.leadId && leadIds.includes(quote.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "You can only approve your own quotes" });
+        }
+        
+        // Update quote status to accepted
+        const updatedQuote = await storage.updateQuote(req.params.id, {
+          status: 'accepted',
+        });
+        
+        await logActivity(
+          userId,
+          'approve',
+          'quote',
+          quote.id,
+          quote.quoteNumber,
+          'Client approved quote',
+          req
+        );
+        
+        res.json(updatedQuote);
+      } catch (error) {
+        console.error("Error approving quote:", error);
+        res.status(500).json({ message: "Failed to approve quote" });
+      }
+    }
+  );
+
+  // Quote rejection endpoint (client action)
+  app.post("/api/quotes/:id/reject",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !userId) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Only clients can reject quotes
+        if (user.role !== 'client') {
+          return res.status(403).json({ message: "Only clients can reject quotes" });
+        }
+        
+        const quote = await storage.getQuote(req.params.id);
+        if (!quote) {
+          return res.status(404).json({ message: "Quote not found" });
+        }
+        
+        // Verify client owns this quote
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (quote.clientId && clientIds.includes(quote.clientId)) ||
+                        (quote.leadId && leadIds.includes(quote.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "You can only reject your own quotes" });
+        }
+        
+        // Update quote status to rejected
+        const updatedQuote = await storage.updateQuote(req.params.id, {
+          status: 'rejected',
+        });
+        
+        await logActivity(
+          userId,
+          'reject',
+          'quote',
+          quote.id,
+          quote.quoteNumber,
+          'Client rejected quote',
+          req
+        );
+        
+        res.json(updatedQuote);
+      } catch (error) {
+        console.error("Error rejecting quote:", error);
+        res.status(500).json({ message: "Failed to reject quote" });
       }
     }
   );

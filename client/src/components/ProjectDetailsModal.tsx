@@ -1,10 +1,18 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import type { Project } from "@shared/schema";
 import { format } from "date-fns";
-import { Calendar, User, FileText, DollarSign, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, User, FileText, DollarSign, Clock, CheckCircle, XCircle, Star } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { User as UserType } from "@shared/schema";
 
 interface ProjectDetailsModalProps {
   project: Project | null;
@@ -15,7 +23,53 @@ interface ProjectDetailsModalProps {
 }
 
 export function ProjectDetailsModal({ project, isOpen, onClose, clientName, technicianName }: ProjectDetailsModalProps) {
+  const { user } = useAuth();
+  const typedUser = user as UserType | undefined;
+  const { toast } = useToast();
+  const [feedbackText, setFeedbackText] = useState("");
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+
   if (!project) return null;
+
+  const isClient = typedUser?.role === 'client';
+  const canSubmitFeedback = isClient && !project.clientFeedback && project.status === 'completed';
+
+  const submitFeedbackMutation = useMutation({
+    mutationFn: async (data: { feedback: string; rating: number }) => {
+      const response = await apiRequest('POST', `/api/projects/${project.id}/feedback`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Feedback submitted",
+        description: "Thank you for your feedback!",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects'] });
+      setFeedbackText("");
+      setRating(0);
+      onClose();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmitFeedback = () => {
+    if (!feedbackText.trim() || rating === 0) {
+      toast({
+        title: "Missing information",
+        description: "Please provide both feedback and a rating.",
+        variant: "destructive",
+      });
+      return;
+    }
+    submitFeedbackMutation.mutate({ feedback: feedbackText, rating });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -149,13 +203,16 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
             )}
           </div>
 
-          {/* Work Notes */}
+          {/* Work Notes - Prominently Displayed */}
           {project.workNotes && (
             <>
               <Separator />
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Work Notes</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{project.workNotes}</p>
+              <div className="space-y-2 p-4 bg-muted/30 rounded-lg border">
+                <h4 className="text-base font-semibold flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary" />
+                  Work Notes
+                </h4>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">{project.workNotes}</p>
               </div>
             </>
           )}
@@ -177,20 +234,92 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
             </>
           )}
 
-          {/* Client Feedback */}
+          {/* Client Feedback - Display if exists */}
           {project.clientFeedback && (
             <>
               <Separator />
-              <div className="space-y-2">
+              <div className="space-y-2 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   Client Feedback
                   {project.clientRating && (
-                    <span className="text-yellow-500">
-                      {'⭐'.repeat(project.clientRating)}
-                    </span>
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`w-4 h-4 ${
+                            star <= project.clientRating!
+                              ? 'fill-yellow-500 text-yellow-500'
+                              : 'text-gray-300 dark:text-gray-600'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   )}
                 </h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{project.clientFeedback}</p>
+                <p className="text-sm whitespace-pre-wrap">{project.clientFeedback}</p>
+              </div>
+            </>
+          )}
+
+          {/* Client Feedback Form - Show for clients on completed projects without feedback */}
+          {canSubmitFeedback && (
+            <>
+              <Separator />
+              <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+                <h4 className="text-base font-semibold">Share Your Feedback</h4>
+                
+                {/* Star Rating */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Rate this project</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        onMouseEnter={() => setHoveredRating(star)}
+                        onMouseLeave={() => setHoveredRating(0)}
+                        className="focus:outline-none transition-transform hover:scale-110"
+                        data-testid={`button-rating-${star}`}
+                      >
+                        <Star
+                          className={`w-8 h-8 ${
+                            star <= (hoveredRating || rating)
+                              ? 'fill-yellow-500 text-yellow-500'
+                              : 'text-gray-300 dark:text-gray-600'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  {rating > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {rating === 5 ? 'Excellent!' : rating === 4 ? 'Great!' : rating === 3 ? 'Good' : rating === 2 ? 'Fair' : 'Needs Improvement'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Feedback Textarea */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Your comments</label>
+                  <Textarea
+                    placeholder="Tell us about your experience with this project..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    rows={4}
+                    data-testid="textarea-client-feedback"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  onClick={handleSubmitFeedback}
+                  disabled={submitFeedbackMutation.isPending || !feedbackText.trim() || rating === 0}
+                  className="w-full"
+                  data-testid="button-submit-feedback"
+                >
+                  {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
+                </Button>
               </div>
             </>
           )}

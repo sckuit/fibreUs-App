@@ -1,10 +1,16 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { Quote } from "@shared/schema";
+import { Separator } from "@/components/ui/separator";
+import type { Quote, User as UserType } from "@shared/schema";
 import { format } from "date-fns";
-import { Calendar, FileText, DollarSign } from "lucide-react";
+import { Calendar, FileText, DollarSign, CheckCircle, XCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuoteDetailsModalProps {
   quote: Quote | null;
@@ -24,9 +30,59 @@ interface QuoteItem {
 }
 
 export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: QuoteDetailsModalProps) {
+  const { user } = useAuth();
+  const typedUser = user as UserType | undefined;
+  const { toast } = useToast();
+
   if (!quote) return null;
 
   const items = Array.isArray(quote.items) ? (quote.items as QuoteItem[]) : [];
+  const isClient = typedUser?.role === 'client';
+  const canApproveReject = isClient && (quote.status === 'draft' || quote.status === 'sent');
+
+  const approveQuoteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/quotes/${quote.id}/approve`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Quote approved",
+        description: "The quote has been accepted.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
+      onClose();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to approve quote. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectQuoteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/quotes/${quote.id}/reject`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Quote rejected",
+        description: "The quote has been declined.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
+      onClose();
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reject quote. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -157,6 +213,40 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
               <h4 className="text-sm font-semibold">Notes</h4>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{quote.notes}</p>
             </div>
+          )}
+
+          {/* Approve/Reject Actions for Clients */}
+          {canApproveReject && (
+            <>
+              <Separator />
+              <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+                <h4 className="text-sm font-semibold">Quote Decision</h4>
+                <p className="text-sm text-muted-foreground">
+                  Please review the quote details and either approve or reject this proposal.
+                </p>
+                <div className="flex gap-3 flex-wrap">
+                  <Button
+                    onClick={() => approveQuoteMutation.mutate()}
+                    disabled={approveQuoteMutation.isPending || rejectQuoteMutation.isPending}
+                    className="flex-1 min-w-[150px]"
+                    data-testid="button-approve-quote"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    {approveQuoteMutation.isPending ? 'Approving...' : 'Approve Quote'}
+                  </Button>
+                  <Button
+                    onClick={() => rejectQuoteMutation.mutate()}
+                    disabled={approveQuoteMutation.isPending || rejectQuoteMutation.isPending}
+                    variant="destructive"
+                    className="flex-1 min-w-[150px]"
+                    data-testid="button-reject-quote"
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    {rejectQuoteMutation.isPending ? 'Rejecting...' : 'Reject Quote'}
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </DialogContent>
