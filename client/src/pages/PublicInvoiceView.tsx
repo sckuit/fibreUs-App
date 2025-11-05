@@ -3,22 +3,26 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoicePreview } from "@/components/InvoicePreview";
-import { AlertCircle, FileText } from "lucide-react";
-import type { Invoice } from "@shared/schema";
+import { AlertCircle, FileText, Phone, Mail } from "lucide-react";
+import type { Invoice, SystemConfig } from "@shared/schema";
 
 interface InvoiceWithToken extends Invoice {
   items: any;
 }
 
 export default function PublicInvoiceView() {
-  const [match, params] = useRoute("/public/invoice/:token");
+  const [match, params] = useRoute("/invoice/:invoiceNumber/:token");
 
-  const { data: invoice, isLoading, error } = useQuery<InvoiceWithToken>({
-    queryKey: ["/api/public/invoice", params?.token],
-    enabled: !!params?.token && !!match,
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ["/api/system-config"],
   });
 
-  if (!match || !params?.token) {
+  const { data: invoice, isLoading, error } = useQuery<InvoiceWithToken>({
+    queryKey: ["/api/public/invoice", params?.invoiceNumber, params?.token],
+    enabled: !!params?.token && !!params?.invoiceNumber && !!match,
+  });
+
+  if (!match || !params?.token || !params?.invoiceNumber) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -76,13 +80,42 @@ export default function PublicInvoiceView() {
     );
   }
 
+  const companyName = systemConfig?.companyName || "FibreUS";
+  const companyPhone = systemConfig?.phoneNumber || "";
+  const companyEmail = systemConfig?.contactEmail || "";
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Professional Header */}
+      <header className="bg-[#1e3a5f] text-white border-b border-[#2a4a6f]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">{companyName}</h1>
+            </div>
+            <div className="flex items-center gap-6 text-sm">
+              {companyPhone && (
+                <a href={`tel:${companyPhone}`} className="flex items-center gap-2 hover-elevate px-3 py-1.5 rounded-md transition-colors">
+                  <Phone className="w-4 h-4" />
+                  <span>{companyPhone}</span>
+                </a>
+              )}
+              {companyEmail && (
+                <a href={`mailto:${companyEmail}`} className="flex items-center gap-2 hover-elevate px-3 py-1.5 rounded-md transition-colors">
+                  <Mail className="w-4 h-4" />
+                  <span>{companyEmail}</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
       <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
             <FileText className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold" data-testid="text-invoice-title">Invoice</h1>
+            <h2 className="text-3xl font-bold" data-testid="text-invoice-title">Invoice</h2>
           </div>
           <p className="text-muted-foreground">
             Invoice details and payment information

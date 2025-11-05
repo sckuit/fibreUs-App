@@ -3625,10 +3625,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Build shareable URL
         const domain = process.env.REPLIT_DOMAINS ? process.env.REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
         const protocol = process.env.REPLIT_DOMAINS ? 'https' : 'http';
-        const shareUrl = `${protocol}://${domain}/shared/quote/${shareToken}`;
+        const shareUrl = `${protocol}://${domain}/quote/${updatedQuote.quoteNumber}/${shareToken}`;
         
         res.json({
-          shareToken,
+          token: shareToken,
+          quoteNumber: updatedQuote.quoteNumber,
           shareUrl,
           shareTokenCreatedAt: updatedQuote.shareTokenCreatedAt,
         });
@@ -3906,10 +3907,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Build shareable URL
         const domain = process.env.REPLIT_DOMAINS ? process.env.REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
         const protocol = process.env.REPLIT_DOMAINS ? 'https' : 'http';
-        const shareUrl = `${protocol}://${domain}/shared/invoice/${shareToken}`;
+        const shareUrl = `${protocol}://${domain}/invoice/${updatedInvoice.invoiceNumber}/${shareToken}`;
         
         res.json({
-          shareToken,
+          token: shareToken,
+          invoiceNumber: updatedInvoice.invoiceNumber,
           shareUrl,
           shareTokenCreatedAt: updatedInvoice.shareTokenCreatedAt,
         });
@@ -4546,14 +4548,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PUBLIC API ENDPOINTS (No Authentication Required)
   // ===========================
 
-  // GET /api/public/quote/:token - Fetch quote by shareToken
-  app.get('/api/public/quote/:token', async (req: any, res) => {
+  // GET /api/public/quote/:quoteNumber/:token - Fetch quote by number and shareToken
+  // NOTE: This MUST come before the legacy route to match correctly
+  app.get('/api/public/quote/:quoteNumber/:token', async (req: any, res) => {
     try {
-      const { token } = req.params;
+      const { quoteNumber, token } = req.params;
       
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
+        return res.status(404).json({ message: 'Quote not found' });
+      }
+      
+      // Verify quote number matches (security check)
+      if (quote.quoteNumber !== quoteNumber) {
         return res.status(404).json({ message: 'Quote not found' });
       }
       
@@ -4592,15 +4600,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/public/quote/:token/approve - Approve quote
-  app.post('/api/public/quote/:token/approve', async (req: any, res) => {
+  // POST /api/public/quote/:quoteNumber/:token/approve - Approve quote
+  app.post('/api/public/quote/:quoteNumber/:token/approve', async (req: any, res) => {
     try {
-      const { token } = req.params;
+      const { quoteNumber, token } = req.params;
       const { comments } = req.body;
       
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
+        return res.status(404).json({ message: 'Quote not found' });
+      }
+      
+      // Verify quote number matches (security check)
+      if (quote.quoteNumber !== quoteNumber) {
         return res.status(404).json({ message: 'Quote not found' });
       }
       
@@ -4638,15 +4651,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/public/quote/:token/reject - Reject quote
-  app.post('/api/public/quote/:token/reject', async (req: any, res) => {
+  // POST /api/public/quote/:quoteNumber/:token/reject - Reject quote
+  app.post('/api/public/quote/:quoteNumber/:token/reject', async (req: any, res) => {
     try {
-      const { token } = req.params;
+      const { quoteNumber, token } = req.params;
       const { reason } = req.body;
       
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
+        return res.status(404).json({ message: 'Quote not found' });
+      }
+      
+      // Verify quote number matches (security check)
+      if (quote.quoteNumber !== quoteNumber) {
         return res.status(404).json({ message: 'Quote not found' });
       }
       
@@ -4684,14 +4702,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET /api/public/invoice/:token - Fetch invoice by shareToken
-  app.get('/api/public/invoice/:token', async (req: any, res) => {
+  // Legacy redirect: GET /api/public/quote/:token - Redirect to new format
+  // NOTE: This MUST come after the specific routes to avoid matching them
+  app.get('/api/public/quote/:token', async (req: any, res) => {
     try {
       const { token } = req.params;
+      
+      const quote = await storage.getQuoteByShareToken(token);
+      
+      if (!quote) {
+        return res.status(404).json({ message: 'Quote not found' });
+      }
+      
+      // Redirect to new URL format with quote number
+      res.json({
+        redirectTo: `/quote/${quote.quoteNumber}/${token}`,
+        quote,
+      });
+    } catch (error) {
+      console.error('Error handling legacy quote link:', error);
+      res.status(500).json({ message: 'Failed to fetch quote' });
+    }
+  });
+
+  // GET /api/public/invoice/:invoiceNumber/:token - Fetch invoice by number and shareToken
+  // NOTE: This MUST come before the legacy route to match correctly
+  app.get('/api/public/invoice/:invoiceNumber/:token', async (req: any, res) => {
+    try {
+      const { invoiceNumber, token } = req.params;
       
       const invoice = await storage.getInvoiceByShareToken(token);
       
       if (!invoice) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+      
+      // Verify invoice number matches (security check)
+      if (invoice.invoiceNumber !== invoiceNumber) {
         return res.status(404).json({ message: 'Invoice not found' });
       }
       
@@ -4726,6 +4773,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching public invoice:', error);
+      res.status(500).json({ message: 'Failed to fetch invoice' });
+    }
+  });
+
+  // Legacy redirect: GET /api/public/invoice/:token - Redirect to new format
+  // NOTE: This MUST come after the specific routes to avoid matching them
+  app.get('/api/public/invoice/:token', async (req: any, res) => {
+    try {
+      const { token } = req.params;
+      
+      const invoice = await storage.getInvoiceByShareToken(token);
+      
+      if (!invoice) {
+        return res.status(404).json({ message: 'Invoice not found' });
+      }
+      
+      // Redirect to new URL format with invoice number
+      res.json({
+        redirectTo: `/invoice/${invoice.invoiceNumber}/${token}`,
+        invoice,
+      });
+    } catch (error) {
+      console.error('Error handling legacy invoice link:', error);
       res.status(500).json({ message: 'Failed to fetch invoice' });
     }
   });

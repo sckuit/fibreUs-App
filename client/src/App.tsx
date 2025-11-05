@@ -56,6 +56,8 @@ import WarrantyInformation from "@/pages/legal/WarrantyInformation";
 // Public view pages (for share links)
 import PublicQuoteView from "@/pages/PublicQuoteView";
 import PublicInvoiceView from "@/pages/PublicInvoiceView";
+import LegacyPublicQuoteRedirect from "@/pages/LegacyPublicQuoteRedirect";
+import LegacyPublicInvoiceRedirect from "@/pages/LegacyPublicInvoiceRedirect";
 
 // Public layout with PublicHeader for non-authenticated pages
 function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -171,9 +173,13 @@ function Router() {
   // Public routes that don't require authentication
   return (
     <Switch>
+      {/* Legacy redirect routes for backward compatibility */}
+      <Route path="/public/quote/:token" component={LegacyPublicQuoteRedirect} />
+      <Route path="/public/invoice/:token" component={LegacyPublicInvoiceRedirect} />
+      
       {/* Public view pages (share links - no header/footer) */}
-      <Route path="/public/quote/:token" component={PublicQuoteView} />
-      <Route path="/public/invoice/:token" component={PublicInvoiceView} />
+      <Route path="/quote/:quoteNumber/:token" component={PublicQuoteView} />
+      <Route path="/invoice/:invoiceNumber/:token" component={PublicInvoiceView} />
       
       {/* Public pages */}
       <Route path="/logos" component={() => (

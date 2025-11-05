@@ -127,9 +127,12 @@ export default function InvoiceBuilder() {
   });
 
   const generateShareLinkMutation = useMutation({
-    mutationFn: () => apiRequest('POST', `/api/invoices/${invoiceId}/share`, {}),
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/invoices/${invoiceId}/share`, {});
+      return response.json();
+    },
     onSuccess: (data: any) => {
-      const shareUrl = `${window.location.origin}/public/invoice/${data.token}`;
+      const shareUrl = `${window.location.origin}/invoice/${data.invoiceNumber}/${data.token}`;
       navigator.clipboard.writeText(shareUrl);
       toast({ title: "Link copied to clipboard!" });
     },
@@ -161,7 +164,7 @@ export default function InvoiceBuilder() {
         balanceDue: existingInvoice.balanceDue || '0.00',
         paymentStatus: existingInvoice.paymentStatus as any,
         status: existingInvoice.status as any,
-        dueDate: existingInvoice.dueDate || '',
+        dueDate: existingInvoice.dueDate ? (existingInvoice.dueDate instanceof Date ? existingInvoice.dueDate.toISOString().split('T')[0] : existingInvoice.dueDate) : '',
         notes: existingInvoice.notes || '',
       });
 

@@ -4,9 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuotePreview } from "@/components/QuotePreview";
-import { AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, Phone, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { SystemConfig } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -25,20 +26,24 @@ interface QuoteWithToken extends Quote {
 }
 
 export default function PublicQuoteView() {
-  const [match, params] = useRoute("/public/quote/:token");
-  const { toast } = useToast();
+  const [match, params] = useRoute("/quote/:quoteNumber/:token");
+  const { toast} = useToast();
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ["/api/system-config"],
+  });
+
   const { data: quote, isLoading, error } = useQuery<QuoteWithToken>({
-    queryKey: ["/api/public/quote", params?.token],
-    enabled: !!params?.token && !!match,
+    queryKey: ["/api/public/quote", params?.quoteNumber, params?.token],
+    enabled: !!params?.token && !!params?.quoteNumber && !!match,
   });
 
   const approveMutation = useMutation({
-    mutationFn: () => apiRequest("POST", `/api/public/quote/${params?.token}/approve`, {}),
+    mutationFn: () => apiRequest("POST", `/api/public/quote/${params?.quoteNumber}/${params?.token}/approve`, {}),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/public/quote", params?.token] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/quote", params?.quoteNumber, params?.token] });
       toast({
         title: "Quote Approved",
         description: "Thank you! We've received your approval and will be in touch soon.",
@@ -55,9 +60,9 @@ export default function PublicQuoteView() {
 
   const rejectMutation = useMutation({
     mutationFn: (reason: string) => 
-      apiRequest("POST", `/api/public/quote/${params?.token}/reject`, { reason }),
+      apiRequest("POST", `/api/public/quote/${params?.quoteNumber}/${params?.token}/reject`, { reason }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/public/quote", params?.token] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public/quote", params?.quoteNumber, params?.token] });
       setIsRejectDialogOpen(false);
       setRejectionReason("");
       toast({
@@ -82,7 +87,7 @@ export default function PublicQuoteView() {
     rejectMutation.mutate(rejectionReason);
   };
 
-  if (!match || !params?.token) {
+  if (!match || !params?.token || !params?.quoteNumber) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -144,11 +149,40 @@ export default function PublicQuoteView() {
   const isAccepted = quote.status === 'accepted';
   const isRejected = quote.status === 'rejected';
 
+  const companyName = systemConfig?.companyName || "FibreUS";
+  const companyPhone = systemConfig?.phoneNumber || "";
+  const companyEmail = systemConfig?.contactEmail || "";
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Professional Header */}
+      <header className="bg-[#1e3a5f] text-white border-b border-[#2a4a6f]">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold">{companyName}</h1>
+            </div>
+            <div className="flex items-center gap-6 text-sm">
+              {companyPhone && (
+                <a href={`tel:${companyPhone}`} className="flex items-center gap-2 hover-elevate px-3 py-1.5 rounded-md transition-colors">
+                  <Phone className="w-4 h-4" />
+                  <span>{companyPhone}</span>
+                </a>
+              )}
+              {companyEmail && (
+                <a href={`mailto:${companyEmail}`} className="flex items-center gap-2 hover-elevate px-3 py-1.5 rounded-md transition-colors">
+                  <Mail className="w-4 h-4" />
+                  <span>{companyEmail}</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
       <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold" data-testid="text-quote-title">Quote Review</h1>
+          <h2 className="text-3xl font-bold" data-testid="text-quote-title">Quote Review</h2>
           <p className="text-muted-foreground">
             Please review the quote details below
           </p>

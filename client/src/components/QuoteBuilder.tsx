@@ -117,9 +117,12 @@ export default function QuoteBuilder() {
   });
 
   const generateShareLinkMutation = useMutation({
-    mutationFn: () => apiRequest('POST', `/api/quotes/${quoteId}/share`, {}),
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/quotes/${quoteId}/share`, {});
+      return response.json();
+    },
     onSuccess: (data: any) => {
-      const shareUrl = `${window.location.origin}/public/quote/${data.token}`;
+      const shareUrl = `${window.location.origin}/quote/${data.quoteNumber}/${data.token}`;
       navigator.clipboard.writeText(shareUrl);
       toast({ title: "Link copied to clipboard!" });
     },
@@ -145,7 +148,7 @@ export default function QuoteBuilder() {
         taxRate: existingQuote.taxRate || '0.00',
         taxAmount: existingQuote.taxAmount || '0.00',
         total: existingQuote.total,
-        validUntil: existingQuote.validUntil || '',
+        validUntil: existingQuote.validUntil ? (existingQuote.validUntil instanceof Date ? existingQuote.validUntil.toISOString().split('T')[0] : existingQuote.validUntil) : '',
         notes: existingQuote.notes || '',
         status: existingQuote.status as any,
       });
