@@ -142,14 +142,10 @@ export default function QuotesManager() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const getRecipientName = (quote: Quote) => {
-    if (quote.leadId) {
-      const lead = leads.find(l => l.id === quote.leadId);
-      return lead ? `${lead.name} (Lead)` : 'Unknown Lead';
-    }
-    if (quote.clientId) {
-      const client = clients.find(c => c.id === quote.clientId);
-      return client ? `${client.name} (Client)` : 'Unknown Client';
+  const getRecipientName = (quote: Quote & { recipientName?: string }) => {
+    if (quote.recipientName) {
+      const type = quote.leadId ? 'Lead' : quote.clientId ? 'Client' : '';
+      return type ? `${quote.recipientName} (${type})` : quote.recipientName;
     }
     return 'No Recipient';
   };
@@ -174,7 +170,7 @@ export default function QuotesManager() {
     }
     
     return filtered;
-  }, [quotes, statusFilter, searchTerm, leads, clients, isClient, typedUser?.id]);
+  }, [quotes, statusFilter, searchTerm]);
 
   // Paginate filtered quotes
   const paginatedQuotes = useMemo(() => {
