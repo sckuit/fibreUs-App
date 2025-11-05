@@ -20,15 +20,22 @@ import { loginSchema, registerSchema, type LoginType, type RegisterType } from "
 import { Shield, Mail, Lock, User, Building2 } from "lucide-react";
 
 interface LoginDialogProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-export default function LoginDialog({ children }: LoginDialogProps) {
-  const [open, setOpen] = useState(false);
+export default function LoginDialog({ children, open: controlledOpen, onOpenChange: controlledOnOpenChange, onSuccess }: LoginDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+
+  // Use controlled state if provided, otherwise use internal state
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = controlledOnOpenChange || setInternalOpen;
 
   // Login form
   const loginForm = useForm<LoginType>({
@@ -67,8 +74,13 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       
       setOpen(false);
       
-      // Use full page reload to ensure auth state is fresh
-      window.location.href = '/dashboard';
+      if (onSuccess) {
+        // Call custom success handler if provided
+        onSuccess();
+      } else {
+        // Default behavior: navigate to dashboard
+        window.location.href = '/dashboard';
+      }
     },
     onError: (error: any) => {
       toast({
@@ -94,8 +106,13 @@ export default function LoginDialog({ children }: LoginDialogProps) {
       
       setOpen(false);
       
-      // Use full page reload to ensure auth state is fresh
-      window.location.href = '/dashboard';
+      if (onSuccess) {
+        // Call custom success handler if provided
+        onSuccess();
+      } else {
+        // Default behavior: navigate to dashboard
+        window.location.href = '/dashboard';
+      }
     },
     onError: (error: any) => {
       toast({
@@ -116,9 +133,11 @@ export default function LoginDialog({ children }: LoginDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      {children && (
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center">
