@@ -267,6 +267,18 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           )}
         </div>
 
+        {legalDocs?.termsOfService && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h3 className="font-semibold">TERMS OF SERVICE</h3>
+              <div className="text-xs text-muted-foreground whitespace-pre-wrap bg-muted/30 p-4 rounded-md">
+                {legalDocs.termsOfService}
+              </div>
+            </div>
+          </>
+        )}
+
         {legalDocs?.termsAndConditions && (
           <>
             <Separator />
