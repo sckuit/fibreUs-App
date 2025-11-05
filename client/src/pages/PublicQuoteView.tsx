@@ -1,13 +1,13 @@
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuotePreview } from "@/components/QuotePreview";
-import { AlertCircle, CheckCircle, XCircle, Phone, Mail } from "lucide-react";
+import { AlertCircle, CheckCircle, XCircle, Phone, Mail, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { SystemConfig } from "@shared/schema";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
+import type { SystemConfig, User } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import type { Quote } from "@shared/schema";
+import { LoginDialog } from "@/components/auth/LoginDialog";
 
 interface QuoteWithToken extends Quote {
   items: any;
@@ -34,17 +35,32 @@ interface PublicQuoteResponse {
 
 export default function PublicQuoteView() {
   const [match, params] = useRoute("/quote/:quoteNumber/:token");
+  const [, setLocation] = useLocation();
   const { toast} = useToast();
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   const { data: response, isLoading, error } = useQuery<PublicQuoteResponse>({
     queryKey: ["/api/public/quote", params?.quoteNumber, params?.token],
     enabled: !!params?.token && !!params?.quoteNumber && !!match,
   });
 
+  const { data: currentUser } = useQuery<User | null>({
+    queryKey: ["/api/auth/user"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+  });
+
   const quote = response?.quote;
   const systemConfig = response?.systemConfig;
+  const clientInfo = response?.clientInfo;
+  const leadInfo = response?.leadInfo;
+
+  // Check if current user owns this quote
+  const isOwner = currentUser && (
+    (clientInfo && clientInfo.userId === currentUser.id) ||
+    (leadInfo && leadInfo.userId === currentUser.id)
+  );
 
   const approveMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/public/quote/${params?.quoteNumber}/${params?.token}/approve`, {}),
@@ -159,6 +175,102 @@ export default function PublicQuoteView() {
   const companyPhone = systemConfig?.phoneNumber || "";
   const companyEmail = systemConfig?.contactEmail || "";
 
+  const renderActions = () => {
+    // If quote is already accepted
+    if (isAccepted) {
+      return (
+        <div className="border-l-4 border-green-500 bg-green-50 dark:bg-green-950/20 p-4 rounded">
+          <div className="flex items-center gap-3 text-green-700 dark:text-green-400">
+            <CheckCircle className="h-5 w-5" />
+            <p className="font-medium" data-testid="text-quote-approved">
+              This quote has been approved. We will contact you shortly to proceed.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // If quote is already rejected
+    if (isRejected) {
+      return (
+        <div className="border-l-4 border-red-500 bg-red-50 dark:bg-red-950/20 p-4 rounded">
+          <div className="flex items-center gap-3 text-red-700 dark:text-red-400">
+            <XCircle className="h-5 w-5" />
+            <p className="font-medium" data-testid="text-quote-rejected">
+              This quote has been declined. Thank you for your consideration.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // If quote can be actioned and user is the owner
+    if (canTakeAction && isOwner) {
+      return (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground italic">
+            By approving this quote, you authorize {companyName} to proceed with the work as outlined.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              size="lg"
+              onClick={handleApprove}
+              disabled={approveMutation.isPending || rejectMutation.isPending}
+              data-testid="button-approve-quote"
+              className="flex-1"
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              {approveMutation.isPending ? "Approving..." : "Approve Quote"}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setIsRejectDialogOpen(true)}
+              disabled={approveMutation.isPending || rejectMutation.isPending}
+              data-testid="button-reject-quote"
+              className="flex-1"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Decline Quote
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // If quote can be actioned but user is not the owner or not logged in
+    if (canTakeAction && !isOwner) {
+      return (
+        <div className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/20 p-4 rounded space-y-3">
+          <div className="flex items-start gap-3 text-blue-700 dark:text-blue-400">
+            <AlertCircle className="h-5 w-5 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium">Client Authorization Required</p>
+              <p className="text-sm mt-1">
+                {currentUser 
+                  ? "Only the client associated with this quote can approve or decline it."
+                  : "Please sign in as the client to approve or decline this quote."}
+              </p>
+            </div>
+          </div>
+          {!currentUser && (
+            <Button
+              variant="default"
+              onClick={() => setShowLoginDialog(true)}
+              data-testid="button-login"
+              className="w-full sm:w-auto"
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Professional Header */}
@@ -194,32 +306,6 @@ export default function PublicQuoteView() {
           </p>
         </div>
 
-        {isAccepted && (
-          <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3 text-green-700 dark:text-green-400">
-                <CheckCircle className="h-5 w-5" />
-                <p className="font-medium" data-testid="text-quote-approved">
-                  This quote has been approved. We will contact you shortly to proceed.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {isRejected && (
-          <Card className="border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3 text-red-700 dark:text-red-400">
-                <XCircle className="h-5 w-5" />
-                <p className="font-medium" data-testid="text-quote-rejected">
-                  This quote has been declined. Thank you for your consideration.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <QuotePreview
           items={Array.isArray(quote.items) ? quote.items : []}
           subtotal={quote.subtotal || "0"}
@@ -231,42 +317,8 @@ export default function PublicQuoteView() {
           leadId={quote.leadId || undefined}
           clientId={quote.clientId || undefined}
           quoteNumber={quote.quoteNumber}
+          renderActions={renderActions}
         />
-
-        {canTakeAction && (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground text-center">
-                  Please review the quote and let us know if you would like to proceed
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button
-                    size="lg"
-                    onClick={handleApprove}
-                    disabled={approveMutation.isPending || rejectMutation.isPending}
-                    data-testid="button-approve-quote"
-                    className="flex-1 sm:flex-none"
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    {approveMutation.isPending ? "Approving..." : "Approve Quote"}
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => setIsRejectDialogOpen(true)}
-                    disabled={approveMutation.isPending || rejectMutation.isPending}
-                    data-testid="button-reject-quote"
-                    className="flex-1 sm:flex-none"
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Decline Quote
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
 
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
@@ -311,6 +363,16 @@ export default function PublicQuoteView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LoginDialog
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        onSuccess={() => {
+          setShowLoginDialog(false);
+          queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/public/quote", params?.quoteNumber, params?.token] });
+        }}
+      />
     </div>
   );
 }
