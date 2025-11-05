@@ -9,11 +9,10 @@ import { apiRequest } from "@/lib/queryClient";
 import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
-import { Menu, X, Shield, Phone, FileText, Calendar, Clock, Mail, LayoutDashboard, LogOut } from "lucide-react";
+import { Shield, Phone, FileText, Calendar, Clock, Mail, LogOut } from "lucide-react";
 import type { User, SystemConfig } from "@shared/schema";
 
 export default function TopNavigation() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
   const typedUser = user as User | undefined;
@@ -133,17 +132,6 @@ export default function TopNavigation() {
                 </Button>
               </div>
             )}
-
-            {/* Mobile Menu Toggle */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              data-testid="button-mobile-menu"
-            >
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
           </div>
         </div>
       </div>
