@@ -128,16 +128,16 @@ async function logActivity(
 // Helper to get client/lead IDs for a logged-in user
 async function getUserClientLeadIds(userId: string): Promise<{ clientIds: string[], leadIds: string[] }> {
   try {
-    const clients = await storage.getAllClients();
-    const leads = await storage.getAllLeads();
+    const clients = await storage.getClients();
+    const leads = await storage.getLeads();
     
     const clientIds = clients
-      .filter(client => client.userId === userId)
-      .map(client => client.id);
+      .filter((client) => client.userId === userId)
+      .map((client) => client.id);
     
     const leadIds = leads
-      .filter(lead => lead.userId === userId)
-      .map(lead => lead.id);
+      .filter((lead) => lead.userId === userId)
+      .map((lead) => lead.id);
     
     return { clientIds, leadIds };
   } catch (error) {
