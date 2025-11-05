@@ -217,14 +217,14 @@ export default function PublicQuoteView() {
               onClick={handleApprove}
               disabled={approveMutation.isPending || rejectMutation.isPending}
               data-testid="button-approve-quote"
-              className="flex-1"
+              className="flex-1 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white border border-green-700 dark:border-green-700"
             >
               <CheckCircle className="mr-2 h-4 w-4" />
               {approveMutation.isPending ? "Approving..." : "Approve Quote"}
             </Button>
             <Button
               size="lg"
-              variant="outline"
+              variant="destructive"
               onClick={() => setIsRejectDialogOpen(true)}
               disabled={approveMutation.isPending || rejectMutation.isPending}
               data-testid="button-reject-quote"
