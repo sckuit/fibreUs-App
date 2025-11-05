@@ -37,6 +37,7 @@ interface InvoicePreviewProps {
   clientId?: string;
   invoiceNumber?: string;
   quoteId?: string;
+  renderActions?: () => React.ReactNode;
 }
 
 export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
@@ -53,6 +54,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
   leadId,
   clientId,
   invoiceNumber,
+  renderActions,
 }, ref) => {
   const { data: systemConfig } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
@@ -230,20 +232,28 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
           </div>
         )}
 
-        {/* Signature Section */}
-        <div className="pt-6 grid grid-cols-2 gap-12">
-          <div className="space-y-8">
+        {/* Payment/Actions Section or Signature Section */}
+        <div className="pt-6">
+          {renderActions ? (
             <div>
-              <div className="border-b border-foreground/20 mb-2 h-8"></div>
-              <div className="text-xs text-muted-foreground">Authorized Signature</div>
+              {renderActions()}
             </div>
-          </div>
-          <div className="space-y-8">
-            <div>
-              <div className="border-b border-foreground/20 mb-2 h-8"></div>
-              <div className="text-xs text-muted-foreground">Date</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-12">
+              <div className="space-y-8">
+                <div>
+                  <div className="border-b border-foreground/20 mb-2 h-8"></div>
+                  <div className="text-xs text-muted-foreground">Authorized Signature</div>
+                </div>
+              </div>
+              <div className="space-y-8">
+                <div>
+                  <div className="border-b border-foreground/20 mb-2 h-8"></div>
+                  <div className="text-xs text-muted-foreground">Date</div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </CardContent>
 

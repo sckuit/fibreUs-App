@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import type { Quote } from "@shared/schema";
-import { LoginDialog } from "@/components/auth/LoginDialog";
+import { LoginDialog } from "@/components/LoginDialog";
 
 interface QuoteWithToken extends Quote {
   items: any;
