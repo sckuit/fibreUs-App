@@ -34,15 +34,9 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
   const typedUser = user as UserType | undefined;
   const { toast } = useToast();
 
-  if (!quote) return null;
-
-  const items = Array.isArray(quote.items) ? (quote.items as QuoteItem[]) : [];
-  const isClient = typedUser?.role === 'client';
-  const canApproveReject = isClient && (quote.status === 'draft' || quote.status === 'sent');
-
   const approveQuoteMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', `/api/quotes/${quote.id}/approve`);
+      const response = await apiRequest('POST', `/api/quotes/${quote!.id}/approve`);
       return response.json();
     },
     onSuccess: () => {
@@ -64,7 +58,7 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
 
   const rejectQuoteMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', `/api/quotes/${quote.id}/reject`);
+      const response = await apiRequest('POST', `/api/quotes/${quote!.id}/reject`);
       return response.json();
     },
     onSuccess: () => {
@@ -83,6 +77,12 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
       });
     },
   });
+
+  if (!quote) return null;
+
+  const items = Array.isArray(quote.items) ? (quote.items as QuoteItem[]) : [];
+  const isClient = typedUser?.role === 'client';
+  const canApproveReject = isClient && (quote.status === 'draft' || quote.status === 'sent');
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -30,14 +30,9 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
 
-  if (!project) return null;
-
-  const isClient = typedUser?.role === 'client';
-  const canSubmitFeedback = isClient && !project.clientFeedback && project.status === 'completed';
-
   const submitFeedbackMutation = useMutation({
     mutationFn: async (data: { feedback: string; rating: number }) => {
-      const response = await apiRequest('POST', `/api/projects/${project.id}/feedback`, data);
+      const response = await apiRequest('POST', `/api/projects/${project!.id}/feedback`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -58,6 +53,11 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
       });
     },
   });
+
+  if (!project) return null;
+
+  const isClient = typedUser?.role === 'client';
+  const canSubmitFeedback = isClient && !project.clientFeedback && project.status === 'completed';
 
   const handleSubmitFeedback = () => {
     if (!feedbackText.trim() || rating === 0) {
