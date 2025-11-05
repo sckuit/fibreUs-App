@@ -4,12 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import type { Project } from "@shared/schema";
+import type { Project, ProjectComment } from "@shared/schema";
 import { format } from "date-fns";
-import { Calendar, User, FileText, DollarSign, Clock, CheckCircle, XCircle, Star } from "lucide-react";
+import { Calendar, User, FileText, DollarSign, Clock, CheckCircle, XCircle, Star, MessageSquare } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User as UserType } from "@shared/schema";
@@ -29,6 +29,17 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
   const [feedbackText, setFeedbackText] = useState("");
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [commentText, setCommentText] = useState("");
+
+  // Fetch project comments
+  const { data: comments = [], isLoading: commentsLoading } = useQuery<(ProjectComment & { user: UserType })[]>({
+    queryKey: ['/api/projects', project?.id, 'comments'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/projects/${project!.id}/comments`);
+      return response.json();
+    },
+    enabled: !!project?.id && isOpen,
+  });
 
   const submitFeedbackMutation = useMutation({
     mutationFn: async (data: { feedback: string; rating: number }) => {
@@ -54,10 +65,44 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
     },
   });
 
+  const submitCommentMutation = useMutation({
+    mutationFn: async (comment: string) => {
+      const response = await apiRequest('POST', `/api/projects/${project!.id}/comments`, { comment });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', project!.id, 'comments'] });
+      setCommentText("");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add comment. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!project) return null;
 
   const isClient = typedUser?.role === 'client';
   const canSubmitFeedback = isClient && !project.clientFeedback && project.status === 'completed';
+
+  const handleSubmitComment = () => {
+    if (!commentText.trim()) {
+      toast({
+        title: "Missing comment",
+        description: "Please enter a comment.",
+        variant: "destructive",
+      });
+      return;
+    }
+    submitCommentMutation.mutate(commentText);
+  };
 
   const handleSubmitFeedback = () => {
     if (!feedbackText.trim() || rating === 0) {
@@ -233,6 +278,66 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
               </div>
             </>
           )}
+
+          {/* Project Comments Section */}
+          <Separator />
+          <div className="space-y-4">
+            <h4 className="text-base font-semibold flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              Comments
+            </h4>
+
+            {/* Comments List */}
+            {commentsLoading ? (
+              <p className="text-sm text-muted-foreground">Loading comments...</p>
+            ) : comments.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">No comments yet. Be the first to add one!</p>
+            ) : (
+              <div className="space-y-3">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="p-3 bg-muted/30 rounded-lg border" data-testid={`comment-${comment.id}`}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-xs font-semibold text-primary">
+                            {comment.user?.firstName?.[0]}{comment.user?.lastName?.[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {comment.user?.firstName} {comment.user?.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {comment.createdAt && format(new Date(comment.createdAt), 'MMM d, yyyy h:mm a')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Comment Form */}
+            <div className="space-y-2 p-3 bg-muted/20 rounded-lg border">
+              <Textarea
+                placeholder="Add a comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                rows={3}
+                data-testid="textarea-project-comment"
+              />
+              <Button
+                onClick={handleSubmitComment}
+                disabled={submitCommentMutation.isPending || !commentText.trim()}
+                size="sm"
+                data-testid="button-submit-comment"
+              >
+                {submitCommentMutation.isPending ? 'Adding...' : 'Add Comment'}
+              </Button>
+            </div>
+          </div>
 
           {/* Client Feedback - Display if exists */}
           {project.clientFeedback && (

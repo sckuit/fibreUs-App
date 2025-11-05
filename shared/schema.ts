@@ -133,6 +133,15 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Project comments for client and team communication
+export const projectComments = pgTable("project_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Communications/updates between clients and admins
 export const communications = pgTable("communications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -392,6 +401,18 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [users.id],
   }),
   communications: many(communications),
+  comments: many(projectComments),
+}));
+
+export const projectCommentsRelations = relations(projectComments, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectComments.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectComments.userId],
+    references: [users.id],
+  }),
 }));
 
 export const communicationsRelations = relations(communications, ({ one }) => ({
@@ -502,6 +523,9 @@ export type ServiceRequest = typeof serviceRequests.$inferSelect;
 export type InsertProject = typeof projects.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 
+export type InsertProjectComment = typeof projectComments.$inferInsert;
+export type ProjectComment = typeof projectComments.$inferSelect;
+
 export type InsertCommunication = typeof communications.$inferInsert;
 export type Communication = typeof communications.$inferSelect;
 
@@ -548,6 +572,11 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   estimatedCompletionDate: z.coerce.date().optional(),
   actualCompletionDate: z.coerce.date().optional(),
   totalCost: z.union([z.string(), z.number()]).transform(val => String(val)).optional(),
+});
+
+export const insertProjectCommentSchema = createInsertSchema(projectComments).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertCommunicationSchema = createInsertSchema(communications).omit({
@@ -610,6 +639,7 @@ export type InsertServiceRequestType = z.infer<typeof insertServiceRequestSchema
 export type ClientInsertServiceRequestType = z.infer<typeof clientInsertServiceRequestSchema>;
 export type UpdateServiceRequestType = z.infer<typeof updateServiceRequestSchema>;
 export type InsertProjectType = z.infer<typeof insertProjectSchema>;
+export type InsertProjectCommentType = z.infer<typeof insertProjectCommentSchema>;
 export type InsertCommunicationType = z.infer<typeof insertCommunicationSchema>;
 export type InsertVisitorType = z.infer<typeof insertVisitorSchema>;
 export type InsertInventoryItemType = z.infer<typeof insertInventoryItemSchema>;

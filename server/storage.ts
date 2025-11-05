@@ -3,6 +3,7 @@ import {
   users,
   serviceRequests,
   projects,
+  projectComments,
   communications,
   visitors,
   inventoryItems,
@@ -39,6 +40,8 @@ import {
   type InsertServiceRequestType,
   type Project,
   type InsertProjectType,
+  type ProjectComment,
+  type InsertProjectCommentType,
   type Communication,
   type InsertCommunicationType,
   type Visitor,
@@ -159,6 +162,10 @@ export interface IStorage {
   getProject(id: string): Promise<Project | undefined>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project>;
   getTechnicians(): Promise<User[]>;
+  
+  // Project comment operations
+  createProjectComment(comment: InsertProjectCommentType): Promise<ProjectComment>;
+  getProjectComments(projectId: string): Promise<(ProjectComment & { user: User })[]>;
   
   // Communication operations
   createCommunication(communication: InsertCommunicationType): Promise<Communication>;
@@ -559,6 +566,48 @@ export class DatabaseStorage implements IStorage {
     return db.select().from(users)
       .where(eq(users.role, 'employee'))
       .orderBy(users.firstName, users.lastName);
+  }
+
+  async createProjectComment(comment: InsertProjectCommentType): Promise<ProjectComment> {
+    const [newComment] = await db.insert(projectComments)
+      .values(comment)
+      .returning();
+    return newComment;
+  }
+
+  async getProjectComments(projectId: string): Promise<(ProjectComment & { user: User })[]> {
+    const comments = await db.select({
+      id: projectComments.id,
+      projectId: projectComments.projectId,
+      userId: projectComments.userId,
+      comment: projectComments.comment,
+      createdAt: projectComments.createdAt,
+      user: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+      }
+    })
+    .from(projectComments)
+    .leftJoin(users, eq(projectComments.userId, users.id))
+    .where(eq(projectComments.projectId, projectId))
+    .orderBy(asc(projectComments.createdAt));
+
+    return comments.map(c => ({
+      ...c,
+      user: { 
+        ...c.user,
+        email: null,
+        passwordHash: null,
+        role: null,
+        phone: null,
+        company: null,
+        isActive: true,
+        createdAt: null,
+        updatedAt: null,
+      } as User
+    }));
   }
 
   async getProject(id: string): Promise<Project | undefined> {

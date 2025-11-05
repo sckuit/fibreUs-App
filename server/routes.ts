@@ -17,6 +17,7 @@ import {
   insertInventoryItemSchema,
   insertInventoryTransactionSchema,
   insertProjectSchema,
+  insertProjectCommentSchema,
   insertTaskSchema,
   updateTaskSchema,
   insertReportSchema,
@@ -865,6 +866,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error submitting project feedback:", error);
       res.status(500).json({ message: "Failed to submit feedback" });
+    }
+  });
+
+  // Get project comments
+  app.get("/api/projects/:id/comments", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const projectId = req.params.id;
+      
+      // Get the project to verify access
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Verify access permissions
+      if (user.role === 'client') {
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (project.clientId && clientIds.includes(project.clientId)) ||
+                        (project.leadId && leadIds.includes(project.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "You can only view comments for your own projects" });
+        }
+      } else {
+        // Non-client roles need project view permission
+        if (!hasPermission(user.role, 'viewProjects')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+      }
+      
+      const comments = await storage.getProjectComments(projectId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching project comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // Add project comment
+  app.post("/api/projects/:id/comments", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const projectId = req.params.id;
+      
+      // Get the project to verify access
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Verify access permissions
+      if (user.role === 'client') {
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (project.clientId && clientIds.includes(project.clientId)) ||
+                        (project.leadId && leadIds.includes(project.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "You can only comment on your own projects" });
+        }
+      } else {
+        // Non-client roles need project management permission
+        const canManageAll = hasPermission(user.role, 'manageAllProjects');
+        const canManageOwn = hasPermission(user.role, 'manageOwnProjects');
+        
+        if (!canManageAll && !canManageOwn) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        // For users with only manageOwnProjects, verify they are assigned to this project
+        if (!canManageAll && canManageOwn) {
+          const isAssigned = project.assignedTechnicianId === userId;
+          if (!isAssigned) {
+            return res.status(403).json({ message: "You can only comment on projects assigned to you" });
+          }
+        }
+      }
+      
+      // Validate request body
+      const validatedData = insertProjectCommentSchema.parse({
+        projectId,
+        userId,
+        comment: req.body.comment,
+      });
+      
+      const newComment = await storage.createProjectComment(validatedData);
+      
+      await logActivity(
+        userId,
+        'create',
+        'project_comment',
+        newComment.id,
+        `Comment on ${project.projectName}`,
+        undefined,
+        req
+      );
+      
+      res.status(201).json(newComment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      console.error("Error creating project comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
     }
   });
 
