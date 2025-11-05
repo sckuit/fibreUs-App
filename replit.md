@@ -6,6 +6,9 @@ FibreUS is a professional web application connecting clients with security contr
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+- **2025-11-05**: Fixed public quote approve/reject endpoints - removed authentication requirement since token verification provides sufficient security. Added middleware to populate `req.user` from session for authenticated routes.
+
 ## System Architecture
 
 ### Frontend Architecture
