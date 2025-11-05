@@ -1991,9 +1991,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getInvoices(filters?: { leadId?: string; clientId?: string; quoteId?: string; paymentStatus?: string }): Promise<Invoice[]> {
-    let query = db.select().from(invoices);
-    
+  async getInvoices(filters?: { leadId?: string; clientId?: string; quoteId?: string; paymentStatus?: string }): Promise<(Invoice & { recipientName?: string })[]> {
     const conditions = [];
     if (filters?.leadId) {
       conditions.push(eq(invoices.leadId, filters.leadId));
@@ -2008,16 +2006,46 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(invoices.paymentStatus, filters.paymentStatus as any));
     }
     
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
+    const baseQuery = db
+      .select({
+        invoice: invoices,
+        clientName: clients.name,
+        leadName: leads.name,
+      })
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.clientId, clients.id))
+      .leftJoin(leads, eq(invoices.leadId, leads.id));
     
-    return query.orderBy(desc(invoices.createdAt));
+    const query = conditions.length > 0 
+      ? baseQuery.where(and(...conditions))
+      : baseQuery;
+    
+    const results = await query.orderBy(desc(invoices.createdAt));
+    
+    return results.map(r => ({
+      ...r.invoice,
+      recipientName: r.clientName || r.leadName || undefined
+    }));
   }
 
-  async getInvoice(id: string): Promise<Invoice | undefined> {
-    const [result] = await db.select().from(invoices).where(eq(invoices.id, id));
-    return result;
+  async getInvoice(id: string): Promise<(Invoice & { recipientName?: string }) | undefined> {
+    const [result] = await db
+      .select({
+        invoice: invoices,
+        clientName: clients.name,
+        leadName: leads.name,
+      })
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.clientId, clients.id))
+      .leftJoin(leads, eq(invoices.leadId, leads.id))
+      .where(eq(invoices.id, id));
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result.invoice,
+      recipientName: result.clientName || result.leadName || undefined
+    };
   }
 
   async getInvoiceByShareToken(token: string): Promise<Invoice | undefined> {
