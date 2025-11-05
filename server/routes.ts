@@ -3398,7 +3398,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'viewLeads')) {
+        if (!user || !user.email) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Client users can view their own quotes
+        if (user.role === 'client') {
+          // Find client/lead records for this user and filter quotes
+          const { clientIds, leadIds } = await getUserClientLeadIds(user.email);
+          const allQuotes = await storage.getQuotes();
+          
+          // Filter quotes where clientId or leadId matches any of the user's IDs
+          const userQuotes = allQuotes.filter(quote => 
+            (quote.clientId && clientIds.includes(quote.clientId)) ||
+            (quote.leadId && leadIds.includes(quote.leadId))
+          );
+          
+          return res.json(userQuotes);
+        }
+        
+        // Other roles need viewLeads permission to see all quotes
+        if (!hasPermission(user.role, 'viewLeads')) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
