@@ -5010,22 +5010,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/public/quote/:quoteNumber/:token/approve - Approve quote
   app.post('/api/public/quote/:quoteNumber/:token/approve', async (req: any, res) => {
     try {
+      console.log('[APPROVE] Starting approve request:', req.params);
       const { quoteNumber, token } = req.params;
       const { comments } = req.body;
       
       // Check if user is authenticated
       if (!req.user) {
+        console.log('[APPROVE] User not authenticated');
         return res.status(401).json({ message: 'You must be logged in to approve this quote' });
       }
+      console.log('[APPROVE] User authenticated:', req.user.id);
       
+      console.log('[APPROVE] Fetching quote by token...');
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
+        console.log('[APPROVE] Quote not found');
         return res.status(404).json({ message: 'Quote not found' });
       }
+      console.log('[APPROVE] Quote found:', quote.id, quote.quoteNumber);
       
       // Verify quote number matches (security check)
       if (quote.quoteNumber !== quoteNumber) {
+        console.log('[APPROVE] Quote number mismatch');
         return res.status(404).json({ message: 'Quote not found' });
       }
       
@@ -5035,38 +5042,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
         
         if (tokenAge > thirtyDaysInMs) {
+          console.log('[APPROVE] Token expired');
           return res.status(404).json({ message: 'Quote link has expired' });
         }
       }
       
       // Verify ownership: Check if user owns this quote
+      console.log('[APPROVE] Checking ownership. clientId:', quote.clientId, 'leadId:', quote.leadId);
       let isOwner = false;
       
       if (quote.clientId) {
+        console.log('[APPROVE] Fetching client...');
         const client = await storage.getClient(quote.clientId);
+        console.log('[APPROVE] Client:', client?.id, 'userId:', client?.userId);
         if (client && client.userId === req.user.id) {
           isOwner = true;
+          console.log('[APPROVE] User is owner via client');
         }
       }
       
       if (!isOwner && quote.leadId) {
+        console.log('[APPROVE] Fetching lead...');
         const lead = await storage.getLead(quote.leadId);
+        console.log('[APPROVE] Lead:', lead?.id, 'userId:', lead?.userId);
         if (lead && lead.userId === req.user.id) {
           isOwner = true;
+          console.log('[APPROVE] User is owner via lead');
         }
       }
       
       if (!isOwner) {
+        console.log('[APPROVE] User is not owner');
         return res.status(403).json({ message: 'You are not authorized to approve this quote' });
       }
       
       // Update quote status to accepted
+      console.log('[APPROVE] Updating quote to accepted...');
       const updatedQuote = await storage.updateQuote(quote.id, {
         status: 'accepted',
         notes: comments ? `${quote.notes || ''}\n\nClient Comments: ${comments}`.trim() : quote.notes,
       });
+      console.log('[APPROVE] Quote updated');
       
       // Log activity
+      console.log('[APPROVE] Logging activity...');
       await logActivity(
         null,
         'quote_approved_via_link',
@@ -5076,10 +5095,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Quote ${quote.quoteNumber} approved via public link${comments ? ` with comments: ${comments}` : ''}`,
         req
       );
+      console.log('[APPROVE] Activity logged');
       
+      console.log('[APPROVE] Sending response');
       res.json(updatedQuote);
     } catch (error) {
-      console.error('Error approving quote:', error);
+      console.error('[APPROVE] Error approving quote:', error);
       res.status(500).json({ message: 'Failed to approve quote' });
     }
   });
@@ -5087,22 +5108,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/public/quote/:quoteNumber/:token/reject - Reject quote
   app.post('/api/public/quote/:quoteNumber/:token/reject', async (req: any, res) => {
     try {
+      console.log('[REJECT] Starting reject request:', req.params);
       const { quoteNumber, token } = req.params;
       const { reason } = req.body;
       
       // Check if user is authenticated
       if (!req.user) {
+        console.log('[REJECT] User not authenticated');
         return res.status(401).json({ message: 'You must be logged in to decline this quote' });
       }
+      console.log('[REJECT] User authenticated:', req.user.id);
       
+      console.log('[REJECT] Fetching quote by token...');
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
+        console.log('[REJECT] Quote not found');
         return res.status(404).json({ message: 'Quote not found' });
       }
+      console.log('[REJECT] Quote found:', quote.id, quote.quoteNumber);
       
       // Verify quote number matches (security check)
       if (quote.quoteNumber !== quoteNumber) {
+        console.log('[REJECT] Quote number mismatch');
         return res.status(404).json({ message: 'Quote not found' });
       }
       
@@ -5112,38 +5140,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
         
         if (tokenAge > thirtyDaysInMs) {
+          console.log('[REJECT] Token expired');
           return res.status(404).json({ message: 'Quote link has expired' });
         }
       }
       
       // Verify ownership: Check if user owns this quote
+      console.log('[REJECT] Checking ownership. clientId:', quote.clientId, 'leadId:', quote.leadId);
       let isOwner = false;
       
       if (quote.clientId) {
+        console.log('[REJECT] Fetching client...');
         const client = await storage.getClient(quote.clientId);
+        console.log('[REJECT] Client:', client?.id, 'userId:', client?.userId);
         if (client && client.userId === req.user.id) {
           isOwner = true;
+          console.log('[REJECT] User is owner via client');
         }
       }
       
       if (!isOwner && quote.leadId) {
+        console.log('[REJECT] Fetching lead...');
         const lead = await storage.getLead(quote.leadId);
+        console.log('[REJECT] Lead:', lead?.id, 'userId:', lead?.userId);
         if (lead && lead.userId === req.user.id) {
           isOwner = true;
+          console.log('[REJECT] User is owner via lead');
         }
       }
       
       if (!isOwner) {
+        console.log('[REJECT] User is not owner');
         return res.status(403).json({ message: 'You are not authorized to decline this quote' });
       }
       
       // Update quote status to rejected
+      console.log('[REJECT] Updating quote to rejected...');
       const updatedQuote = await storage.updateQuote(quote.id, {
         status: 'rejected',
         notes: reason ? `${quote.notes || ''}\n\nRejection Reason: ${reason}`.trim() : quote.notes,
       });
+      console.log('[REJECT] Quote updated');
       
       // Log activity
+      console.log('[REJECT] Logging activity...');
       await logActivity(
         null,
         'quote_rejected_via_link',
@@ -5153,10 +5193,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Quote ${quote.quoteNumber} rejected via public link${reason ? ` with reason: ${reason}` : ''}`,
         req
       );
+      console.log('[REJECT] Activity logged');
       
+      console.log('[REJECT] Sending response');
       res.json(updatedQuote);
     } catch (error) {
-      console.error('Error rejecting quote:', error);
+      console.error('[REJECT] Error rejecting quote:', error);
       res.status(500).json({ message: 'Failed to reject quote' });
     }
   });
