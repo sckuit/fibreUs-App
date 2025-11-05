@@ -754,7 +754,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid status" });
       }
       
-      const updatedProject = await storage.updateProject(projectId, updates);
+      // Convert date strings to Date objects for Drizzle
+      const processedUpdates: any = { ...updates };
+      
+      // Handle startDate conversion
+      if ('startDate' in updates) {
+        if (typeof updates.startDate === 'string') {
+          if (updates.startDate.trim() === '') {
+            // Empty string means clear the date
+            processedUpdates.startDate = null;
+          } else {
+            const date = new Date(updates.startDate);
+            if (isNaN(date.getTime())) {
+              return res.status(400).json({ message: "Invalid start date format" });
+            }
+            processedUpdates.startDate = date;
+          }
+        }
+      }
+      
+      // Handle estimatedCompletionDate conversion
+      if ('estimatedCompletionDate' in updates) {
+        if (typeof updates.estimatedCompletionDate === 'string') {
+          if (updates.estimatedCompletionDate.trim() === '') {
+            // Empty string means clear the date
+            processedUpdates.estimatedCompletionDate = null;
+          } else {
+            const date = new Date(updates.estimatedCompletionDate);
+            if (isNaN(date.getTime())) {
+              return res.status(400).json({ message: "Invalid estimated completion date format" });
+            }
+            processedUpdates.estimatedCompletionDate = date;
+          }
+        }
+      }
+      
+      const updatedProject = await storage.updateProject(projectId, processedUpdates);
       
       await logActivity(
         userId,
