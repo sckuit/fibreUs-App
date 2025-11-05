@@ -3700,7 +3700,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !hasPermission(user.role, 'viewFinancial')) {
+        if (!user || !user.email) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        // Client users can view their own invoices
+        if (user.role === 'client') {
+          // Find client/lead records for this user and filter invoices
+          const { clientIds, leadIds } = await getUserClientLeadIds(user.email);
+          const allInvoices = await storage.getInvoices();
+          
+          // Filter invoices where clientId or leadId matches any of the user's IDs
+          const userInvoices = allInvoices.filter(invoice => 
+            (invoice.clientId && clientIds.includes(invoice.clientId)) ||
+            (invoice.leadId && leadIds.includes(invoice.leadId))
+          );
+          
+          return res.json(userInvoices);
+        }
+        
+        // Other roles need viewFinancial permission to see all invoices
+        if (!hasPermission(user.role, 'viewFinancial')) {
           return res.status(403).json({ message: "Permission denied" });
         }
         
