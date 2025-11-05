@@ -121,6 +121,11 @@ export default function Dashboard() {
   const [projectsCurrentPage, setProjectsCurrentPage] = useState(1);
   const [projectsItemsPerPage, setProjectsItemsPerPage] = useState(10);
   
+  // Inventory search and pagination state
+  const [inventorySearchTerm, setInventorySearchTerm] = useState("");
+  const [inventoryCurrentPage, setInventoryCurrentPage] = useState(1);
+  const [inventoryItemsPerPage, setInventoryItemsPerPage] = useState(10);
+  
   // Fetch dashboard data based on user role
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: [typedUser?.role === 'admin' ? '/api/dashboard/admin' : '/api/dashboard/client'],
@@ -204,6 +209,48 @@ export default function Dashboard() {
       setProjectsCurrentPage(maxPage);
     }
   }, [projectsItemsPerPage, filteredProjects.length, projectsCurrentPage]);
+
+  // Filter inventory items based on search
+  const filteredInventory = useMemo(() => {
+    if (!inventorySearchTerm.trim()) return inventoryItems;
+    
+    const search = inventorySearchTerm.toLowerCase();
+    return inventoryItems.filter((item) => {
+      return (
+        item.name.toLowerCase().includes(search) ||
+        item.sku.toLowerCase().includes(search) ||
+        item.category.toLowerCase().includes(search) ||
+        (item.description ?? "").toLowerCase().includes(search) ||
+        (item.supplier ?? "").toLowerCase().includes(search) ||
+        (item.location ?? "").toLowerCase().includes(search)
+      );
+    });
+  }, [inventoryItems, inventorySearchTerm]);
+
+  // Paginated inventory items
+  const paginatedInventory = useMemo(() => {
+    const startIndex = (inventoryCurrentPage - 1) * inventoryItemsPerPage;
+    const endIndex = startIndex + inventoryItemsPerPage;
+    return filteredInventory.slice(startIndex, endIndex);
+  }, [filteredInventory, inventoryCurrentPage, inventoryItemsPerPage]);
+
+  // Pagination calculations for inventory
+  const inventoryTotalPages = Math.ceil(filteredInventory.length / inventoryItemsPerPage);
+  const inventoryStartResult = filteredInventory.length === 0 ? 0 : (inventoryCurrentPage - 1) * inventoryItemsPerPage + 1;
+  const inventoryEndResult = Math.min(inventoryCurrentPage * inventoryItemsPerPage, filteredInventory.length);
+
+  // Reset inventory page when search term changes
+  useEffect(() => {
+    setInventoryCurrentPage(1);
+  }, [inventorySearchTerm]);
+
+  // Clamp inventory page when items per page changes or filtered list changes
+  useEffect(() => {
+    const maxPage = Math.ceil(filteredInventory.length / inventoryItemsPerPage) || 1;
+    if (inventoryCurrentPage > maxPage) {
+      setInventoryCurrentPage(maxPage);
+    }
+  }, [inventoryItemsPerPage, filteredInventory.length, inventoryCurrentPage]);
 
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
     queryKey: ["/api/activities"],
@@ -1188,49 +1235,122 @@ export default function Dashboard() {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Search inventory by SKU, name, category, supplier..."
+                    value={inventorySearchTerm}
+                    onChange={(e) => setInventorySearchTerm(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search-dashboard-inventory"
+                  />
+                </div>
+
+                {/* Table or Empty State */}
                 {inventoryLoading ? (
                   <p className="text-sm text-muted-foreground">Loading inventory...</p>
                 ) : inventoryItems.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No inventory items yet</p>
+                ) : filteredInventory.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No inventory items match your search</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Min Stock</TableHead>
-                        <TableHead>Unit Cost</TableHead>
-                        <TableHead>Supplier</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {inventoryItems.map((item) => (
-                        <TableRow key={item.id} data-testid={`row-inventory-${item.id}`} className={(item.quantityInStock ?? 0) <= (item.minimumStockLevel ?? 0) ? "bg-yellow-50 dark:bg-yellow-950" : ""}>
-                          <TableCell className="font-mono">{item.sku}</TableCell>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.category}</TableCell>
-                          <TableCell>{item.quantityInStock} {item.unitOfMeasure}</TableCell>
-                          <TableCell>{item.minimumStockLevel}</TableCell>
-                          <TableCell>{item.unitCost ? `$${Number(item.unitCost).toFixed(2)}` : '-'}</TableCell>
-                          <TableCell>{item.supplier || '-'}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button variant="ghost" size="sm" onClick={() => { setEditingInventoryItem(item); setIsInventoryDialogOpen(true); }} data-testid={`button-edit-inventory-${item.id}`}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => deleteInventoryMutation.mutate(item.id)} data-testid={`button-delete-inventory-${item.id}`}>
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>SKU</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Min Stock</TableHead>
+                            <TableHead>Unit Cost</TableHead>
+                            <TableHead>Supplier</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {paginatedInventory.map((item) => (
+                            <TableRow key={item.id} data-testid={`row-inventory-${item.id}`} className={(item.quantityInStock ?? 0) <= (item.minimumStockLevel ?? 0) ? "bg-yellow-50 dark:bg-yellow-950" : ""}>
+                              <TableCell className="font-mono">{item.sku}</TableCell>
+                              <TableCell>{item.name}</TableCell>
+                              <TableCell>{item.category}</TableCell>
+                              <TableCell>{item.quantityInStock} {item.unitOfMeasure}</TableCell>
+                              <TableCell>{item.minimumStockLevel}</TableCell>
+                              <TableCell>{item.unitCost ? `$${Number(item.unitCost).toFixed(2)}` : '-'}</TableCell>
+                              <TableCell>{item.supplier || '-'}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex gap-1 justify-end">
+                                  <Button variant="ghost" size="sm" onClick={() => { setEditingInventoryItem(item); setIsInventoryDialogOpen(true); }} data-testid={`button-edit-inventory-${item.id}`}>
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => deleteInventoryMutation.mutate(item.id)} data-testid={`button-delete-inventory-${item.id}`}>
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {inventoryStartResult} to {inventoryEndResult} of {filteredInventory.length} items
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Items per page:</span>
+                          <Select
+                            value={String(inventoryItemsPerPage)}
+                            onValueChange={(value) => {
+                              setInventoryItemsPerPage(Number(value));
+                              setInventoryCurrentPage(1);
+                            }}
+                          >
+                            <SelectTrigger className="w-20" data-testid="select-inventory-items-per-page">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                              <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setInventoryCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={inventoryCurrentPage === 1}
+                            data-testid="button-inventory-prev-page"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="text-sm text-muted-foreground">
+                            Page {inventoryCurrentPage} of {inventoryTotalPages || 1}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setInventoryCurrentPage(prev => Math.min(inventoryTotalPages, prev + 1))}
+                            disabled={inventoryCurrentPage === inventoryTotalPages || inventoryTotalPages === 0}
+                            data-testid="button-inventory-next-page"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
