@@ -126,17 +126,17 @@ async function logActivity(
 }
 
 // Helper to get client/lead IDs for a logged-in user
-async function getUserClientLeadIds(userEmail: string): Promise<{ clientIds: string[], leadIds: string[] }> {
+async function getUserClientLeadIds(userId: string): Promise<{ clientIds: string[], leadIds: string[] }> {
   try {
     const clients = await storage.getAllClients();
     const leads = await storage.getAllLeads();
     
     const clientIds = clients
-      .filter(client => client.email?.toLowerCase() === userEmail.toLowerCase())
+      .filter(client => client.userId === userId)
       .map(client => client.id);
     
     const leadIds = leads
-      .filter(lead => lead.email?.toLowerCase() === userEmail.toLowerCase())
+      .filter(lead => lead.userId === userId)
       .map(lead => lead.id);
     
     return { clientIds, leadIds };
@@ -667,7 +667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (!user || !user.role || !userId || !user.email) {
+      if (!user || !user.role || !userId) {
         return res.status(401).json({ message: "User not found" });
       }
       
@@ -686,7 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(projects);
       } else if (user.role === 'client') {
         // For clients, find their client/lead records and filter projects by those IDs
-        const { clientIds, leadIds } = await getUserClientLeadIds(user.email);
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
         const allProjects = await storage.getProjects();
         
         // Filter projects where clientId matches any of the user's client/lead IDs
@@ -3398,14 +3398,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.email) {
+        if (!user || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
         // Client users can view their own quotes
         if (user.role === 'client') {
           // Find client/lead records for this user and filter quotes
-          const { clientIds, leadIds } = await getUserClientLeadIds(user.email);
+          const { clientIds, leadIds } = await getUserClientLeadIds(userId);
           const allQuotes = await storage.getQuotes();
           
           // Filter quotes where clientId or leadId matches any of the user's IDs
@@ -3700,14 +3700,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.email) {
+        if (!user || !userId) {
           return res.status(401).json({ message: "User not found" });
         }
         
         // Client users can view their own invoices
         if (user.role === 'client') {
           // Find client/lead records for this user and filter invoices
-          const { clientIds, leadIds } = await getUserClientLeadIds(user.email);
+          const { clientIds, leadIds } = await getUserClientLeadIds(userId);
           const allInvoices = await storage.getInvoices();
           
           // Filter invoices where clientId or leadId matches any of the user's IDs
