@@ -661,10 +661,12 @@ export default function Dashboard() {
                   <DollarSign className="w-4 h-4 mr-2" />
                   Invoices
                 </TabsTrigger>
-                <TabsTrigger value="services" data-testid="tab-sales-services">
-                  <Wrench className="w-4 h-4 mr-2" />
-                  Services
-                </TabsTrigger>
+                {hasPermission(userRole, 'manageSettings') && (
+                  <TabsTrigger value="services" data-testid="tab-sales-services">
+                    <Wrench className="w-4 h-4 mr-2" />
+                    Services
+                  </TabsTrigger>
+                )}
                 {hasPermission(userRole, 'viewClients') && (
                   <TabsTrigger value="clients" data-testid="tab-sales-clients">
                     <UserCircle className="w-4 h-4 mr-2" />
@@ -687,27 +689,35 @@ export default function Dashboard() {
               <TabsContent value="quotes" className="mt-4">
                 <Tabs defaultValue="manage-quotes" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
-                    <TabsTrigger value="create-quote" data-testid="tab-sales-quotes-create">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Quote
-                    </TabsTrigger>
-                    <TabsTrigger value="promo-quote" data-testid="tab-sales-quotes-promo">
-                      <Gift className="w-4 h-4 mr-2" />
-                      Promo Quote
-                    </TabsTrigger>
+                    {hasPermission(userRole, 'manageFinancial') && (
+                      <TabsTrigger value="create-quote" data-testid="tab-sales-quotes-create">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Quote
+                      </TabsTrigger>
+                    )}
+                    {hasPermission(userRole, 'manageFinancial') && (
+                      <TabsTrigger value="promo-quote" data-testid="tab-sales-quotes-promo">
+                        <Gift className="w-4 h-4 mr-2" />
+                        Promo Quote
+                      </TabsTrigger>
+                    )}
                     <TabsTrigger value="manage-quotes" data-testid="tab-sales-quotes-manage">
                       <ClipboardList className="w-4 h-4 mr-2" />
                       Manage Quotes
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="create-quote" className="mt-4">
-                    <QuoteBuilder />
-                  </TabsContent>
+                  {hasPermission(userRole, 'manageFinancial') && (
+                    <TabsContent value="create-quote" className="mt-4">
+                      <QuoteBuilder />
+                    </TabsContent>
+                  )}
 
-                  <TabsContent value="promo-quote" className="mt-4">
-                    <PromoQuoteBuilder />
-                  </TabsContent>
+                  {hasPermission(userRole, 'manageFinancial') && (
+                    <TabsContent value="promo-quote" className="mt-4">
+                      <PromoQuoteBuilder />
+                    </TabsContent>
+                  )}
 
                   <TabsContent value="manage-quotes" className="mt-4">
                     <QuotesManager />
@@ -719,19 +729,23 @@ export default function Dashboard() {
               <TabsContent value="invoices" className="mt-4">
                 <Tabs defaultValue="manage-invoices" className="w-full">
                   <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
-                    <TabsTrigger value="create-invoice" data-testid="tab-sales-invoices-create">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Invoice
-                    </TabsTrigger>
+                    {hasPermission(userRole, 'manageFinancial') && (
+                      <TabsTrigger value="create-invoice" data-testid="tab-sales-invoices-create">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Invoice
+                      </TabsTrigger>
+                    )}
                     <TabsTrigger value="manage-invoices" data-testid="tab-sales-invoices-manage">
                       <ClipboardList className="w-4 h-4 mr-2" />
                       Manage Invoices
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="create-invoice" className="mt-4">
-                    <InvoiceBuilder />
-                  </TabsContent>
+                  {hasPermission(userRole, 'manageFinancial') && (
+                    <TabsContent value="create-invoice" className="mt-4">
+                      <InvoiceBuilder />
+                    </TabsContent>
+                  )}
 
                   <TabsContent value="manage-invoices" className="mt-4">
                     <InvoicesManager />
@@ -740,28 +754,30 @@ export default function Dashboard() {
               </TabsContent>
 
               {/* Services Sub-Tab with nested Service Types/Price Matrix */}
-              <TabsContent value="services" className="mt-4">
-                <Tabs defaultValue="service-types" className="w-full">
-                  <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
-                    <TabsTrigger value="service-types" data-testid="tab-sales-services-types">
-                      <Wrench className="w-4 h-4 mr-2" />
-                      Service Types
-                    </TabsTrigger>
-                    <TabsTrigger value="price-matrix" data-testid="tab-sales-services-matrix">
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      Price Matrix
-                    </TabsTrigger>
-                  </TabsList>
+              {hasPermission(userRole, 'manageSettings') && (
+                <TabsContent value="services" className="mt-4">
+                  <Tabs defaultValue="service-types" className="w-full">
+                    <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                      <TabsTrigger value="service-types" data-testid="tab-sales-services-types">
+                        <Wrench className="w-4 h-4 mr-2" />
+                        Service Types
+                      </TabsTrigger>
+                      <TabsTrigger value="price-matrix" data-testid="tab-sales-services-matrix">
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Price Matrix
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <TabsContent value="service-types" className="mt-4">
-                    <ServiceTypesManager />
-                  </TabsContent>
+                    <TabsContent value="service-types" className="mt-4">
+                      <ServiceTypesManager />
+                    </TabsContent>
 
-                  <TabsContent value="price-matrix" className="mt-4">
-                    <PriceMatrixManager />
-                  </TabsContent>
-                </Tabs>
-              </TabsContent>
+                    <TabsContent value="price-matrix" className="mt-4">
+                      <PriceMatrixManager />
+                    </TabsContent>
+                  </Tabs>
+                </TabsContent>
+              )}
 
               {/* Clients Sub-Tab - Direct access */}
               {hasPermission(userRole, 'viewClients') && (
