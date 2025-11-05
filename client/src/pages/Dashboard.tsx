@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -20,7 +22,7 @@ import {
   DollarSign, MessageSquare, BarChart, Package, Truck,
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
   UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, TrendingDown, Gift,
-  Server, Database, Users2, Gauge
+  Server, Database, Users2, Gauge, Search, ChevronLeft, ChevronRight
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
@@ -109,6 +111,11 @@ export default function Dashboard() {
   const [isAppConfigDialogOpen, setIsAppConfigDialogOpen] = useState(false);
   const [isLogoUploadDialogOpen, setIsLogoUploadDialogOpen] = useState(false);
   
+  // Projects Overview search and pagination state
+  const [projectsSearchTerm, setProjectsSearchTerm] = useState("");
+  const [projectsCurrentPage, setProjectsCurrentPage] = useState(1);
+  const [projectsItemsPerPage, setProjectsItemsPerPage] = useState(10);
+  
   // Fetch dashboard data based on user role
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: [typedUser?.role === 'admin' ? '/api/dashboard/admin' : '/api/dashboard/client'],
@@ -145,6 +152,48 @@ export default function Dashboard() {
     queryKey: ["/api/projects"],
     enabled: !!typedUser?.role && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
   });
+
+  // Filtered projects based on search for Dashboard Projects Overview
+  const filteredProjects = useMemo(() => {
+    if (!projectsSearchTerm.trim()) return projects;
+    
+    const search = projectsSearchTerm.toLowerCase();
+    return projects.filter((project) => {
+      return (
+        project.projectName.toLowerCase().includes(search) ||
+        project.ticketNumber.toLowerCase().includes(search) ||
+        (project.workNotes ?? "").toLowerCase().includes(search) ||
+        (project.status ?? "").toLowerCase().includes(search) ||
+        (project.totalCost ?? "").toString().includes(search) ||
+        ((project as any).clientName ?? "").toLowerCase().includes(search)
+      );
+    });
+  }, [projects, projectsSearchTerm]);
+
+  // Paginated projects for Dashboard Projects Overview
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (projectsCurrentPage - 1) * projectsItemsPerPage;
+    const endIndex = startIndex + projectsItemsPerPage;
+    return filteredProjects.slice(startIndex, endIndex);
+  }, [filteredProjects, projectsCurrentPage, projectsItemsPerPage]);
+
+  // Pagination calculations for projects overview
+  const projectsTotalPages = Math.ceil(filteredProjects.length / projectsItemsPerPage);
+  const projectsStartResult = filteredProjects.length === 0 ? 0 : (projectsCurrentPage - 1) * projectsItemsPerPage + 1;
+  const projectsEndResult = Math.min(projectsCurrentPage * projectsItemsPerPage, filteredProjects.length);
+
+  // Reset projects page when search term changes
+  useEffect(() => {
+    setProjectsCurrentPage(1);
+  }, [projectsSearchTerm]);
+
+  // Clamp projects page when items per page changes or filtered list changes
+  useEffect(() => {
+    const maxPage = Math.ceil(filteredProjects.length / projectsItemsPerPage) || 1;
+    if (projectsCurrentPage > maxPage) {
+      setProjectsCurrentPage(maxPage);
+    }
+  }, [projectsItemsPerPage, filteredProjects.length, projectsCurrentPage]);
 
   const { data: activities = [], isLoading: activitiesLoading } = useQuery<ActivityLog[]>({
     queryKey: ["/api/activities"],
@@ -905,50 +954,113 @@ export default function Dashboard() {
                       </Button>
                     )}
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                      <Input
+                        placeholder="Search projects by ticket #, title, client, status, cost..."
+                        value={projectsSearchTerm}
+                        onChange={(e) => setProjectsSearchTerm(e.target.value)}
+                        className="pl-10"
+                        data-testid="input-search-dashboard-projects"
+                      />
+                    </div>
+
+                    {/* Table or Empty State */}
                     {projects.length === 0 ? (
                       <p className="text-muted-foreground text-center py-8">No projects found</p>
+                    ) : filteredProjects.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No projects match your search</p>
                     ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Ticket #</TableHead>
-                            <TableHead>Title</TableHead>
-                            <TableHead>Client</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Start Date</TableHead>
-                            {hasPermission(userRole, 'manageAllProjects') && <TableHead className="text-right">Actions</TableHead>}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {projects.slice(0, 10).map((project) => (
-                            <TableRow key={project.id}>
-                              <TableCell className="font-mono">{project.ticketNumber}</TableCell>
-                              <TableCell>{project.projectName || '-'}</TableCell>
-                              <TableCell>{(project as any).clientName || '-'}</TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">{project.status}</Badge>
-                              </TableCell>
-                              <TableCell>{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</TableCell>
-                              {hasPermission(userRole, 'manageAllProjects') && (
-                                <TableCell className="text-right">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => { 
-                                      setEditingProject(project); 
-                                      setIsProjectDialogOpen(true); 
-                                    }} 
-                                    data-testid={`button-edit-project-${project.id}`}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                </TableCell>
-                              )}
+                      <>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Ticket #</TableHead>
+                              <TableHead>Title</TableHead>
+                              <TableHead>Client</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead>Start Date</TableHead>
+                              {hasPermission(userRole, 'manageAllProjects') && <TableHead className="text-right">Actions</TableHead>}
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedProjects.map((project) => (
+                              <TableRow key={project.id}>
+                                <TableCell className="font-mono">{project.ticketNumber}</TableCell>
+                                <TableCell>{project.projectName || '-'}</TableCell>
+                                <TableCell>{(project as any).clientName || '-'}</TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">{project.status}</Badge>
+                                </TableCell>
+                                <TableCell>{project.startDate ? new Date(project.startDate).toLocaleDateString() : '-'}</TableCell>
+                                {hasPermission(userRole, 'manageAllProjects') && (
+                                  <TableCell className="text-right">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      onClick={() => { 
+                                        setEditingProject(project); 
+                                        setIsProjectDialogOpen(true); 
+                                      }} 
+                                      data-testid={`button-edit-project-${project.id}`}
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+
+                        {/* Pagination Controls */}
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Items per page:</span>
+                            <Select
+                              value={projectsItemsPerPage.toString()}
+                              onValueChange={(value) => setProjectsItemsPerPage(Number(value))}
+                            >
+                              <SelectTrigger className="w-20" data-testid="select-items-per-page-dashboard-projects">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="5">5</SelectItem>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setProjectsCurrentPage(Math.max(1, projectsCurrentPage - 1))}
+                              disabled={projectsCurrentPage === 1}
+                              data-testid="button-prev-page-dashboard-projects"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <span className="text-sm text-muted-foreground">
+                              Page {projectsCurrentPage} of {projectsTotalPages || 1} 
+                              {filteredProjects.length > 0 && ` • Showing ${projectsStartResult}-${projectsEndResult} of ${filteredProjects.length}`}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setProjectsCurrentPage(Math.min(projectsTotalPages || 1, projectsCurrentPage + 1))}
+                              disabled={projectsCurrentPage >= (projectsTotalPages || 1)}
+                              data-testid="button-next-page-dashboard-projects"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </CardContent>
                 </Card>
