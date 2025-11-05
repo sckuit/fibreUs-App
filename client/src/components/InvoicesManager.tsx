@@ -146,11 +146,6 @@ export default function InvoicesManager() {
   const filteredInvoices = useMemo(() => {
     let filtered = statusFilter === "all" ? invoices : invoices.filter(i => i.status === statusFilter);
     
-    // If user is a client, only show invoices where they are the recipient
-    if (isClient && typedUser?.id) {
-      filtered = filtered.filter(invoice => invoice.clientId === typedUser.id);
-    }
-    
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(invoice => {

@@ -719,13 +719,7 @@ export default function Dashboard() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {projects
-                                .filter((project: Project) => 
-                                  userRole === 'client' 
-                                    ? project.clientId === typedUser?.id 
-                                    : true
-                                )
-                                .map((project: Project) => (
+                              {projects.map((project: Project) => (
                                   <TableRow key={project.id}>
                                     <TableCell className="font-medium">{project.ticketNumber}</TableCell>
                                     <TableCell>{project.projectName}</TableCell>

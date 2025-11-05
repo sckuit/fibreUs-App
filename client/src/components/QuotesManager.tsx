@@ -153,11 +153,6 @@ export default function QuotesManager() {
   const filteredQuotes = useMemo(() => {
     let filtered = statusFilter === "all" ? quotes : quotes.filter(q => q.status === statusFilter);
     
-    // If user is a client, only show quotes where they are the recipient
-    if (isClient && typedUser?.id) {
-      filtered = filtered.filter(quote => quote.clientId === typedUser.id);
-    }
-    
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(quote => {
