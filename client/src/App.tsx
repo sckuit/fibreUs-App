@@ -94,7 +94,7 @@ function LandingPage() {
   );
 }
 
-// Protected router for authenticated users - redirects to role-specific portals
+// Protected router for authenticated users - redirects to dashboard
 function AuthenticatedRouter() {
   const { user } = useAuth();
 
@@ -102,24 +102,12 @@ function AuthenticatedRouter() {
     return <Redirect to="/" />;
   }
 
-  // Role-based routing
-  const roleRoutes: Record<string, string> = {
-    client: "/portal/client",
-    employee: "/portal/employee",
-    manager: "/portal/manager",
-    admin: "/portal/admin",
-    sales: "/portal/sales",
-    project_manager: "/projects",
-  };
-
-  const defaultRoute = (user?.role && roleRoutes[user.role]) || "/portal/client";
-
   return (
     <AuthenticatedLayout>
       <Switch>
-        {/* Root redirects to role-specific portal */}
+        {/* Root redirects to dashboard for all authenticated users */}
         <Route path="/">
-          {() => <Redirect to={defaultRoute} />}
+          {() => <Redirect to="/dashboard" />}
         </Route>
 
         {/* Role-specific portals */}
