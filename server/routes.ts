@@ -4606,6 +4606,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { quoteNumber, token } = req.params;
       const { comments } = req.body;
       
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ message: 'You must be logged in to approve this quote' });
+      }
+      
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
@@ -4625,6 +4630,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (tokenAge > thirtyDaysInMs) {
           return res.status(404).json({ message: 'Quote link has expired' });
         }
+      }
+      
+      // Verify ownership: Check if user owns this quote
+      let isOwner = false;
+      
+      if (quote.clientId) {
+        const client = await storage.getClient(quote.clientId);
+        if (client && client.userId === req.user.id) {
+          isOwner = true;
+        }
+      }
+      
+      if (!isOwner && quote.leadId) {
+        const lead = await storage.getLead(quote.leadId);
+        if (lead && lead.userId === req.user.id) {
+          isOwner = true;
+        }
+      }
+      
+      if (!isOwner) {
+        return res.status(403).json({ message: 'You are not authorized to approve this quote' });
       }
       
       // Update quote status to accepted
@@ -4657,6 +4683,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { quoteNumber, token } = req.params;
       const { reason } = req.body;
       
+      // Check if user is authenticated
+      if (!req.user) {
+        return res.status(401).json({ message: 'You must be logged in to decline this quote' });
+      }
+      
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
@@ -4676,6 +4707,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (tokenAge > thirtyDaysInMs) {
           return res.status(404).json({ message: 'Quote link has expired' });
         }
+      }
+      
+      // Verify ownership: Check if user owns this quote
+      let isOwner = false;
+      
+      if (quote.clientId) {
+        const client = await storage.getClient(quote.clientId);
+        if (client && client.userId === req.user.id) {
+          isOwner = true;
+        }
+      }
+      
+      if (!isOwner && quote.leadId) {
+        const lead = await storage.getLead(quote.leadId);
+        if (lead && lead.userId === req.user.id) {
+          isOwner = true;
+        }
+      }
+      
+      if (!isOwner) {
+        return res.status(403).json({ message: 'You are not authorized to decline this quote' });
       }
       
       // Update quote status to rejected
