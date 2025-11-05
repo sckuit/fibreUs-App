@@ -286,6 +286,7 @@ export const inquiries = pgTable("inquiries", {
 // Leads - potential clients that can be converted to clients
 export const leads = pgTable("leads", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id), // link to user account if lead has login access
   source: leadSourceEnum("source").notNull().default('manual'),
   inquiryId: varchar("inquiry_id").references(() => inquiries.id), // nullable for manual leads
   name: varchar("name").notNull(),
@@ -305,6 +306,7 @@ export const leads = pgTable("leads", {
 // Clients - current customers converted from leads
 export const clients = pgTable("clients", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id), // link to user account for client login access
   leadId: varchar("lead_id").references(() => leads.id), // nullable for direct clients
   accountManagerId: varchar("account_manager_id").references(() => users.id),
   name: varchar("name").notNull(),
