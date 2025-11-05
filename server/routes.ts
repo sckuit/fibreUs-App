@@ -689,9 +689,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { clientIds, leadIds } = await getUserClientLeadIds(userId);
         const allProjects = await storage.getProjects();
         
-        // Filter projects where clientId matches any of the user's client/lead IDs
+        // Filter projects where clientId or leadId matches any of the user's client/lead IDs
         const userProjects = allProjects.filter(project => 
-          (project.clientId && clientIds.includes(project.clientId))
+          (project.clientId && clientIds.includes(project.clientId)) ||
+          (project.leadId && leadIds.includes(project.leadId))
         );
         
         res.json(userProjects);
