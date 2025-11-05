@@ -128,7 +128,7 @@ import {
   type UpdateRevenueType,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, sql, asc } from "drizzle-orm";
+import { eq, desc, and, or, sql, asc, getTableColumns } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -1870,7 +1870,7 @@ export class DatabaseStorage implements IStorage {
     
     const baseQuery = db
       .select({
-        quote: quotes,
+        ...getTableColumns(quotes),
         clientName: clients.name,
         leadName: leads.name,
       })
@@ -1884,16 +1884,19 @@ export class DatabaseStorage implements IStorage {
     
     const results = await query.orderBy(desc(quotes.createdAt));
     
-    return results.map(r => ({
-      ...r.quote,
-      recipientName: r.clientName || r.leadName || undefined
-    }));
+    return results.map(r => {
+      const { clientName, leadName, ...quote } = r;
+      return {
+        ...quote,
+        recipientName: clientName || leadName || undefined
+      } as Quote & { recipientName?: string };
+    });
   }
 
   async getQuote(id: string): Promise<(Quote & { recipientName?: string }) | undefined> {
     const [result] = await db
       .select({
-        quote: quotes,
+        ...getTableColumns(quotes),
         clientName: clients.name,
         leadName: leads.name,
       })
@@ -1904,10 +1907,11 @@ export class DatabaseStorage implements IStorage {
     
     if (!result) return undefined;
     
+    const { clientName, leadName, ...quote } = result;
     return {
-      ...result.quote,
-      recipientName: result.clientName || result.leadName || undefined
-    };
+      ...quote,
+      recipientName: clientName || leadName || undefined
+    } as Quote & { recipientName?: string };
   }
 
   async getQuoteByShareToken(token: string): Promise<Quote | undefined> {
@@ -2008,7 +2012,7 @@ export class DatabaseStorage implements IStorage {
     
     const baseQuery = db
       .select({
-        invoice: invoices,
+        ...getTableColumns(invoices),
         clientName: clients.name,
         leadName: leads.name,
       })
@@ -2022,16 +2026,19 @@ export class DatabaseStorage implements IStorage {
     
     const results = await query.orderBy(desc(invoices.createdAt));
     
-    return results.map(r => ({
-      ...r.invoice,
-      recipientName: r.clientName || r.leadName || undefined
-    }));
+    return results.map(r => {
+      const { clientName, leadName, ...invoice } = r;
+      return {
+        ...invoice,
+        recipientName: clientName || leadName || undefined
+      } as Invoice & { recipientName?: string };
+    });
   }
 
   async getInvoice(id: string): Promise<(Invoice & { recipientName?: string }) | undefined> {
     const [result] = await db
       .select({
-        invoice: invoices,
+        ...getTableColumns(invoices),
         clientName: clients.name,
         leadName: leads.name,
       })
@@ -2042,10 +2049,11 @@ export class DatabaseStorage implements IStorage {
     
     if (!result) return undefined;
     
+    const { clientName, leadName, ...invoice } = result;
     return {
-      ...result.invoice,
-      recipientName: result.clientName || result.leadName || undefined
-    };
+      ...invoice,
+      recipientName: clientName || leadName || undefined
+    } as Invoice & { recipientName?: string };
   }
 
   async getInvoiceByShareToken(token: string): Promise<Invoice | undefined> {
