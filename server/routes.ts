@@ -5029,13 +5029,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { quoteNumber, token } = req.params;
       const { comments } = req.body;
       
-      // Check if user is authenticated
-      if (!req.user) {
-        console.log('[APPROVE] User not authenticated');
-        return res.status(401).json({ message: 'You must be logged in to approve this quote' });
-      }
-      console.log('[APPROVE] User authenticated:', req.user.id);
-      
       console.log('[APPROVE] Fetching quote by token...');
       const quote = await storage.getQuoteByShareToken(token);
       
@@ -5060,35 +5053,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[APPROVE] Token expired');
           return res.status(404).json({ message: 'Quote link has expired' });
         }
-      }
-      
-      // Verify ownership: Check if user owns this quote
-      console.log('[APPROVE] Checking ownership. clientId:', quote.clientId, 'leadId:', quote.leadId);
-      let isOwner = false;
-      
-      if (quote.clientId) {
-        console.log('[APPROVE] Fetching client...');
-        const client = await storage.getClient(quote.clientId);
-        console.log('[APPROVE] Client:', client?.id, 'userId:', client?.userId);
-        if (client && client.userId === req.user.id) {
-          isOwner = true;
-          console.log('[APPROVE] User is owner via client');
-        }
-      }
-      
-      if (!isOwner && quote.leadId) {
-        console.log('[APPROVE] Fetching lead...');
-        const lead = await storage.getLead(quote.leadId);
-        console.log('[APPROVE] Lead:', lead?.id, 'userId:', lead?.userId);
-        if (lead && lead.userId === req.user.id) {
-          isOwner = true;
-          console.log('[APPROVE] User is owner via lead');
-        }
-      }
-      
-      if (!isOwner) {
-        console.log('[APPROVE] User is not owner');
-        return res.status(403).json({ message: 'You are not authorized to approve this quote' });
       }
       
       // Update quote status to accepted
@@ -5127,13 +5091,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { quoteNumber, token } = req.params;
       const { reason } = req.body;
       
-      // Check if user is authenticated
-      if (!req.user) {
-        console.log('[REJECT] User not authenticated');
-        return res.status(401).json({ message: 'You must be logged in to decline this quote' });
-      }
-      console.log('[REJECT] User authenticated:', req.user.id);
-      
       console.log('[REJECT] Fetching quote by token...');
       const quote = await storage.getQuoteByShareToken(token);
       
@@ -5158,35 +5115,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('[REJECT] Token expired');
           return res.status(404).json({ message: 'Quote link has expired' });
         }
-      }
-      
-      // Verify ownership: Check if user owns this quote
-      console.log('[REJECT] Checking ownership. clientId:', quote.clientId, 'leadId:', quote.leadId);
-      let isOwner = false;
-      
-      if (quote.clientId) {
-        console.log('[REJECT] Fetching client...');
-        const client = await storage.getClient(quote.clientId);
-        console.log('[REJECT] Client:', client?.id, 'userId:', client?.userId);
-        if (client && client.userId === req.user.id) {
-          isOwner = true;
-          console.log('[REJECT] User is owner via client');
-        }
-      }
-      
-      if (!isOwner && quote.leadId) {
-        console.log('[REJECT] Fetching lead...');
-        const lead = await storage.getLead(quote.leadId);
-        console.log('[REJECT] Lead:', lead?.id, 'userId:', lead?.userId);
-        if (lead && lead.userId === req.user.id) {
-          isOwner = true;
-          console.log('[REJECT] User is owner via lead');
-        }
-      }
-      
-      if (!isOwner) {
-        console.log('[REJECT] User is not owner');
-        return res.status(403).json({ message: 'You are not authorized to decline this quote' });
       }
       
       // Update quote status to rejected
