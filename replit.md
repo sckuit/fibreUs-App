@@ -27,6 +27,7 @@ Preferred communication style: Simple, everyday language.
 - **Primary Database**: PostgreSQL (Neon serverless hosting)
 - **Schema Management**: Drizzle Kit
 - **Core Entities**: Users (clients, admins, technicians), Service Requests, Projects, Communications, Sessions.
+- **User-Client Relationships**: Direct `userId` foreign key in `clients` and `leads` tables linking user accounts to client/lead records for secure data access control.
 - **Flexible Rate Structure**: Implemented `rate_types` (e.g., Phone/Remote Service, Trip Rate) and `service_rates` (three-dimensional rate structure by time period).
 - **Support Plans**: `support_plans` table for recurring service offerings with customizable rates and billing periods.
 
@@ -34,7 +35,8 @@ Preferred communication style: Simple, everyday language.
 - **Provider**: Email/Password with Argon2id hashing
 - **Session Management**: Secure HTTP-only cookies, PostgreSQL session store
 - **User Roles**: Six-tier system (client, employee, sales, project_manager, manager, admin) with granular permissions.
-- **Security**: CSRF protection, secure session configuration, role-based API access.
+- **Security**: CSRF protection, secure session configuration, role-based API access with server-side data filtering.
+- **Data Access Control**: Client users access data via direct `userId` relationships in database, not email matching, ensuring secure isolation of client data.
 - **Login Flow**: All authenticated users redirect to `/dashboard`.
 
 ### Role-Based Permissions
