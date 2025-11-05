@@ -154,6 +154,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Visitor tracking middleware (should be early in the chain)
   app.use(trackVisitor);
 
+  // Middleware to load user from session and attach to req.user
+  app.use(async (req: any, res: any, next: any) => {
+    if (req.session?.userId) {
+      try {
+        const user = await storage.getUser(req.session.userId);
+        if (user) {
+          req.user = user;
+        }
+      } catch (error) {
+        console.error('Error loading user from session:', error);
+      }
+    }
+    next();
+  });
+
   // Session-based authentication middleware (email/password only)
   const isSessionAuthenticated = (req: any, res: any, next: any) => {
     if (req.session?.userId) {
