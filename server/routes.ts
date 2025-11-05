@@ -732,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/projects/:id", isSessionAuthenticated, async (req: any, res) => {
+  app.patch("/api/projects/:id", isSessionAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
@@ -750,11 +750,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
       
       // Validate status if provided
-      if (updates.status && !['scheduled', 'in_progress', 'completed', 'on_hold'].includes(updates.status)) {
+      if (updates.status && !['scheduled', 'in_progress', 'completed', 'on_hold', 'cancelled'].includes(updates.status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
       
       const updatedProject = await storage.updateProject(projectId, updates);
+      
+      await logActivity(
+        userId,
+        'update',
+        'project',
+        projectId,
+        updatedProject.projectName,
+        undefined,
+        req
+      );
+      
       res.json(updatedProject);
     } catch (error) {
       console.error("Error updating project:", error);
