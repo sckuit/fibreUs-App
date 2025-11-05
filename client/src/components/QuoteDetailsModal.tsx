@@ -228,7 +228,7 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
                   <Button
                     onClick={() => approveQuoteMutation.mutate()}
                     disabled={approveQuoteMutation.isPending || rejectQuoteMutation.isPending}
-                    className="flex-1 min-w-[150px]"
+                    className="flex-1 min-w-[150px] bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white border border-green-700 dark:border-green-700"
                     data-testid="button-approve-quote"
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
