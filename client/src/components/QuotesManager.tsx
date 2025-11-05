@@ -5,7 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import type { Quote, Lead, Client, PriceMatrix, SystemConfig, UpdateQuoteType } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
+import type { Quote, Lead, Client, PriceMatrix, SystemConfig, UpdateQuoteType, User } from "@shared/schema";
 import { updateQuoteSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,8 @@ interface QuoteItem {
 
 export default function QuotesManager() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const typedUser = user as User | undefined;
   const [, setLocation] = useLocation();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -48,6 +51,8 @@ export default function QuotesManager() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [downloadingQuote, setDownloadingQuote] = useState<Quote | null>(null);
   const downloadPreviewRef = useRef<HTMLDivElement>(null);
+
+  const isClient = typedUser?.role === 'client';
 
   const { data: quotes = [], isLoading: quotesLoading } = useQuery<Quote[]>({
     queryKey: ['/api/quotes'],
@@ -148,6 +153,11 @@ export default function QuotesManager() {
   const filteredQuotes = useMemo(() => {
     let filtered = statusFilter === "all" ? quotes : quotes.filter(q => q.status === statusFilter);
     
+    // If user is a client, only show quotes where they are the recipient
+    if (isClient && typedUser?.id) {
+      filtered = filtered.filter(quote => quote.clientId === typedUser.id);
+    }
+    
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(quote => {
@@ -164,7 +174,7 @@ export default function QuotesManager() {
     }
     
     return filtered;
-  }, [quotes, statusFilter, searchTerm, leads, clients]);
+  }, [quotes, statusFilter, searchTerm, leads, clients, isClient, typedUser?.id]);
 
   // Paginate filtered quotes
   const paginatedQuotes = useMemo(() => {
@@ -487,7 +497,7 @@ export default function QuotesManager() {
                     <TableHead>Total</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Active</TableHead>
+                    {!isClient && <TableHead>Active</TableHead>}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -514,23 +524,27 @@ export default function QuotesManager() {
                     <TableCell data-testid={`text-created-${quote.id}`}>
                       {quote.createdAt ? format(new Date(quote.createdAt), 'MMM dd, yyyy') : '-'}
                     </TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={quote.status !== 'expired' && quote.status !== 'rejected'}
-                        onCheckedChange={() => handleToggleStatus(quote)}
-                        data-testid={`switch-active-${quote.id}`}
-                      />
-                    </TableCell>
+                    {!isClient && (
+                      <TableCell>
+                        <Switch
+                          checked={quote.status !== 'expired' && quote.status !== 'rejected'}
+                          onCheckedChange={() => handleToggleStatus(quote)}
+                          data-testid={`switch-active-${quote.id}`}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLocation(`/portal/admin/quotes/${quote.id}/edit`)}
-                          data-testid={`button-edit-quote-${quote.id}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        {!isClient && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setLocation(`/portal/admin/quotes/${quote.id}/edit`)}
+                            data-testid={`button-edit-quote-${quote.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -539,14 +553,16 @@ export default function QuotesManager() {
                         >
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(quote.id)}
-                          data-testid={`button-delete-${quote.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!isClient && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(quote.id)}
+                            data-testid={`button-delete-${quote.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

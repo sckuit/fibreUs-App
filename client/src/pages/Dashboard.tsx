@@ -153,6 +153,11 @@ export default function Dashboard() {
     enabled: !!typedUser?.role && (hasPermission(typedUser.role, 'viewOwnProjects') || hasPermission(typedUser.role, 'viewAllProjects')),
   });
 
+  const { data: clients = [] } = useQuery({
+    queryKey: ["/api/clients"],
+    enabled: !!typedUser?.role,
+  });
+
   // Filtered projects based on search for Dashboard Projects Overview
   const filteredProjects = useMemo(() => {
     if (!projectsSearchTerm.trim()) return projects;
@@ -653,6 +658,10 @@ export default function Dashboard() {
           <TabsContent value="sales" className="space-y-4">
             <Tabs defaultValue="quotes" className="w-full">
               <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="projects" data-testid="tab-sales-projects">
+                  <ClipboardList className="w-4 h-4 mr-2" />
+                  Projects
+                </TabsTrigger>
                 <TabsTrigger value="quotes" data-testid="tab-sales-quotes">
                   <FileText className="w-4 h-4 mr-2" />
                   Quotes
@@ -684,6 +693,74 @@ export default function Dashboard() {
                   Referrals
                 </TabsTrigger>
               </TabsList>
+
+              {/* Projects Sub-Tab */}
+              <TabsContent value="projects" className="mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Projects</CardTitle>
+                    <CardDescription>
+                      {userRole === 'client' ? 'View your projects' : 'Manage all projects'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {projects && projects.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Ticket #</TableHead>
+                                <TableHead>Project Name</TableHead>
+                                {userRole !== 'client' && <TableHead>Client</TableHead>}
+                                <TableHead>Status</TableHead>
+                                <TableHead>Priority</TableHead>
+                                <TableHead>Created</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {projects
+                                .filter((project: Project) => 
+                                  userRole === 'client' 
+                                    ? project.clientId === typedUser?.id 
+                                    : true
+                                )
+                                .map((project: Project) => (
+                                  <TableRow key={project.id}>
+                                    <TableCell className="font-medium">{project.ticketNumber}</TableCell>
+                                    <TableCell>{project.projectName}</TableCell>
+                                    {userRole !== 'client' && (
+                                      <TableCell>
+                                        {clients?.find((c: any) => c.id === project.clientId)?.name || 'N/A'}
+                                      </TableCell>
+                                    )}
+                                    <TableCell>
+                                      <Badge>{project.status}</Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant={
+                                        project.priority === 'urgent' ? 'destructive' :
+                                        project.priority === 'high' ? 'default' :
+                                        project.priority === 'medium' ? 'secondary' : 'outline'
+                                      }>
+                                        {project.priority}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'N/A'}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-center py-8">No projects found</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               {/* Quotes Sub-Tab with nested Create/Manage/Promo */}
               <TabsContent value="quotes" className="mt-4">

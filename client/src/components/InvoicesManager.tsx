@@ -5,7 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import type { Invoice, Lead, Client, PriceMatrix, SystemConfig, UpdateInvoiceType } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
+import type { Invoice, Lead, Client, PriceMatrix, SystemConfig, UpdateInvoiceType, User } from "@shared/schema";
 import { updateInvoiceSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,8 @@ interface InvoiceItem {
 
 export default function InvoicesManager() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const typedUser = user as User | undefined;
   const [, setLocation] = useLocation();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -45,6 +48,8 @@ export default function InvoicesManager() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [downloadingInvoice, setDownloadingInvoice] = useState<Invoice | null>(null);
   const downloadPreviewRef = useRef<HTMLDivElement>(null);
+
+  const isClient = typedUser?.role === 'client';
 
   const { data: invoices = [], isLoading: invoicesLoading } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
@@ -141,6 +146,11 @@ export default function InvoicesManager() {
   const filteredInvoices = useMemo(() => {
     let filtered = statusFilter === "all" ? invoices : invoices.filter(i => i.status === statusFilter);
     
+    // If user is a client, only show invoices where they are the recipient
+    if (isClient && typedUser?.id) {
+      filtered = filtered.filter(invoice => invoice.clientId === typedUser.id);
+    }
+    
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(invoice => {
@@ -163,7 +173,7 @@ export default function InvoicesManager() {
     }
     
     return filtered;
-  }, [invoices, statusFilter, searchTerm, leads, clients]);
+  }, [invoices, statusFilter, searchTerm, leads, clients, isClient, typedUser?.id]);
 
   // Paginate filtered invoices
   const paginatedInvoices = useMemo(() => {
@@ -430,14 +440,16 @@ export default function InvoicesManager() {
                     <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLocation(`/portal/admin/invoices/${invoice.id}/edit`)}
-                          data-testid={`button-edit-invoice-${invoice.id}`}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
+                        {!isClient && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setLocation(`/portal/admin/invoices/${invoice.id}/edit`)}
+                            data-testid={`button-edit-invoice-${invoice.id}`}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
@@ -446,14 +458,16 @@ export default function InvoicesManager() {
                         >
                           <Download className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)}
-                          data-testid={`button-delete-${invoice.id}`}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+                        {!isClient && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)}
+                            data-testid={`button-delete-${invoice.id}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
