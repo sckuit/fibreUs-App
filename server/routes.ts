@@ -5025,22 +5025,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/public/quote/:quoteNumber/:token/approve - Approve quote
   app.post('/api/public/quote/:quoteNumber/:token/approve', async (req: any, res) => {
     try {
-      console.log('[APPROVE] Starting approve request:', req.params);
       const { quoteNumber, token } = req.params;
       const { comments } = req.body;
       
-      console.log('[APPROVE] Fetching quote by token...');
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
-        console.log('[APPROVE] Quote not found');
         return res.status(404).json({ message: 'Quote not found' });
       }
-      console.log('[APPROVE] Quote found:', quote.id, quote.quoteNumber);
       
       // Verify quote number matches (security check)
       if (quote.quoteNumber !== quoteNumber) {
-        console.log('[APPROVE] Quote number mismatch');
         return res.status(404).json({ message: 'Quote not found' });
       }
       
@@ -5050,21 +5045,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
         
         if (tokenAge > thirtyDaysInMs) {
-          console.log('[APPROVE] Token expired');
           return res.status(404).json({ message: 'Quote link has expired' });
         }
       }
       
       // Update quote status to accepted
-      console.log('[APPROVE] Updating quote to accepted...');
       const updatedQuote = await storage.updateQuote(quote.id, {
         status: 'accepted',
         notes: comments ? `${quote.notes || ''}\n\nClient Comments: ${comments}`.trim() : quote.notes,
       });
-      console.log('[APPROVE] Quote updated');
       
       // Log activity
-      console.log('[APPROVE] Logging activity...');
       await logActivity(
         null,
         'quote_approved_via_link',
@@ -5074,12 +5065,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Quote ${quote.quoteNumber} approved via public link${comments ? ` with comments: ${comments}` : ''}`,
         req
       );
-      console.log('[APPROVE] Activity logged');
       
-      console.log('[APPROVE] Sending response');
       res.json(updatedQuote);
     } catch (error) {
-      console.error('[APPROVE] Error approving quote:', error);
+      console.error('Error approving quote:', error);
       res.status(500).json({ message: 'Failed to approve quote' });
     }
   });
@@ -5087,22 +5076,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // POST /api/public/quote/:quoteNumber/:token/reject - Reject quote
   app.post('/api/public/quote/:quoteNumber/:token/reject', async (req: any, res) => {
     try {
-      console.log('[REJECT] Starting reject request:', req.params);
       const { quoteNumber, token } = req.params;
       const { reason } = req.body;
       
-      console.log('[REJECT] Fetching quote by token...');
       const quote = await storage.getQuoteByShareToken(token);
       
       if (!quote) {
-        console.log('[REJECT] Quote not found');
         return res.status(404).json({ message: 'Quote not found' });
       }
-      console.log('[REJECT] Quote found:', quote.id, quote.quoteNumber);
       
       // Verify quote number matches (security check)
       if (quote.quoteNumber !== quoteNumber) {
-        console.log('[REJECT] Quote number mismatch');
         return res.status(404).json({ message: 'Quote not found' });
       }
       
@@ -5112,21 +5096,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
         
         if (tokenAge > thirtyDaysInMs) {
-          console.log('[REJECT] Token expired');
           return res.status(404).json({ message: 'Quote link has expired' });
         }
       }
       
       // Update quote status to rejected
-      console.log('[REJECT] Updating quote to rejected...');
       const updatedQuote = await storage.updateQuote(quote.id, {
         status: 'rejected',
         notes: reason ? `${quote.notes || ''}\n\nRejection Reason: ${reason}`.trim() : quote.notes,
       });
-      console.log('[REJECT] Quote updated');
       
       // Log activity
-      console.log('[REJECT] Logging activity...');
       await logActivity(
         null,
         'quote_rejected_via_link',
@@ -5136,12 +5116,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `Quote ${quote.quoteNumber} rejected via public link${reason ? ` with reason: ${reason}` : ''}`,
         req
       );
-      console.log('[REJECT] Activity logged');
       
-      console.log('[REJECT] Sending response');
       res.json(updatedQuote);
     } catch (error) {
-      console.error('[REJECT] Error rejecting quote:', error);
+      console.error('Error rejecting quote:', error);
       res.status(500).json({ message: 'Failed to reject quote' });
     }
   });
