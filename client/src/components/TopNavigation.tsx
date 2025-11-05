@@ -81,7 +81,7 @@ export default function TopNavigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2" data-testid="link-home">
+          <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2" data-testid="link-home">
             {config?.logoUrl ? (
               <img src={config.logoUrl} alt={`${config.companyName || 'FibreUS'} Logo`} className="h-8 w-8 object-contain" />
             ) : (
@@ -89,19 +89,6 @@ export default function TopNavigation() {
             )}
             <span className="text-2xl font-bold text-primary">{config?.companyName || 'FibreUS'}</span>
           </Link>
-
-          {/* Dashboard Link for Authenticated Users */}
-          {isAuthenticated && (
-            <Button
-              variant={location === '/dashboard' ? 'default' : 'ghost'}
-              size="icon"
-              onClick={() => setLocation('/dashboard')}
-              className="mx-4"
-              data-testid="button-dashboard"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-            </Button>
-          )}
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-3">
@@ -159,22 +146,6 @@ export default function TopNavigation() {
             </Button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && isAuthenticated && (
-          <div className="md:hidden border-t py-4">
-            <div className="flex flex-col space-y-2">
-              <Button
-                variant={location === '/dashboard' ? 'default' : 'ghost'}
-                className="justify-start"
-                onClick={() => { setLocation('/dashboard'); setMobileMenuOpen(false); }}
-              >
-                <LayoutDashboard className="w-4 h-4 mr-2" />
-                Dashboard
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     </header>
   );
