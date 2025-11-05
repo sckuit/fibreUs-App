@@ -25,20 +25,26 @@ interface QuoteWithToken extends Quote {
   items: any;
 }
 
+interface PublicQuoteResponse {
+  quote: QuoteWithToken;
+  clientInfo: any;
+  leadInfo: any;
+  systemConfig: SystemConfig;
+}
+
 export default function PublicQuoteView() {
   const [match, params] = useRoute("/quote/:quoteNumber/:token");
   const { toast} = useToast();
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const { data: systemConfig } = useQuery<SystemConfig>({
-    queryKey: ["/api/system-config"],
-  });
-
-  const { data: quote, isLoading, error } = useQuery<QuoteWithToken>({
+  const { data: response, isLoading, error } = useQuery<PublicQuoteResponse>({
     queryKey: ["/api/public/quote", params?.quoteNumber, params?.token],
     enabled: !!params?.token && !!params?.quoteNumber && !!match,
   });
+
+  const quote = response?.quote;
+  const systemConfig = response?.systemConfig;
 
   const approveMutation = useMutation({
     mutationFn: () => apiRequest("POST", `/api/public/quote/${params?.quoteNumber}/${params?.token}/approve`, {}),

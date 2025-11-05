@@ -10,17 +10,23 @@ interface InvoiceWithToken extends Invoice {
   items: any;
 }
 
+interface PublicInvoiceResponse {
+  invoice: InvoiceWithToken;
+  clientInfo: any;
+  leadInfo: any;
+  systemConfig: SystemConfig;
+}
+
 export default function PublicInvoiceView() {
   const [match, params] = useRoute("/invoice/:invoiceNumber/:token");
 
-  const { data: systemConfig } = useQuery<SystemConfig>({
-    queryKey: ["/api/system-config"],
-  });
-
-  const { data: invoice, isLoading, error } = useQuery<InvoiceWithToken>({
+  const { data: response, isLoading, error } = useQuery<PublicInvoiceResponse>({
     queryKey: ["/api/public/invoice", params?.invoiceNumber, params?.token],
     enabled: !!params?.token && !!params?.invoiceNumber && !!match,
   });
+
+  const invoice = response?.invoice;
+  const systemConfig = response?.systemConfig;
 
   if (!match || !params?.token || !params?.invoiceNumber) {
     return (
