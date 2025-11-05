@@ -9,7 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import LoginDialog from "@/components/LoginDialog";
 import GetQuoteDialog from "@/components/GetQuoteDialog";
 import ScheduleAppointmentDialog from "@/components/ScheduleAppointmentDialog";
-import { Menu, X, Shield, Phone, FileText, Calendar, Clock, Mail, LayoutDashboard } from "lucide-react";
+import { Menu, X, Shield, Phone, FileText, Calendar, Clock, Mail, LayoutDashboard, LogOut } from "lucide-react";
 import type { User, SystemConfig } from "@shared/schema";
 
 export default function TopNavigation() {
@@ -94,12 +94,12 @@ export default function TopNavigation() {
           {isAuthenticated && (
             <Button
               variant={location === '/dashboard' ? 'default' : 'ghost'}
+              size="icon"
               onClick={() => setLocation('/dashboard')}
               className="mx-4"
               data-testid="button-dashboard"
             >
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Dashboard
+              <LayoutDashboard className="w-4 h-4" />
             </Button>
           )}
 
@@ -130,19 +130,19 @@ export default function TopNavigation() {
             ) : (
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-muted-foreground">
-                  Welcome, {typedUser?.firstName || typedUser?.email}
+                  Hi, {typedUser?.firstName || typedUser?.email}
                 </span>
                 <Badge variant={typedUser?.role === 'admin' ? 'default' : 'secondary'} data-testid="badge-user-role">
                   {typedUser?.role}
                 </Badge>
                 <Button 
                   variant="outline" 
-                  size="sm"
+                  size="icon"
                   onClick={() => logoutMutation.mutate()}
                   disabled={logoutMutation.isPending}
                   data-testid="button-logout"
                 >
-                  {logoutMutation.isPending ? 'Signing Out...' : 'Sign Out'}
+                  <LogOut className="w-4 h-4" />
                 </Button>
               </div>
             )}
