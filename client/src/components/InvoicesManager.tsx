@@ -135,14 +135,10 @@ export default function InvoicesManager() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const getRecipientName = (invoice: Invoice) => {
-    if (invoice.leadId) {
-      const lead = leads.find(l => l.id === invoice.leadId);
-      return lead ? `${lead.name} (Lead)` : 'Unknown Lead';
-    }
-    if (invoice.clientId) {
-      const client = clients.find(c => c.id === invoice.clientId);
-      return client ? `${client.name} (Client)` : 'Unknown Client';
+  const getRecipientName = (invoice: Invoice & { recipientName?: string }) => {
+    if (invoice.recipientName) {
+      const type = invoice.leadId ? 'Lead' : invoice.clientId ? 'Client' : '';
+      return type ? `${invoice.recipientName} (${type})` : invoice.recipientName;
     }
     return 'No Recipient';
   };
@@ -173,7 +169,7 @@ export default function InvoicesManager() {
     }
     
     return filtered;
-  }, [invoices, statusFilter, searchTerm, leads, clients, isClient, typedUser?.id]);
+  }, [invoices, statusFilter, searchTerm]);
 
   // Paginate filtered invoices
   const paginatedInvoices = useMemo(() => {
