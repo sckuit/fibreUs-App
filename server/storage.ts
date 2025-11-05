@@ -1856,9 +1856,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getQuotes(filters?: { leadId?: string; clientId?: string; status?: string }): Promise<Quote[]> {
-    let query = db.select().from(quotes);
-    
+  async getQuotes(filters?: { leadId?: string; clientId?: string; status?: string }): Promise<(Quote & { recipientName?: string })[]> {
     const conditions = [];
     if (filters?.leadId) {
       conditions.push(eq(quotes.leadId, filters.leadId));
@@ -1870,16 +1868,46 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(quotes.status, filters.status as any));
     }
     
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
+    const baseQuery = db
+      .select({
+        quote: quotes,
+        clientName: clients.name,
+        leadName: leads.name,
+      })
+      .from(quotes)
+      .leftJoin(clients, eq(quotes.clientId, clients.id))
+      .leftJoin(leads, eq(quotes.leadId, leads.id));
     
-    return query.orderBy(desc(quotes.createdAt));
+    const query = conditions.length > 0 
+      ? baseQuery.where(and(...conditions))
+      : baseQuery;
+    
+    const results = await query.orderBy(desc(quotes.createdAt));
+    
+    return results.map(r => ({
+      ...r.quote,
+      recipientName: r.clientName || r.leadName || undefined
+    }));
   }
 
-  async getQuote(id: string): Promise<Quote | undefined> {
-    const [result] = await db.select().from(quotes).where(eq(quotes.id, id));
-    return result;
+  async getQuote(id: string): Promise<(Quote & { recipientName?: string }) | undefined> {
+    const [result] = await db
+      .select({
+        quote: quotes,
+        clientName: clients.name,
+        leadName: leads.name,
+      })
+      .from(quotes)
+      .leftJoin(clients, eq(quotes.clientId, clients.id))
+      .leftJoin(leads, eq(quotes.leadId, leads.id))
+      .where(eq(quotes.id, id));
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result.quote,
+      recipientName: result.clientName || result.leadName || undefined
+    };
   }
 
   async getQuoteByShareToken(token: string): Promise<Quote | undefined> {
