@@ -54,6 +54,12 @@ export default function LeadsManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  
+  // Suggested leads search and pagination
+  const [suggestedSearchTerm, setSuggestedSearchTerm] = useState('');
+  const [suggestedCurrentPage, setSuggestedCurrentPage] = useState(1);
+  const [suggestedItemsPerPage, setSuggestedItemsPerPage] = useState(20);
+  
   const { toast } = useToast();
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
@@ -249,9 +255,52 @@ export default function LeadsManager() {
 
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
 
-  const suggestedLeads = inquiries.filter(
-    (inquiry) => inquiry.status === "new" || inquiry.status === "contacted"
-  );
+  // Filter suggested leads based on search
+  const suggestedLeads = useMemo(() => {
+    return inquiries.filter(
+      (inquiry) => inquiry.status === "new" || inquiry.status === "contacted"
+    );
+  }, [inquiries]);
+
+  // Reset to first page when suggested search term changes
+  useEffect(() => {
+    setSuggestedCurrentPage(1);
+  }, [suggestedSearchTerm]);
+
+  // Filtered suggested leads based on search
+  const filteredSuggestedLeads = useMemo(() => {
+    if (!suggestedSearchTerm.trim()) return suggestedLeads;
+    
+    const search = suggestedSearchTerm.toLowerCase();
+    return suggestedLeads.filter((inquiry) => {
+      const name = (inquiry.name || '').toLowerCase();
+      const email = (inquiry.email || '').toLowerCase();
+      const phone = (inquiry.phone || '').toLowerCase();
+      const company = (inquiry.company || '').toLowerCase();
+      const serviceType = (inquiry.serviceType || '').toLowerCase();
+      const type = (inquiry.type || '').toLowerCase();
+      const status = (inquiry.status || '').toLowerCase();
+      
+      return name.includes(search) ||
+             email.includes(search) ||
+             phone.includes(search) ||
+             company.includes(search) ||
+             serviceType.includes(search) ||
+             type.includes(search) ||
+             status.includes(search);
+    });
+  }, [suggestedLeads, suggestedSearchTerm]);
+
+  // Paginated suggested leads
+  const paginatedSuggestedLeads = useMemo(() => {
+    const startIndex = (suggestedCurrentPage - 1) * suggestedItemsPerPage;
+    const endIndex = startIndex + suggestedItemsPerPage;
+    return filteredSuggestedLeads.slice(startIndex, endIndex);
+  }, [filteredSuggestedLeads, suggestedCurrentPage, suggestedItemsPerPage]);
+
+  const suggestedTotalPages = Math.ceil(filteredSuggestedLeads.length / suggestedItemsPerPage);
+  const suggestedStartResult = filteredSuggestedLeads.length === 0 ? 0 : (suggestedCurrentPage - 1) * suggestedItemsPerPage + 1;
+  const suggestedEndResult = Math.min(suggestedCurrentPage * suggestedItemsPerPage, filteredSuggestedLeads.length);
 
   const handleLeadSubmit = (leadData: any) => {
     if (leadData.id) {
@@ -499,74 +548,146 @@ export default function LeadsManager() {
                 Convert website inquiries into leads to start nurturing potential clients
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, email, phone, company, service type..."
+                  value={suggestedSearchTerm}
+                  onChange={(e) => setSuggestedSearchTerm(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-suggested-leads"
+                />
+              </div>
+
               {inquiriesLoading ? (
-                <p className="text-sm text-muted-foreground">Loading inquiries...</p>
-              ) : suggestedLeads.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No new inquiries to convert</p>
+                <div className="text-center py-8 text-muted-foreground">Loading inquiries...</div>
+              ) : filteredSuggestedLeads.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {suggestedSearchTerm ? `No inquiries found matching "${suggestedSearchTerm}"` : "No new inquiries to convert"}
+                </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {suggestedLeads.map((inquiry) => (
-                      <TableRow key={inquiry.id} data-testid={`row-inquiry-${inquiry.id}`}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium" data-testid={`text-inquiry-name-${inquiry.id}`}>{inquiry.name}</p>
-                            {inquiry.company && (
-                              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Building className="w-3 h-3" />
-                                {inquiry.company}
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm space-y-1">
-                            <div className="flex items-center gap-1">
-                              <Mail className="w-3 h-3" />
-                              {inquiry.email}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {inquiry.phone}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {inquiry.type === "quote" ? "Quote Request" : "Appointment"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatServiceType(inquiry.serviceType)}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                            {inquiry.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            onClick={() => convertInquiry.mutate(inquiry.id)}
-                            disabled={convertInquiry.isPending || !!inquiry.convertedLeadId}
-                            data-testid={`button-convert-inquiry-${inquiry.id}`}
-                          >
-                            {inquiry.convertedLeadId ? "Already Converted" : "Convert to Lead"}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Service</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedSuggestedLeads.map((inquiry) => (
+                          <TableRow key={inquiry.id} data-testid={`row-inquiry-${inquiry.id}`}>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium" data-testid={`text-inquiry-name-${inquiry.id}`}>{inquiry.name}</p>
+                                {inquiry.company && (
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <Building className="w-3 h-3" />
+                                    {inquiry.company}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <Mail className="w-3 h-3" />
+                                  {inquiry.email}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Phone className="w-3 h-3" />
+                                  {inquiry.phone}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {inquiry.type === "quote" ? "Quote Request" : "Appointment"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{formatServiceType(inquiry.serviceType)}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                {inquiry.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                onClick={() => convertInquiry.mutate(inquiry.id)}
+                                disabled={convertInquiry.isPending || !!inquiry.convertedLeadId}
+                                data-testid={`button-convert-inquiry-${inquiry.id}`}
+                              >
+                                {inquiry.convertedLeadId ? "Already Converted" : "Convert to Lead"}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {suggestedStartResult} to {suggestedEndResult} of {filteredSuggestedLeads.length} inquiries
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Items per page:</span>
+                        <Select
+                          value={String(suggestedItemsPerPage)}
+                          onValueChange={(value) => {
+                            setSuggestedItemsPerPage(Number(value));
+                            setSuggestedCurrentPage(1);
+                          }}
+                        >
+                          <SelectTrigger className="w-20" data-testid="select-suggested-items-per-page">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSuggestedCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={suggestedCurrentPage === 1}
+                          data-testid="button-suggested-prev-page"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Page {suggestedCurrentPage} of {suggestedTotalPages || 1}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSuggestedCurrentPage(prev => Math.min(suggestedTotalPages, prev + 1))}
+                          disabled={suggestedCurrentPage === suggestedTotalPages || suggestedTotalPages === 0}
+                          data-testid="button-suggested-next-page"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -28,12 +29,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Mail, Phone, MapPin, Building, Calendar, Clock, Package, FileText } from "lucide-react";
+import { Mail, Phone, MapPin, Building, Calendar, Clock, Package, FileText, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Inquiry } from "@shared/schema";
 
 export default function MessagesManager() {
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
 
   const { data: inquiries = [], isLoading } = useQuery<Inquiry[]>({
@@ -101,13 +105,59 @@ export default function MessagesManager() {
       .join(" ");
   };
 
-  const filteredInquiries = inquiries.filter((inquiry) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "quotes") return inquiry.type === "quote";
-    if (activeTab === "appointments") return inquiry.type === "appointment";
-    if (activeTab === "new") return inquiry.status === "new";
-    return true;
-  });
+  // Reset to first page when search term or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab]);
+
+  // Filter by active tab and search term
+  const filteredInquiries = useMemo(() => {
+    let filtered = inquiries.filter((inquiry) => {
+      if (activeTab === "all") return true;
+      if (activeTab === "quotes") return inquiry.type === "quote";
+      if (activeTab === "appointments") return inquiry.type === "appointment";
+      if (activeTab === "new") return inquiry.status === "new";
+      return true;
+    });
+
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter((inquiry) => {
+        const name = (inquiry.name || '').toLowerCase();
+        const email = (inquiry.email || '').toLowerCase();
+        const phone = (inquiry.phone || '').toLowerCase();
+        const company = (inquiry.company || '').toLowerCase();
+        const serviceType = (inquiry.serviceType || '').toLowerCase();
+        const description = (inquiry.description || '').toLowerCase();
+        const notes = (inquiry.notes || '').toLowerCase();
+        const type = (inquiry.type || '').toLowerCase();
+        const status = (inquiry.status || '').toLowerCase();
+        
+        return name.includes(search) ||
+               email.includes(search) ||
+               phone.includes(search) ||
+               company.includes(search) ||
+               serviceType.includes(search) ||
+               description.includes(search) ||
+               notes.includes(search) ||
+               type.includes(search) ||
+               status.includes(search);
+      });
+    }
+    
+    return filtered;
+  }, [inquiries, activeTab, searchTerm]);
+
+  // Paginate filtered inquiries
+  const paginatedInquiries = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredInquiries.slice(startIndex, endIndex);
+  }, [filteredInquiries, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredInquiries.length / itemsPerPage);
+  const startResult = filteredInquiries.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endResult = Math.min(currentPage * itemsPerPage, filteredInquiries.length);
 
   if (isLoading) {
     return (
@@ -146,77 +196,147 @@ export default function MessagesManager() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab}>
+            <TabsContent value={activeTab} className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search by name, email, phone, company, service, description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                  data-testid="input-search-messages"
+                />
+              </div>
+
               {filteredInquiries.length === 0 ? (
                 <div className="text-center py-12">
                   <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No messages found</p>
+                  <p className="text-muted-foreground">
+                    {searchTerm ? `No messages found matching "${searchTerm}"` : "No messages found"}
+                  </p>
                 </div>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Contact</TableHead>
-                        <TableHead>Service</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredInquiries.map((inquiry) => (
-                        <TableRow key={inquiry.id} data-testid={`row-inquiry-${inquiry.id}`}>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {inquiry.type === "quote" ? <FileText className="w-3 h-3 mr-1" /> : <Calendar className="w-3 h-3 mr-1" />}
-                              {inquiry.type === "quote" ? "Quote" : "Appointment"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-medium" data-testid={`text-name-${inquiry.id}`}>
-                            {inquiry.name}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1 text-sm">
-                              <span className="flex items-center gap-1">
-                                <Mail className="w-3 h-3" /> {inquiry.email}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Phone className="w-3 h-3" /> {inquiry.phone}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{formatServiceType(inquiry.serviceType)}</TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(inquiry.status || "new")}>
-                              {inquiry.status || "new"}
-                            </Badge>
-                            {inquiry.urgency && inquiry.type === "quote" && (
-                              <Badge className={`ml-2 ${getUrgencyColor(inquiry.urgency)}`}>
-                                {inquiry.urgency}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(inquiry.createdAt!).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedInquiry(inquiry)}
-                              data-testid={`button-view-${inquiry.id}`}
-                            >
-                              View Details
-                            </Button>
-                          </TableCell>
+                <>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Service</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedInquiries.map((inquiry) => (
+                          <TableRow key={inquiry.id} data-testid={`row-inquiry-${inquiry.id}`}>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {inquiry.type === "quote" ? <FileText className="w-3 h-3 mr-1" /> : <Calendar className="w-3 h-3 mr-1" />}
+                                {inquiry.type === "quote" ? "Quote" : "Appointment"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium" data-testid={`text-name-${inquiry.id}`}>
+                              {inquiry.name}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1 text-sm">
+                                <span className="flex items-center gap-1">
+                                  <Mail className="w-3 h-3" /> {inquiry.email}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Phone className="w-3 h-3" /> {inquiry.phone}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{formatServiceType(inquiry.serviceType)}</TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(inquiry.status || "new")}>
+                                {inquiry.status || "new"}
+                              </Badge>
+                              {inquiry.urgency && inquiry.type === "quote" && (
+                                <Badge className={`ml-2 ${getUrgencyColor(inquiry.urgency)}`}>
+                                  {inquiry.urgency}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(inquiry.createdAt!).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedInquiry(inquiry)}
+                                data-testid={`button-view-${inquiry.id}`}
+                              >
+                                View Details
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startResult} to {endResult} of {filteredInquiries.length} inquiries
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Items per page:</span>
+                        <Select
+                          value={String(itemsPerPage)}
+                          onValueChange={(value) => {
+                            setItemsPerPage(Number(value));
+                            setCurrentPage(1);
+                          }}
+                        >
+                          <SelectTrigger className="w-20" data-testid="select-items-per-page">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="10">10</SelectItem>
+                            <SelectItem value="20">20</SelectItem>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                          data-testid="button-prev-page"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          Page {currentPage} of {totalPages || 1}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages || totalPages === 0}
+                          data-testid="button-next-page"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </TabsContent>
           </Tabs>
