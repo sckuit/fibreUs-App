@@ -125,6 +125,27 @@ async function logActivity(
   }
 }
 
+// Helper to get client/lead IDs for a logged-in user
+async function getUserClientLeadIds(userEmail: string): Promise<{ clientIds: string[], leadIds: string[] }> {
+  try {
+    const clients = await storage.getAllClients();
+    const leads = await storage.getAllLeads();
+    
+    const clientIds = clients
+      .filter(client => client.email?.toLowerCase() === userEmail.toLowerCase())
+      .map(client => client.id);
+    
+    const leadIds = leads
+      .filter(lead => lead.email?.toLowerCase() === userEmail.toLowerCase())
+      .map(lead => lead.id);
+    
+    return { clientIds, leadIds };
+  } catch (error) {
+    console.error("Error fetching client/lead IDs:", error);
+    return { clientIds: [], leadIds: [] };
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session middleware must be configured before any routes that use sessions
   app.use(getSession());
@@ -646,7 +667,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
       
-      if (!user || !user.role || !userId) {
+      if (!user || !user.role || !userId || !user.email) {
         return res.status(401).json({ message: "User not found" });
       }
       
@@ -659,13 +680,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (hasPermission(user.role, 'viewAllProjects')) {
         const projects = await storage.getProjects();
         res.json(projects);
-      } else {
-        // For employees, filter by assignedTechnicianId. For clients, filter by clientId
-        const filters = user.role === 'employee' 
-          ? { assignedTechnicianId: userId }
-          : { clientId: userId };
-        const projects = await storage.getProjects(filters);
+      } else if (user.role === 'employee') {
+        // For employees, filter by assignedTechnicianId
+        const projects = await storage.getProjects({ assignedTechnicianId: userId });
         res.json(projects);
+      } else if (user.role === 'client') {
+        // For clients, find their client/lead records and filter projects by those IDs
+        const { clientIds, leadIds } = await getUserClientLeadIds(user.email);
+        const allProjects = await storage.getProjects();
+        
+        // Filter projects where clientId matches any of the user's client/lead IDs
+        const userProjects = allProjects.filter(project => 
+          (project.clientId && clientIds.includes(project.clientId))
+        );
+        
+        res.json(userProjects);
+      } else {
+        // Default: return empty array for other roles without explicit permissions
+        res.json([]);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
