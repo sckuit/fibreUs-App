@@ -24,6 +24,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { QuotePreview } from "@/components/QuotePreview";
 import { formatCurrency } from "@/lib/currency";
+import { QuoteDetailsModal } from "@/components/QuoteDetailsModal";
 
 interface QuoteItem {
   priceMatrixId: string;
@@ -51,6 +52,10 @@ export default function QuotesManager() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [downloadingQuote, setDownloadingQuote] = useState<Quote | null>(null);
   const downloadPreviewRef = useRef<HTMLDivElement>(null);
+  
+  // Details modal state
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const isClient = typedUser?.role === 'client';
 
@@ -498,7 +503,15 @@ export default function QuotesManager() {
                 </TableHeader>
                 <TableBody>
                   {paginatedQuotes.map((quote) => (
-                  <TableRow key={quote.id} data-testid={`row-quote-${quote.id}`}>
+                  <TableRow 
+                    key={quote.id} 
+                    data-testid={`row-quote-${quote.id}`}
+                    className="cursor-pointer hover-elevate"
+                    onClick={() => {
+                      setSelectedQuote(quote);
+                      setIsDetailsModalOpen(true);
+                    }}
+                  >
                     <TableCell className="font-medium" data-testid={`text-quote-number-${quote.id}`}>
                       {quote.quoteNumber}
                     </TableCell>
@@ -520,7 +533,7 @@ export default function QuotesManager() {
                       {quote.createdAt ? format(new Date(quote.createdAt), 'MMM dd, yyyy') : '-'}
                     </TableCell>
                     {!isClient && (
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Switch
                           checked={quote.status !== 'expired' && quote.status !== 'rejected'}
                           onCheckedChange={() => handleToggleStatus(quote)}
@@ -534,7 +547,10 @@ export default function QuotesManager() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setLocation(`/portal/admin/quotes/${quote.id}/edit`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLocation(`/portal/admin/quotes/${quote.id}/edit`);
+                            }}
                             data-testid={`button-edit-quote-${quote.id}`}
                           >
                             <Pencil className="h-4 w-4" />
@@ -543,7 +559,10 @@ export default function QuotesManager() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDownloadPDF(quote)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadPDF(quote);
+                          }}
                           data-testid={`button-download-${quote.id}`}
                         >
                           <Download className="h-4 w-4" />
@@ -552,7 +571,10 @@ export default function QuotesManager() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(quote.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(quote.id);
+                            }}
                             data-testid={`button-delete-${quote.id}`}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -1017,6 +1039,17 @@ export default function QuotesManager() {
           />
         </div>
       )}
+      
+      {/* Quote Details Modal */}
+      <QuoteDetailsModal
+        quote={selectedQuote}
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedQuote(null);
+        }}
+        recipientName={selectedQuote ? getRecipientName(selectedQuote) : undefined}
+      />
     </Card>
   );
 }

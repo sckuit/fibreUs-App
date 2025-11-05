@@ -23,6 +23,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { formatCurrency } from "@/lib/currency";
+import { InvoiceDetailsModal } from "@/components/InvoiceDetailsModal";
 
 interface InvoiceItem {
   priceMatrixId: string;
@@ -48,6 +49,10 @@ export default function InvoicesManager() {
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [downloadingInvoice, setDownloadingInvoice] = useState<Invoice | null>(null);
   const downloadPreviewRef = useRef<HTMLDivElement>(null);
+  
+  // Details modal state
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const isClient = typedUser?.role === 'client';
 
@@ -409,7 +414,15 @@ export default function InvoicesManager() {
               </TableHeader>
               <TableBody>
                 {paginatedInvoices.map(invoice => (
-                  <TableRow key={invoice.id}>
+                  <TableRow 
+                    key={invoice.id}
+                    className="cursor-pointer hover-elevate"
+                    onClick={() => {
+                      setSelectedInvoice(invoice);
+                      setIsDetailsModalOpen(true);
+                    }}
+                    data-testid={`row-invoice-${invoice.id}`}
+                  >
                     <TableCell className="font-medium" data-testid={`text-invoice-${invoice.id}`}>
                       {invoice.invoiceNumber}
                     </TableCell>
@@ -439,7 +452,10 @@ export default function InvoicesManager() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setLocation(`/portal/admin/invoices/${invoice.id}/edit`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLocation(`/portal/admin/invoices/${invoice.id}/edit`);
+                            }}
                             data-testid={`button-edit-invoice-${invoice.id}`}
                           >
                             <Pencil className="w-4 h-4" />
@@ -448,7 +464,10 @@ export default function InvoicesManager() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDownloadPDF(invoice)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadPDF(invoice);
+                          }}
                           data-testid={`button-download-${invoice.id}`}
                         >
                           <Download className="w-4 h-4" />
@@ -665,6 +684,17 @@ export default function InvoicesManager() {
           />
         </div>
       )}
+      
+      {/* Invoice Details Modal */}
+      <InvoiceDetailsModal
+        invoice={selectedInvoice}
+        isOpen={isDetailsModalOpen}
+        onClose={() => {
+          setIsDetailsModalOpen(false);
+          setSelectedInvoice(null);
+        }}
+        recipientName={selectedInvoice ? getRecipientName(selectedInvoice) : undefined}
+      />
     </div>
   );
 }

@@ -62,6 +62,7 @@ import ReferreesManager from "@/components/ReferreesManager";
 import ExpensesManager from "@/components/ExpensesManager";
 import RevenueManager from "@/components/RevenueManager";
 import FinancialLogs from "@/components/FinancialLogs";
+import { ProjectDetailsModal } from "@/components/ProjectDetailsModal";
 
 interface DashboardData {
   pendingRequests?: ServiceRequest[];
@@ -110,6 +111,10 @@ export default function Dashboard() {
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [isAppConfigDialogOpen, setIsAppConfigDialogOpen] = useState(false);
   const [isLogoUploadDialogOpen, setIsLogoUploadDialogOpen] = useState(false);
+  
+  // Project details modal state
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isProjectDetailsModalOpen, setIsProjectDetailsModalOpen] = useState(false);
   
   // Projects Overview search and pagination state
   const [projectsSearchTerm, setProjectsSearchTerm] = useState("");
@@ -1074,7 +1079,15 @@ export default function Dashboard() {
                           </TableHeader>
                           <TableBody>
                             {paginatedProjects.map((project) => (
-                              <TableRow key={project.id}>
+                              <TableRow 
+                                key={project.id}
+                                className="cursor-pointer hover-elevate"
+                                onClick={() => {
+                                  setSelectedProject(project);
+                                  setIsProjectDetailsModalOpen(true);
+                                }}
+                                data-testid={`row-project-${project.id}`}
+                              >
                                 <TableCell className="font-mono">{project.ticketNumber}</TableCell>
                                 <TableCell>{project.projectName || '-'}</TableCell>
                                 <TableCell>{(project as any).clientName || '-'}</TableCell>
@@ -1087,7 +1100,8 @@ export default function Dashboard() {
                                     <Button 
                                       variant="ghost" 
                                       size="sm" 
-                                      onClick={() => { 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setEditingProject(project); 
                                         setIsProjectDialogOpen(true); 
                                       }} 
@@ -1667,6 +1681,23 @@ export default function Dashboard() {
         <LogoUploadDialog
           open={isLogoUploadDialogOpen}
           onOpenChange={setIsLogoUploadDialogOpen}
+        />
+        <ProjectDetailsModal
+          project={selectedProject}
+          isOpen={isProjectDetailsModalOpen}
+          onClose={() => {
+            setIsProjectDetailsModalOpen(false);
+            setSelectedProject(null);
+          }}
+          clientName={(selectedProject as any)?.clientName}
+          technicianName={
+            selectedProject?.assignedTechnicianId 
+              ? (() => {
+                  const tech = users.find(u => u.id === selectedProject.assignedTechnicianId);
+                  return tech ? `${tech.firstName} ${tech.lastName}` : undefined;
+                })()
+              : undefined
+          }
         />
       </div>
     </div>
