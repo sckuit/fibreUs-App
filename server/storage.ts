@@ -628,15 +628,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTicket(ticket: InsertTicketType): Promise<Ticket> {
-    // Generate ticket number
+    // Generate ticket number in format YYMM### (e.g., 2411001 for November 2024, ticket 1)
+    const now = new Date();
+    const year = String(now.getFullYear()).slice(2); // Last 2 digits of year
+    const month = String(now.getMonth() + 1).padStart(2, '0'); // Month with leading zero
+    const prefix = `${year}${month}`;
+    
+    // Get the last ticket number for this month/year
     const lastTicket = await db.select({ ticketNumber: tickets.ticketNumber })
       .from(tickets)
-      .orderBy(desc(tickets.createdAt))
+      .where(sql`${tickets.ticketNumber} LIKE ${prefix}||'%'`)
+      .orderBy(desc(tickets.ticketNumber))
       .limit(1);
     
-    const ticketNumber = lastTicket.length > 0 
-      ? `TKT-${String(parseInt(lastTicket[0].ticketNumber.split('-')[1]) + 1).padStart(6, '0')}`
-      : 'TKT-000001';
+    let ticketNumber: string;
+    if (lastTicket.length > 0) {
+      // Extract the sequence number and increment
+      const lastNumber = parseInt(lastTicket[0].ticketNumber.slice(4)); // Get last 3 digits
+      const nextNumber = lastNumber + 1;
+      ticketNumber = `${prefix}${String(nextNumber).padStart(3, '0')}`;
+    } else {
+      // First ticket of this month
+      ticketNumber = `${prefix}001`;
+    }
     
     const [newTicket] = await db.insert(tickets)
       .values({ ...ticket, ticketNumber })

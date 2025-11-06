@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Ticket as TicketIcon, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Ticket as TicketIcon, AlertCircle, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Ticket, User as UserType } from "@shared/schema";
@@ -23,6 +24,9 @@ export function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps) {
   const [showTicketDetails, setShowTicketDetails] = useState(false);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Fetch tickets for this project
   const { data: tickets = [], isLoading } = useQuery<Ticket[]>({
@@ -93,13 +97,37 @@ export function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps) {
     }
   };
 
+  // Filter and paginate tickets
+  const filteredTickets = useMemo(() => {
+    if (!searchQuery.trim()) return tickets;
+    
+    const query = searchQuery.toLowerCase();
+    return tickets.filter(ticket => 
+      ticket.title?.toLowerCase().includes(query) ||
+      ticket.description?.toLowerCase().includes(query) ||
+      ticket.ticketNumber?.toLowerCase().includes(query)
+    );
+  }, [tickets, searchQuery]);
+
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
+  const paginatedTickets = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredTickets.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredTickets, currentPage, itemsPerPage]);
+
+  // Reset to first page when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TicketIcon className="h-5 w-5" />
           <h3 className="text-lg font-semibold">Tickets</h3>
-          <Badge variant="secondary" data-testid="badge-ticket-count">{tickets.length}</Badge>
+          <Badge variant="secondary" data-testid="badge-ticket-count">{filteredTickets.length}</Badge>
         </div>
         {canCreate && (
           <Button
@@ -113,6 +141,20 @@ export function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps) {
         )}
       </div>
 
+      {/* Search Bar */}
+      {tickets.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tickets by title, description, or number..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-9"
+            data-testid="input-search-tickets"
+          />
+        </div>
+      )}
+
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading tickets...</p>
       ) : tickets.length === 0 ? (
@@ -125,9 +167,18 @@ export function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps) {
             )}
           </div>
         </Card>
+      ) : filteredTickets.length === 0 ? (
+        <Card className="p-8">
+          <div className="text-center text-muted-foreground">
+            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm">No tickets match your search.</p>
+            <p className="text-xs mt-2">Try a different search term.</p>
+          </div>
+        </Card>
       ) : (
-        <div className="space-y-2">
-          {tickets.map((ticket) => (
+        <>
+          <div className="space-y-2">
+            {paginatedTickets.map((ticket) => (
             <Card
               key={ticket.id}
               className="p-4 hover-elevate cursor-pointer"
@@ -176,7 +227,42 @@ export function ProjectTicketsTab({ projectId }: ProjectTicketsTabProps) {
               </div>
             </Card>
           ))}
-        </div>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredTickets.length)} of {filteredTickets.length} tickets
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  data-testid="button-prev-page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  data-testid="button-next-page"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <TicketDetailsModal
