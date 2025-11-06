@@ -300,7 +300,7 @@ export default function SalesPortal() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
+          <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
             <TabsTrigger value="deals" data-testid="tab-deals">
               Sales Deals
             </TabsTrigger>

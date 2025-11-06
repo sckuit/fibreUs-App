@@ -115,7 +115,7 @@ export default function ManagerPortal() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
+          <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
             <TabsTrigger value="team" data-testid="tab-team">
               Team Management
             </TabsTrigger>

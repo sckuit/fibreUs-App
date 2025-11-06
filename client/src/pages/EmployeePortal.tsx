@@ -102,7 +102,7 @@ export default function EmployeePortal() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList>
+          <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
             <TabsTrigger value="tasks" data-testid="tab-tasks">
               My Tasks
             </TabsTrigger>
