@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, AlertCircle, Eye, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import type { Ticket, User, Project } from "@shared/schema";
 import { TicketDetailsModal } from "@/components/TicketDetailsModal";
@@ -18,7 +19,9 @@ type TicketsManagerProps = {
 };
 
 export function TicketsManager({ role, userId }: TicketsManagerProps) {
+  const queryClient = useQueryClient();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -31,7 +34,7 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
     queryKey: ["/api/tickets"],
   });
 
-  const { data: users = [] } = useQuery<User[]>({
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
 
@@ -117,6 +120,15 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
   };
 
   const canCreateTickets = ['manager', 'admin', 'project_manager'].includes(role);
+  const canEditTickets = ['manager', 'admin', 'project_manager'].includes(role);
+  const canDeleteTickets = ['manager', 'admin'].includes(role);
+
+  const deleteTicketMutation = useMutation({
+    mutationFn: (ticketId: string) => apiRequest('DELETE', `/api/tickets/${ticketId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tickets"] });
+    },
+  });
 
   return (
     <>
@@ -221,6 +233,7 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
                       <TableHead>Priority</TableHead>
                       <TableHead>Assigned To</TableHead>
                       <TableHead>Due Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -253,6 +266,46 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {ticket.dueDate ? format(new Date(ticket.dueDate), 'MMM dd, yyyy') : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedTicket(ticket)}
+                                data-testid={`button-view-ticket-${ticket.id}`}
+                                title="View ticket"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {canEditTickets && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingTicket(ticket)}
+                                  data-testid={`button-edit-ticket-${ticket.id}`}
+                                  title="Edit ticket"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDeleteTickets && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to delete ticket #${ticket.ticketNumber}?`)) {
+                                      deleteTicketMutation.mutate(ticket.id);
+                                    }
+                                  }}
+                                  disabled={deleteTicketMutation.isPending}
+                                  data-testid={`button-delete-ticket-${ticket.id}`}
+                                  title="Delete ticket"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -314,6 +367,24 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
           projects={projects}
           isOpen={showCreateDialog}
           onClose={() => setShowCreateDialog(false)}
+          technicians={users
+            .filter(u => ['employee', 'sales', 'project_manager', 'manager', 'admin'].includes(u.role || ''))
+            .map(u => ({
+              id: u.id,
+              fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown'
+            }))
+          }
+        />
+      )}
+
+      {/* Edit Ticket Dialog */}
+      {editingTicket && !usersLoading && (
+        <TicketFormDialog
+          ticket={editingTicket}
+          projectId={editingTicket.projectId}
+          projects={projects}
+          isOpen={!!editingTicket}
+          onClose={() => setEditingTicket(null)}
           technicians={users
             .filter(u => ['employee', 'sales', 'project_manager', 'manager', 'admin'].includes(u.role || ''))
             .map(u => ({
