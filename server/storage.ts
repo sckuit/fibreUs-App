@@ -4,6 +4,8 @@ import {
   serviceRequests,
   projects,
   projectComments,
+  tickets,
+  ticketComments,
   communications,
   visitors,
   inventoryItems,
@@ -42,6 +44,10 @@ import {
   type InsertProjectType,
   type ProjectComment,
   type InsertProjectCommentType,
+  type Ticket,
+  type InsertTicketType,
+  type TicketComment,
+  type InsertTicketCommentType,
   type Communication,
   type InsertCommunicationType,
   type Visitor,
@@ -166,6 +172,17 @@ export interface IStorage {
   // Project comment operations
   createProjectComment(comment: InsertProjectCommentType): Promise<ProjectComment>;
   getProjectComments(projectId: string): Promise<(ProjectComment & { user: User })[]>;
+  
+  // Ticket operations
+  createTicket(ticket: InsertTicketType): Promise<Ticket>;
+  getTicketsByProject(projectId: string): Promise<Ticket[]>;
+  getTicket(id: string): Promise<Ticket | undefined>;
+  updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket>;
+  deleteTicket(id: string): Promise<void>;
+  
+  // Ticket comment operations
+  createTicketComment(comment: InsertTicketCommentType): Promise<TicketComment>;
+  getTicketComments(ticketId: string): Promise<(TicketComment & { user: User })[]>;
   
   // Communication operations
   createCommunication(communication: InsertCommunicationType): Promise<Communication>;

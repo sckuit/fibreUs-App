@@ -230,7 +230,6 @@ export function InvoiceDetailsModal({ invoice, isOpen, onClose, recipientName }:
               <div className="flex justify-end">
                 <Button
                   type="button"
-                  variant="outline"
                   onClick={() => generateShareLinkMutation.mutate()}
                   disabled={generateShareLinkMutation.isPending}
                   data-testid="button-share-invoice-link"

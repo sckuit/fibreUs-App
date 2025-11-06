@@ -455,7 +455,6 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
               <div className="flex justify-end">
                 <Button
                   type="button"
-                  variant="outline"
                   onClick={() => generateShareLinkMutation.mutate()}
                   disabled={generateShareLinkMutation.isPending}
                   data-testid="button-share-project-link"

@@ -884,6 +884,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Share project - generate shareable link
+  app.post("/api/projects/:id/share",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        const project = await storage.getProject(req.params.id);
+        if (!project) {
+          return res.status(404).json({ message: "Project not found" });
+        }
+        
+        // Permission check: manageSettings OR assigned technician
+        const hasAccess = hasPermission(user.role, 'manageSettings') || project.assignedTechnicianId === userId;
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        // Generate crypto-random UUID for shareToken
+        const crypto = await import('crypto');
+        const shareToken = crypto.randomUUID();
+        
+        // Update project with shareToken and shareTokenCreatedAt
+        const updatedProject = await storage.updateProject(req.params.id, {
+          shareToken,
+          shareTokenCreatedAt: new Date(),
+        });
+        
+        if (!updatedProject) {
+          return res.status(404).json({ message: "Project not found" });
+        }
+        
+        await logActivity(
+          userId,
+          'share',
+          'project',
+          updatedProject.id,
+          updatedProject.projectName,
+          'Generated share token',
+          req
+        );
+        
+        // Build shareable URL using ticketNumber
+        const domain = process.env.REPLIT_DOMAINS ? process.env.REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
+        const protocol = process.env.REPLIT_DOMAINS ? 'https' : 'http';
+        const shareUrl = `${protocol}://${domain}/project/${updatedProject.ticketNumber}/${shareToken}`;
+        
+        res.json({
+          token: shareToken,
+          projectNumber: updatedProject.ticketNumber,
+          shareUrl,
+          shareTokenCreatedAt: updatedProject.shareTokenCreatedAt,
+        });
+      } catch (error) {
+        console.error("Error generating share token for project:", error);
+        res.status(500).json({ message: "Failed to generate share token" });
+      }
+    }
+  );
+
   // Get project comments
   app.get("/api/projects/:id/comments", isSessionAuthenticated, async (req: any, res) => {
     try {

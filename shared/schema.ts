@@ -41,6 +41,9 @@ export const reportStatusEnum = pgEnum('report_status', [
 export const taskStatusEnum = pgEnum('task_status', [
   'pending', 'in_progress', 'completed', 'cancelled'
 ]);
+export const ticketStatusEnum = pgEnum('ticket_status', [
+  'open', 'in_progress', 'resolved', 'closed'
+]);
 export const financialLogTypeEnum = pgEnum('financial_log_type', [
   'project_cost_update', 'quote_created', 'quote_updated', 'inventory_purchase', 'inventory_sale', 'sales_record_created', 'sales_record_updated'
 ]);
@@ -129,6 +132,8 @@ export const projects = pgTable("projects", {
   workNotes: text("work_notes"),
   clientFeedback: text("client_feedback"),
   clientRating: integer("client_rating"), // 1-5 stars
+  shareToken: varchar("share_token"),
+  shareTokenCreatedAt: timestamp("share_token_created_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -137,6 +142,33 @@ export const projects = pgTable("projects", {
 export const projectComments = pgTable("project_comments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Tickets for project issue tracking and support
+export const tickets = pgTable("tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketNumber: varchar("ticket_number").notNull().unique(),
+  projectId: varchar("project_id").notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  status: ticketStatusEnum("status").default('open'),
+  priority: priorityEnum("priority").default('medium'),
+  assignedToId: varchar("assigned_to_id").references(() => users.id),
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  dueDate: timestamp("due_date"),
+  shareToken: varchar("share_token"),
+  shareTokenCreatedAt: timestamp("share_token_created_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Ticket comments for collaboration and updates
+export const ticketComments = pgTable("ticket_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").notNull().references(() => tickets.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").notNull().references(() => users.id),
   comment: text("comment").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -526,6 +558,12 @@ export type Project = typeof projects.$inferSelect;
 export type InsertProjectComment = typeof projectComments.$inferInsert;
 export type ProjectComment = typeof projectComments.$inferSelect;
 
+export type InsertTicket = typeof tickets.$inferInsert;
+export type Ticket = typeof tickets.$inferSelect;
+
+export type InsertTicketComment = typeof ticketComments.$inferInsert;
+export type TicketComment = typeof ticketComments.$inferSelect;
+
 export type InsertCommunication = typeof communications.$inferInsert;
 export type Communication = typeof communications.$inferSelect;
 
@@ -575,6 +613,22 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 });
 
 export const insertProjectCommentSchema = createInsertSchema(projectComments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTicketSchema = createInsertSchema(tickets).omit({
+  id: true,
+  ticketNumber: true,
+  createdAt: true,
+  updatedAt: true,
+  shareToken: true,
+  shareTokenCreatedAt: true,
+}).extend({
+  dueDate: z.coerce.date().optional(),
+});
+
+export const insertTicketCommentSchema = createInsertSchema(ticketComments).omit({
   id: true,
   createdAt: true,
 });
