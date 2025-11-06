@@ -7,6 +7,9 @@ FibreUS is a professional web application connecting clients with security contr
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **2025-11-06**: Implemented comprehensive ticket management system - added tickets and ticket_comments tables with full CRUD API routes and frontend components (TicketDetailsModal, TicketFormDialog, ProjectTicketsTab integrated into ProjectDetailsModal). Includes role-based access control, share links, comment threads, and status tracking.
+- **2025-11-06**: Fixed project share link generation - added shareToken and shareTokenCreatedAt fields to projects table, created /api/projects/:id/share endpoint.
+- **2025-11-06**: Updated share button styling across Quote, Invoice, and Project detail modals to use primary blue theme.
 - **2025-11-05**: Fixed public quote approve/reject endpoints - removed authentication requirement since token verification provides sufficient security. Added middleware to populate `req.user` from session for authenticated routes.
 
 ## System Architecture
@@ -29,10 +32,11 @@ Preferred communication style: Simple, everyday language.
 ### Database Design
 - **Primary Database**: PostgreSQL (Neon serverless hosting)
 - **Schema Management**: Drizzle Kit
-- **Core Entities**: Users (clients, admins, technicians), Service Requests, Projects, Communications, Sessions.
+- **Core Entities**: Users (clients, admins, technicians), Service Requests, Projects, Tickets, Communications, Sessions.
 - **User-Client Relationships**: Direct `userId` foreign key in `clients` and `leads` tables linking user accounts to client/lead records for secure data access control.
 - **Flexible Rate Structure**: Implemented `rate_types` (e.g., Phone/Remote Service, Trip Rate) and `service_rates` (three-dimensional rate structure by time period).
 - **Support Plans**: `support_plans` table for recurring service offerings with customizable rates and billing periods.
+- **Ticket Management**: Project-based ticket system with `tickets` and `ticket_comments` tables for issue tracking, task management, and team collaboration.
 
 ### Authentication & Authorization
 - **Provider**: Email/Password with Argon2id hashing
@@ -59,6 +63,8 @@ Preferred communication style: Simple, everyday language.
 - **Theming**: Dark/Light mode with system preference detection.
 
 ### Business Logic & Features
+- **Ticket Management System**: Project-based issue tracking with full CRUD operations, status workflow (open → in_progress → resolved → closed), priority levels, assignee management, due dates, comment threads, and share links. Role-based access: project managers/managers/admins can create/edit/delete tickets; technicians and clients can comment on assigned/owned tickets.
+- **Project Share Links**: Secure share token generation for projects with hybrid URL structure exposing project numbers while maintaining security.
 - **Public Quote/Invoice URLs**: Hybrid URL structure (`/quote/:quoteNumber/:token`) for public access, maintaining security tokens while exposing document numbers. Includes backward compatibility for old URLs.
 - **Dashboard Search/Pagination**: Implemented search and pagination for project overviews.
 - **Quote/Invoice PDF Generation**: Uses `html2canvas` for pixel-perfect PDF capture of QuotePreview, with robust multi-page handling.
@@ -68,7 +74,7 @@ Preferred communication style: Simple, everyday language.
 - **Service Types**: Enum-driven categorization (CCTV, alarm, access control, etc.).
 - **Request Workflow**: Status-driven progression (pending → reviewed → quoted → approved → scheduled → in_progress → completed).
 - **Priority System**: Four levels (low, medium, high, urgent).
-- **Communication Threads**: Integrated messaging for project coordination.
+- **Communication Threads**: Integrated messaging for project and ticket coordination.
 
 ## External Dependencies
 
