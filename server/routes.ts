@@ -1092,7 +1092,7 @@ Crawl-delay: 1
     }
   });
 
-  // Get all tickets (with role-based filtering)
+  // Get all tickets assigned to the logged-in user
   app.get("/api/tickets", isSessionAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
@@ -1104,35 +1104,11 @@ Crawl-delay: 1
       
       // Get all tickets with project information
       const allTickets = await storage.getAllTicketsWithProject();
-      let accessibleTickets: any[] = [];
       
-      // Role-based filtering
-      if (user.role === 'client') {
-        // Clients can only see tickets for their own projects
-        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
-        const allProjects = await storage.getProjects();
-        const clientProjectIds = allProjects
-          .filter(p => 
-            (p.clientId && clientIds.includes(p.clientId)) ||
-            (p.leadId && leadIds.includes(p.leadId))
-          )
-          .map(p => p.id);
-        
-        accessibleTickets = allTickets.filter(t => clientProjectIds.includes(t.projectId));
-      } else if (hasPermission(user.role, 'viewAllProjects')) {
-        // Managers, admins, project managers can see all tickets
-        accessibleTickets = allTickets;
-      } else if (user.role === 'employee') {
-        // Employees can only see tickets assigned to them
-        accessibleTickets = allTickets.filter(t => t.assignedToId === userId);
-      } else if (user.role === 'sales') {
-        // Sales can see tickets for all projects
-        accessibleTickets = allTickets;
-      } else {
-        return res.status(403).json({ message: "Permission denied" });
-      }
+      // Filter to only show tickets assigned to the logged-in user
+      const assignedTickets = allTickets.filter(t => t.assignedToId === userId);
       
-      res.json(accessibleTickets);
+      res.json(assignedTickets);
     } catch (error) {
       console.error("Error fetching tickets:", error);
       res.status(500).json({ message: "Failed to fetch tickets" });
