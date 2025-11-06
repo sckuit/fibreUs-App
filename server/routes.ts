@@ -979,8 +979,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "You can only view comments for your own projects" });
         }
       } else {
-        // Non-client roles need project view permission
-        if (!hasPermission(user.role, 'viewProjects')) {
+        // Non-client roles need project view permission (either own or all)
+        if (!hasPermission(user.role, 'viewOwnProjects') && !hasPermission(user.role, 'viewAllProjects')) {
           return res.status(403).json({ message: "Permission denied" });
         }
       }
