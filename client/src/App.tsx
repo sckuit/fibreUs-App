@@ -20,7 +20,7 @@ import EmployeePortal from "@/pages/EmployeePortal";
 import ManagerPortal from "@/pages/ManagerPortal";
 import AdminPortal from "@/pages/AdminPortal";
 import SalesPortal from "@/pages/SalesPortal";
-import QuoteBuilder from "@/components/QuoteBuilder";
+import PromoQuoteBuilder from "@/components/PromoQuoteBuilder";
 import InvoiceBuilder from "@/components/InvoiceBuilder";
 
 // Services pages
@@ -118,8 +118,8 @@ function AuthenticatedRouter() {
         <Route path="/portal/sales" component={SalesPortal} />
 
         {/* Quote and Invoice edit routes */}
-        <Route path="/portal/admin/quotes/new" component={QuoteBuilder} />
-        <Route path="/portal/admin/quotes/:id/edit" component={QuoteBuilder} />
+        <Route path="/portal/admin/quotes/new" component={PromoQuoteBuilder} />
+        <Route path="/portal/admin/quotes/:id/edit" component={PromoQuoteBuilder} />
         <Route path="/portal/admin/invoices/new" component={InvoiceBuilder} />
         <Route path="/portal/admin/invoices/:id/edit" component={InvoiceBuilder} />
 

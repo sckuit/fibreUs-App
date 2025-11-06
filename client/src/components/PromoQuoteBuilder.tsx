@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useRoute } from "wouter";
 import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments, User } from "@shared/schema";
 import { insertQuoteSchema } from "@shared/schema";
 import { formatCurrency } from "@/lib/currency";
@@ -17,7 +18,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, FileText, DollarSign, Save, Download, Search, Percent } from "lucide-react";
+import { Plus, Trash2, FileText, DollarSign, Save, Download, Search, Percent, Share2 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
@@ -38,6 +39,8 @@ interface PromoQuoteItem {
 
 export default function PromoQuoteBuilder() {
   const { toast } = useToast();
+  const [, params] = useRoute("/portal/admin/quotes/:id/edit");
+  const quoteId = params?.id;
   const [selectedItems, setSelectedItems] = useState<PromoQuoteItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,6 +71,12 @@ export default function PromoQuoteBuilder() {
     queryKey: ['/api/auth/user'],
   });
 
+  // Fetch existing quote if editing
+  const { data: existingQuote, isLoading: isLoadingQuote } = useQuery<Quote>({
+    queryKey: ['/api/quotes', quoteId],
+    enabled: !!quoteId,
+  });
+
   const form = useForm({
     resolver: zodResolver(insertQuoteSchema.omit({ createdById: true })),
     defaultValues: {
@@ -85,21 +94,86 @@ export default function PromoQuoteBuilder() {
     },
   });
 
-  const createQuoteMutation = useMutation({
-    mutationFn: (data: InsertQuoteType) => apiRequest('POST', '/api/quotes', data),
+  const saveQuoteMutation = useMutation({
+    mutationFn: (data: InsertQuoteType) => {
+      if (quoteId) {
+        return apiRequest('PATCH', `/api/quotes/${quoteId}`, data);
+      }
+      return apiRequest('POST', '/api/quotes', data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/quotes'] });
-      toast({ title: "Promotional quote created successfully" });
-      resetForm();
+      if (quoteId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/quotes', quoteId] });
+      }
+      toast({ title: quoteId ? "Quote updated successfully" : "Promotional quote created successfully" });
+      if (!quoteId) {
+        resetForm();
+      }
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to create promotional quote",
+        title: quoteId ? "Failed to update quote" : "Failed to create promotional quote",
         description: error.message,
         variant: "destructive",
       });
     },
   });
+
+  const generateShareLinkMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/quotes/${quoteId}/share`, {});
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      const shareUrl = `${window.location.origin}/quote/${data.quoteNumber}/${data.token}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied to clipboard!" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to generate share link",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Populate form when editing existing quote
+  useEffect(() => {
+    if (existingQuote && priceMatrixItems.length > 0) {
+      // Populate form fields
+      form.reset({
+        quoteNumber: existingQuote.quoteNumber || '',
+        leadId: existingQuote.leadId || '',
+        clientId: existingQuote.clientId || '',
+        items: existingQuote.items as any,
+        subtotal: existingQuote.subtotal,
+        taxRate: existingQuote.taxRate || '0.00',
+        taxAmount: existingQuote.taxAmount || '0.00',
+        total: existingQuote.total,
+        validUntil: existingQuote.validUntil ? (existingQuote.validUntil instanceof Date ? existingQuote.validUntil.toISOString().split('T')[0] : existingQuote.validUntil) : '',
+        notes: existingQuote.notes || '',
+        status: existingQuote.status as any,
+      });
+
+      // Populate selectedItems from quote items with promo fields
+      const quoteItems = existingQuote.items as any[];
+      const items: PromoQuoteItem[] = quoteItems.map((item: any) => ({
+        priceMatrixId: item.priceMatrixId || '',
+        itemName: item.itemName,
+        description: item.description || '',
+        unit: item.unit,
+        unitPrice: typeof item.unitPrice === 'string' ? item.unitPrice : String(item.unitPrice),
+        quantity: item.quantity,
+        promoEnabled: item.promoEnabled || false,
+        promoPercent: item.promoPercent || 0,
+        originalTotal: typeof item.originalTotal === 'number' ? item.originalTotal : parseFloat(String(item.originalTotal || item.total)),
+        total: typeof item.total === 'number' ? item.total : parseFloat(String(item.total)),
+      }));
+      setSelectedItems(items);
+    }
+  }, [existingQuote, priceMatrixItems]);
 
   // Update form values when items or tax rate changes
   useEffect(() => {
@@ -273,7 +347,7 @@ export default function PromoQuoteBuilder() {
     if (values.validUntil && values.validUntil !== '') quoteData.validUntil = values.validUntil;
     if (values.notes && values.notes.trim() !== '') quoteData.notes = values.notes;
 
-    createQuoteMutation.mutate(quoteData);
+    saveQuoteMutation.mutate(quoteData);
   };
 
   const resetForm = () => {
@@ -413,10 +487,10 @@ export default function PromoQuoteBuilder() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
-          Promotional Quote Builder
+          {quoteId ? 'Edit Quote' : 'Promotional Quote Builder'}
         </CardTitle>
         <CardDescription>
-          Create promotional quotes with discounts from the price matrix catalog
+          {quoteId ? 'Update quote details and apply discounts' : 'Create promotional quotes with discounts from the price matrix catalog'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -734,13 +808,25 @@ export default function PromoQuoteBuilder() {
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
               </Button>
+              {quoteId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => generateShareLinkMutation.mutate()}
+                  disabled={generateShareLinkMutation.isPending}
+                  data-testid="button-promo-share-link"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  {generateShareLinkMutation.isPending ? 'Generating...' : 'Share Link'}
+                </Button>
+              )}
               <Button
                 type="submit"
-                disabled={createQuoteMutation.isPending}
+                disabled={saveQuoteMutation.isPending}
                 data-testid="button-promo-save-quote"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {createQuoteMutation.isPending ? 'Saving...' : 'Save Quote'}
+                {saveQuoteMutation.isPending ? 'Saving...' : (quoteId ? 'Update Quote' : 'Save Quote')}
               </Button>
             </div>
           </form>
