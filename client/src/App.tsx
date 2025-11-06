@@ -56,6 +56,8 @@ import WarrantyInformation from "@/pages/legal/WarrantyInformation";
 // Public view pages (for share links)
 import PublicQuoteView from "@/pages/PublicQuoteView";
 import PublicInvoiceView from "@/pages/PublicInvoiceView";
+import PublicProjectView from "@/pages/PublicProjectView";
+import PublicTicketView from "@/pages/PublicTicketView";
 import LegacyPublicQuoteRedirect from "@/pages/LegacyPublicQuoteRedirect";
 import LegacyPublicInvoiceRedirect from "@/pages/LegacyPublicInvoiceRedirect";
 
@@ -168,6 +170,8 @@ function Router() {
       {/* Public view pages (share links - no header/footer) */}
       <Route path="/quote/:quoteNumber/:token" component={PublicQuoteView} />
       <Route path="/invoice/:invoiceNumber/:token" component={PublicInvoiceView} />
+      <Route path="/project/:projectNumber/:token" component={PublicProjectView} />
+      <Route path="/ticket/:ticketNumber/:token" component={PublicTicketView} />
       
       {/* Public pages */}
       <Route path="/logos" component={() => (

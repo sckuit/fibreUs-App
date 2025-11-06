@@ -166,6 +166,7 @@ export interface IStorage {
   createProject(project: InsertProjectType): Promise<Project>;
   getProjects(filters?: { clientId?: string; assignedTechnicianId?: string }): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
+  getProjectByShareToken(token: string): Promise<Project | undefined>;
   updateProject(id: string, updates: Partial<Project>): Promise<Project>;
   getTechnicians(): Promise<User[]>;
   
@@ -177,6 +178,7 @@ export interface IStorage {
   createTicket(ticket: InsertTicketType): Promise<Ticket>;
   getTicketsByProject(projectId: string): Promise<Ticket[]>;
   getTicket(id: string): Promise<Ticket | undefined>;
+  getTicketByShareToken(token: string): Promise<Ticket | undefined>;
   updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket>;
   deleteTicket(id: string): Promise<void>;
   
@@ -670,6 +672,11 @@ export class DatabaseStorage implements IStorage {
     return ticket;
   }
 
+  async getTicketByShareToken(token: string): Promise<Ticket | undefined> {
+    const [ticket] = await db.select().from(tickets).where(eq(tickets.shareToken, token));
+    return ticket;
+  }
+
   async updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket> {
     const [updatedTicket] = await db.update(tickets)
       .set({ ...updates, updatedAt: new Date() })
@@ -749,6 +756,11 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .where(eq(projects.id, id));
     return project as any;
+  }
+
+  async getProjectByShareToken(token: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.shareToken, token));
+    return project;
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project> {

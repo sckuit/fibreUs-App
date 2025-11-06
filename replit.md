@@ -7,6 +7,7 @@ FibreUS is a professional web application connecting clients with security contr
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **2025-11-06**: Created public project and ticket view pages (PublicProjectView, PublicTicketView) with secure token-based access (30-day expiration). Added storage methods getProjectByShareToken and getTicketByShareToken. Public project view displays project details, assigned technicians, client info, work notes, and associated tickets. Public ticket view shows ticket details, comments with user info, and project context.
 - **2025-11-06**: Implemented comprehensive ticket management system - added tickets and ticket_comments tables with full CRUD API routes and frontend components (TicketDetailsModal, TicketFormDialog, ProjectTicketsTab integrated into ProjectDetailsModal). Includes role-based access control, share links, comment threads, and status tracking.
 - **2025-11-06**: Fixed project share link generation - added shareToken and shareTokenCreatedAt fields to projects table, created /api/projects/:id/share endpoint.
 - **2025-11-06**: Updated share button styling across Quote, Invoice, and Project detail modals to use primary blue theme.

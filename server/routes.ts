@@ -5697,6 +5697,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/public/project/:projectNumber/:token - Fetch project by number and shareToken
+  app.get('/api/public/project/:projectNumber/:token', async (req: any, res) => {
+    try {
+      const { projectNumber, token } = req.params;
+      
+      const project = await storage.getProjectByShareToken(token);
+      
+      if (!project) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      
+      // Verify project number matches (security check)
+      if (project.projectNumber !== projectNumber) {
+        return res.status(404).json({ message: 'Project not found' });
+      }
+      
+      // Check if token is expired (30 days from creation)
+      if (project.shareTokenCreatedAt) {
+        const tokenAge = Date.now() - new Date(project.shareTokenCreatedAt).getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+        
+        if (tokenAge > thirtyDaysInMs) {
+          return res.status(404).json({ message: 'Project link has expired' });
+        }
+      }
+      
+      // Fetch related data
+      const systemConfig = await storage.getSystemConfig();
+      const tickets = await storage.getTicketsByProject(project.id);
+      
+      let clientName: string | undefined;
+      let technicianName: string | undefined;
+      
+      if (project.clientId) {
+        const client = await storage.getClient(project.clientId);
+        if (client) {
+          clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim();
+        }
+      }
+      
+      if (project.leadId) {
+        const lead = await storage.getLead(project.leadId);
+        if (lead) {
+          clientName = `${lead.firstName || ''} ${lead.lastName || ''}`.trim();
+        }
+      }
+      
+      if (project.assignedTechnicianId) {
+        const tech = await storage.getUser(project.assignedTechnicianId);
+        if (tech) {
+          technicianName = `${tech.firstName || ''} ${tech.lastName || ''}`.trim();
+        }
+      }
+      
+      res.json({
+        project,
+        clientName,
+        technicianName,
+        systemConfig,
+        tickets,
+      });
+    } catch (error) {
+      console.error('Error fetching public project:', error);
+      res.status(500).json({ message: 'Failed to fetch project' });
+    }
+  });
+
+  // GET /api/public/ticket/:ticketNumber/:token - Fetch ticket by number and shareToken
+  app.get('/api/public/ticket/:ticketNumber/:token', async (req: any, res) => {
+    try {
+      const { ticketNumber, token } = req.params;
+      
+      const ticket = await storage.getTicketByShareToken(token);
+      
+      if (!ticket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+      
+      // Verify ticket number matches (security check)
+      if (ticket.ticketNumber !== ticketNumber) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+      
+      // Check if token is expired (30 days from creation)
+      if (ticket.shareTokenCreatedAt) {
+        const tokenAge = Date.now() - new Date(ticket.shareTokenCreatedAt).getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+        
+        if (tokenAge > thirtyDaysInMs) {
+          return res.status(404).json({ message: 'Ticket link has expired' });
+        }
+      }
+      
+      // Fetch related data
+      const systemConfig = await storage.getSystemConfig();
+      const comments = await storage.getTicketComments(ticket.id);
+      
+      let projectName: string | undefined;
+      if (ticket.projectId) {
+        const project = await storage.getProject(ticket.projectId);
+        if (project) {
+          projectName = project.projectName || undefined;
+        }
+      }
+      
+      res.json({
+        ticket,
+        comments,
+        projectName,
+        systemConfig,
+      });
+    } catch (error) {
+      console.error('Error fetching public ticket:', error);
+      res.status(500).json({ message: 'Failed to fetch ticket' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
