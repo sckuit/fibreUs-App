@@ -526,14 +526,16 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Main Navigation - Single Row with Hierarchical Structure */}
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue={userRole === 'admin' ? 'system' : (hasPermission(userRole, 'viewUsers') && userRole !== 'project_manager' ? 'users' : (hasPermission(userRole, 'viewOwnProjects') ? 'projects' : 'settings'))} className="w-full">
           <TabsList className="w-full h-auto p-1 grid gap-1" style={{
             gridTemplateColumns: `repeat(auto-fit, minmax(100px, 1fr))`
           }}>
-            <TabsTrigger value="overview" data-testid="tab-overview">
-              <Home className="w-4 h-4 mr-2" />
-              Overview
-            </TabsTrigger>
+            {userRole === 'admin' && (
+              <TabsTrigger value="system" data-testid="tab-system">
+                <Server className="w-4 h-4 mr-2" />
+                System
+              </TabsTrigger>
+            )}
             {hasPermission(userRole, 'viewUsers') && userRole !== 'project_manager' && (
               <TabsTrigger value="users" data-testid="tab-users">
                 <Users className="w-4 h-4 mr-2" />
@@ -552,12 +554,6 @@ export default function Dashboard() {
                 Projects
               </TabsTrigger>
             )}
-            {hasPermission(userRole, 'viewOwnProjects') && (
-              <TabsTrigger value="tickets" data-testid="tab-tickets">
-                <Ticket className="w-4 h-4 mr-2" />
-                Tickets
-              </TabsTrigger>
-            )}
             {hasPermission(userRole, 'viewActivities') && (
               <TabsTrigger value="activities" data-testid="tab-activities">
                 <Activity className="w-4 h-4 mr-2" />
@@ -570,12 +566,6 @@ export default function Dashboard() {
                 Inventory
               </TabsTrigger>
             )}
-            {hasPermission(userRole, 'viewSuppliers') && (
-              <TabsTrigger value="suppliers" data-testid="tab-suppliers">
-                <Truck className="w-4 h-4 mr-2" />
-                Suppliers
-              </TabsTrigger>
-            )}
             {hasPermission(userRole, 'viewFinancial') && (
               <TabsTrigger value="financial" data-testid="tab-financial">
                 <DollarSign className="w-4 h-4 mr-2" />
@@ -586,16 +576,25 @@ export default function Dashboard() {
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </TabsTrigger>
-            {userRole === 'admin' && (
-              <TabsTrigger value="system" data-testid="tab-system">
-                <Server className="w-4 h-4 mr-2" />
-                System
-              </TabsTrigger>
-            )}
           </TabsList>
 
-          {/* Overview Tab Content */}
-          <TabsContent value="overview" className="mt-6 space-y-6">
+          {/* System Tab (Admin Only) - Now with Overview as sub-tab */}
+          {userRole === 'admin' && (
+            <TabsContent value="system" className="space-y-4">
+              <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                  <TabsTrigger value="overview" data-testid="tab-system-overview">
+                    <Home className="w-4 h-4 mr-2" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="metrics" data-testid="tab-system-metrics">
+                    <Gauge className="w-4 h-4 mr-2" />
+                    Metrics
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Overview Sub-Tab */}
+                <TabsContent value="overview" className="mt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {hasPermission(userRole, 'createRequests') && (
                 <Card className="hover-elevate" data-testid="card-new-request">
@@ -706,7 +705,103 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+                </TabsContent>
+
+                {/* Metrics Sub-Tab */}
+                <TabsContent value="metrics" className="mt-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Total Users Card */}
+                    <Card data-testid="card-total-users">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                        <Users2 className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {systemMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <>
+                            <div className="text-2xl font-bold" data-testid="text-total-users">
+                              {systemMetrics?.totalUsers || 0}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              +{systemMetrics?.usersThisMonth || 0} this month
+                            </p>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* System Health Card */}
+                    <Card data-testid="card-system-health">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">System Health</CardTitle>
+                        <Gauge className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {systemMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <>
+                            <div className="text-2xl font-bold" data-testid="text-system-health">
+                              {systemMetrics?.systemHealthPercent || 0}%
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              All systems operational
+                            </p>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Database Storage Card */}
+                    <Card data-testid="card-database-storage">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Database</CardTitle>
+                        <Database className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {systemMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <>
+                            <div className="text-2xl font-bold" data-testid="text-database-size">
+                              {systemMetrics?.databaseSizeGB?.toFixed(2) || '0.00'}GB
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Storage used
+                            </p>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Active Sessions Card */}
+                    <Card data-testid="card-active-sessions">
+                      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+                        <Activity className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        {systemMetricsLoading ? (
+                          <div className="text-2xl font-bold">...</div>
+                        ) : (
+                          <>
+                            <div className="text-2xl font-bold" data-testid="text-active-sessions">
+                              {systemMetrics?.activeSessions || 0}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Currently logged in
+                            </p>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </TabsContent>
+          )}
 
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-4">
@@ -1015,6 +1110,12 @@ export default function Dashboard() {
                     Reports
                   </TabsTrigger>
                 )}
+                {hasPermission(userRole, 'viewOwnProjects') && (
+                  <TabsTrigger value="tickets" data-testid="tab-projects-tickets">
+                    <Ticket className="w-4 h-4 mr-2" />
+                    Tickets
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {/* Projects Overview Sub-Tab */}
@@ -1170,12 +1271,14 @@ export default function Dashboard() {
                   {typedUser && <ReportsManager role={userRole as "manager" | "admin"} userId={typedUser.id} />}
                 </TabsContent>
               )}
-            </Tabs>
-          </TabsContent>
 
-          {/* Tickets Tab */}
-          <TabsContent value="tickets" className="space-y-4">
-            {typedUser && <TicketsManager role={userRole} userId={typedUser.id} />}
+              {/* Tickets Sub-Tab */}
+              {hasPermission(userRole, 'viewOwnProjects') && (
+                <TabsContent value="tickets" className="mt-4">
+                  {typedUser && <TicketsManager role={userRole} userId={typedUser.id} />}
+                </TabsContent>
+              )}
+            </Tabs>
           </TabsContent>
 
           {/* Activities Tab - Nested structure */}
@@ -1208,8 +1311,24 @@ export default function Dashboard() {
             </Tabs>
           </TabsContent>
 
-          {/* Inventory Tab */}
+          {/* Inventory Tab - Now with nested Stock and Suppliers sub-tabs */}
           <TabsContent value="inventory" className="space-y-4">
+            <Tabs defaultValue="stock" className="w-full">
+              <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+                <TabsTrigger value="stock" data-testid="tab-inventory-stock">
+                  <Package className="w-4 h-4 mr-2" />
+                  Stock
+                </TabsTrigger>
+                {hasPermission(userRole, 'viewSuppliers') && (
+                  <TabsTrigger value="suppliers" data-testid="tab-inventory-suppliers">
+                    <Truck className="w-4 h-4 mr-2" />
+                    Suppliers
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              {/* Stock Sub-Tab */}
+              <TabsContent value="stock" className="mt-4 space-y-4">
             {lowStockItems.length > 0 && (
               <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950">
                 <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
@@ -1366,11 +1485,15 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+              </TabsContent>
 
-          {/* Suppliers Tab */}
-          <TabsContent value="suppliers" className="space-y-4">
-            <SuppliersManager />
+              {/* Suppliers Sub-Tab */}
+              {hasPermission(userRole, 'viewSuppliers') && (
+                <TabsContent value="suppliers" className="mt-4 space-y-4">
+                  <SuppliersManager />
+                </TabsContent>
+              )}
+            </Tabs>
           </TabsContent>
 
           {/* Financial Tab - Nested structure */}
@@ -1615,101 +1738,6 @@ export default function Dashboard() {
               )}
             </Tabs>
           </TabsContent>
-
-          {/* System Tab (Admin Only) */}
-          {userRole === 'admin' && (
-            <TabsContent value="system" className="mt-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Total Users Card */}
-                <Card data-testid="card-total-users">
-                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                    <Users2 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {systemMetricsLoading ? (
-                      <div className="text-2xl font-bold">...</div>
-                    ) : (
-                      <>
-                        <div className="text-2xl font-bold" data-testid="text-total-users">
-                          {systemMetrics?.totalUsers || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          +{systemMetrics?.usersThisMonth || 0} this month
-                        </p>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* System Health Card */}
-                <Card data-testid="card-system-health">
-                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">System Health</CardTitle>
-                    <Gauge className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {systemMetricsLoading ? (
-                      <div className="text-2xl font-bold">...</div>
-                    ) : (
-                      <>
-                        <div className="text-2xl font-bold" data-testid="text-system-health">
-                          {systemMetrics?.systemHealthPercent || 0}%
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          All systems operational
-                        </p>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Database Storage Card */}
-                <Card data-testid="card-database-storage">
-                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Database</CardTitle>
-                    <Database className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {systemMetricsLoading ? (
-                      <div className="text-2xl font-bold">...</div>
-                    ) : (
-                      <>
-                        <div className="text-2xl font-bold" data-testid="text-database-size">
-                          {systemMetrics?.databaseSizeGB?.toFixed(2) || '0.00'}GB
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Storage used
-                        </p>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Active Sessions Card */}
-                <Card data-testid="card-active-sessions">
-                  <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    {systemMetricsLoading ? (
-                      <div className="text-2xl font-bold">...</div>
-                    ) : (
-                      <>
-                        <div className="text-2xl font-bold" data-testid="text-active-sessions">
-                          {systemMetrics?.activeSessions || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Currently logged in
-                        </p>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          )}
         </Tabs>
 
         {/* Dialogs */}
