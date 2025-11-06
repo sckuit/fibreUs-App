@@ -18,6 +18,8 @@ import {
   insertInventoryTransactionSchema,
   insertProjectSchema,
   insertProjectCommentSchema,
+  insertTicketSchema,
+  insertTicketCommentSchema,
   insertTaskSchema,
   updateTaskSchema,
   insertReportSchema,
@@ -1067,6 +1069,414 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create comment" });
     }
   });
+
+  // Get tickets for a project
+  app.get("/api/projects/:projectId/tickets", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const projectId = req.params.projectId;
+      
+      // Get the project to verify access
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Verify access permissions (same as project access)
+      if (user.role === 'client') {
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (project.clientId && clientIds.includes(project.clientId)) ||
+                        (project.leadId && leadIds.includes(project.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "You can only view tickets for your own projects" });
+        }
+      } else {
+        if (!hasPermission(user.role, 'viewProjects')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+      }
+      
+      const tickets = await storage.getTicketsByProject(projectId);
+      res.json(tickets);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
+  // Create a new ticket
+  app.post("/api/projects/:projectId/tickets", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const projectId = req.params.projectId;
+      
+      // Get the project to verify access
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Project managers, managers, and admins can create tickets
+      const canManageAll = hasPermission(user.role, 'manageAllProjects');
+      const canManageOwn = hasPermission(user.role, 'manageOwnProjects');
+      
+      if (!canManageAll && !canManageOwn) {
+        return res.status(403).json({ message: "Permission denied. Only project managers, managers, and admins can create tickets." });
+      }
+      
+      // Validate request body
+      const validatedData = insertTicketSchema.parse({
+        ...req.body,
+        projectId,
+        createdById: userId,
+      });
+      
+      const newTicket = await storage.createTicket(validatedData);
+      
+      await logActivity(
+        userId,
+        'create',
+        'ticket',
+        newTicket.id,
+        newTicket.title,
+        undefined,
+        req
+      );
+      
+      res.status(201).json(newTicket);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      console.error("Error creating ticket:", error);
+      res.status(500).json({ message: "Failed to create ticket" });
+    }
+  });
+
+  // Get a specific ticket
+  app.get("/api/tickets/:id", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Get the project to verify access
+      const project = await storage.getProject(ticket.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Verify access permissions
+      if (user.role === 'client') {
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (project.clientId && clientIds.includes(project.clientId)) ||
+                        (project.leadId && leadIds.includes(project.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      } else {
+        if (!hasPermission(user.role, 'viewProjects')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+      }
+      
+      res.json(ticket);
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
+      res.status(500).json({ message: "Failed to fetch ticket" });
+    }
+  });
+
+  // Update a ticket
+  app.patch("/api/tickets/:id", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Project managers, managers, and admins can update tickets
+      const canManageAll = hasPermission(user.role, 'manageAllProjects');
+      const canManageOwn = hasPermission(user.role, 'manageOwnProjects');
+      
+      if (!canManageAll && !canManageOwn) {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      const updatedTicket = await storage.updateTicket(req.params.id, req.body);
+      
+      await logActivity(
+        userId,
+        'update',
+        'ticket',
+        updatedTicket.id,
+        updatedTicket.title,
+        undefined,
+        req
+      );
+      
+      res.json(updatedTicket);
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+      res.status(500).json({ message: "Failed to update ticket" });
+    }
+  });
+
+  // Delete a ticket
+  app.delete("/api/tickets/:id", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Only admins and managers can delete tickets
+      const canDelete = hasPermission(user.role, 'manageSettings');
+      if (!canDelete) {
+        return res.status(403).json({ message: "Permission denied. Only managers and admins can delete tickets." });
+      }
+      
+      await storage.deleteTicket(req.params.id);
+      
+      await logActivity(
+        userId,
+        'delete',
+        'ticket',
+        req.params.id,
+        ticket.title,
+        undefined,
+        req
+      );
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+      res.status(500).json({ message: "Failed to delete ticket" });
+    }
+  });
+
+  // Get ticket comments
+  app.get("/api/tickets/:id/comments", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Get the project to verify access
+      const project = await storage.getProject(ticket.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Verify access permissions
+      if (user.role === 'client') {
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (project.clientId && clientIds.includes(project.clientId)) ||
+                        (project.leadId && leadIds.includes(project.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      } else {
+        if (!hasPermission(user.role, 'viewProjects')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+      }
+      
+      const comments = await storage.getTicketComments(req.params.id);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching ticket comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  // Add ticket comment (clients and technicians can only comment, not update ticket itself)
+  app.post("/api/tickets/:id/comments", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+      
+      // Get the project to verify access
+      const project = await storage.getProject(ticket.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // Verify access permissions - clients, technicians, and staff can comment
+      if (user.role === 'client') {
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const isOwner = (project.clientId && clientIds.includes(project.clientId)) ||
+                        (project.leadId && leadIds.includes(project.leadId));
+        
+        if (!isOwner) {
+          return res.status(403).json({ message: "You can only comment on tickets for your own projects" });
+        }
+      } else if (user.role === 'employee') {
+        // Technicians can comment if they are assigned to the project or the ticket
+        const isAssigned = project.assignedTechnicianId === userId || ticket.assignedToId === userId;
+        if (!isAssigned) {
+          return res.status(403).json({ message: "You can only comment on tickets assigned to you" });
+        }
+      } else {
+        // Managers and admins can always comment
+        if (!hasPermission(user.role, 'viewProjects')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+      }
+      
+      // Validate request body
+      const validatedData = insertTicketCommentSchema.parse({
+        ticketId: req.params.id,
+        userId,
+        comment: req.body.comment,
+      });
+      
+      const newComment = await storage.createTicketComment(validatedData);
+      
+      await logActivity(
+        userId,
+        'create',
+        'ticket_comment',
+        newComment.id,
+        `Comment on ${ticket.title}`,
+        undefined,
+        req
+      );
+      
+      res.status(201).json(newComment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      console.error("Error creating ticket comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
+  // Share ticket - generate shareable link
+  app.post("/api/tickets/:id/share",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        const ticket = await storage.getTicket(req.params.id);
+        if (!ticket) {
+          return res.status(404).json({ message: "Ticket not found" });
+        }
+        
+        // Permission check: managers and admins only
+        const hasAccess = hasPermission(user.role, 'manageSettings');
+        if (!hasAccess) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        // Generate crypto-random UUID for shareToken
+        const crypto = await import('crypto');
+        const shareToken = crypto.randomUUID();
+        
+        // Update ticket with shareToken and shareTokenCreatedAt
+        const updatedTicket = await storage.updateTicket(req.params.id, {
+          shareToken,
+          shareTokenCreatedAt: new Date(),
+        });
+        
+        if (!updatedTicket) {
+          return res.status(404).json({ message: "Ticket not found" });
+        }
+        
+        await logActivity(
+          userId,
+          'share',
+          'ticket',
+          updatedTicket.id,
+          updatedTicket.title,
+          'Generated share token',
+          req
+        );
+        
+        // Build shareable URL using ticketNumber
+        const domain = process.env.REPLIT_DOMAINS ? process.env.REPLIT_DOMAINS.split(',')[0] : 'localhost:5000';
+        const protocol = process.env.REPLIT_DOMAINS ? 'https' : 'http';
+        const shareUrl = `${protocol}://${domain}/ticket/${updatedTicket.ticketNumber}/${shareToken}`;
+        
+        res.json({
+          token: shareToken,
+          ticketNumber: updatedTicket.ticketNumber,
+          shareUrl,
+          shareTokenCreatedAt: updatedTicket.shareTokenCreatedAt,
+        });
+      } catch (error) {
+        console.error("Error generating share token for ticket:", error);
+        res.status(500).json({ message: "Failed to generate share token" });
+      }
+    }
+  );
 
   app.get("/api/technicians", isSessionAuthenticated, async (req: any, res) => {
     try {

@@ -627,6 +627,89 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+  async createTicket(ticket: InsertTicketType): Promise<Ticket> {
+    // Generate ticket number
+    const lastTicket = await db.select({ ticketNumber: tickets.ticketNumber })
+      .from(tickets)
+      .orderBy(desc(tickets.createdAt))
+      .limit(1);
+    
+    const ticketNumber = lastTicket.length > 0 
+      ? `TKT-${String(parseInt(lastTicket[0].ticketNumber.split('-')[1]) + 1).padStart(6, '0')}`
+      : 'TKT-000001';
+    
+    const [newTicket] = await db.insert(tickets)
+      .values({ ...ticket, ticketNumber })
+      .returning();
+    return newTicket;
+  }
+
+  async getTicketsByProject(projectId: string): Promise<Ticket[]> {
+    return db.select().from(tickets)
+      .where(eq(tickets.projectId, projectId))
+      .orderBy(desc(tickets.createdAt));
+  }
+
+  async getTicket(id: string): Promise<Ticket | undefined> {
+    const [ticket] = await db.select().from(tickets)
+      .where(eq(tickets.id, id));
+    return ticket;
+  }
+
+  async updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket> {
+    const [updatedTicket] = await db.update(tickets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(tickets.id, id))
+      .returning();
+    return updatedTicket;
+  }
+
+  async deleteTicket(id: string): Promise<void> {
+    await db.delete(tickets).where(eq(tickets.id, id));
+  }
+
+  async createTicketComment(comment: InsertTicketCommentType): Promise<TicketComment> {
+    const [newComment] = await db.insert(ticketComments)
+      .values(comment)
+      .returning();
+    return newComment;
+  }
+
+  async getTicketComments(ticketId: string): Promise<(TicketComment & { user: User })[]> {
+    const comments = await db.select({
+      id: ticketComments.id,
+      ticketId: ticketComments.ticketId,
+      userId: ticketComments.userId,
+      comment: ticketComments.comment,
+      createdAt: ticketComments.createdAt,
+      user: {
+        id: users.id,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+      }
+    })
+    .from(ticketComments)
+    .leftJoin(users, eq(ticketComments.userId, users.id))
+    .where(eq(ticketComments.ticketId, ticketId))
+    .orderBy(asc(ticketComments.createdAt));
+
+    return comments.map(c => ({
+      ...c,
+      user: { 
+        ...c.user,
+        email: null,
+        passwordHash: null,
+        role: null,
+        phone: null,
+        company: null,
+        isActive: true,
+        createdAt: null,
+        updatedAt: null,
+      } as User
+    }));
+  }
+
   async getProject(id: string): Promise<Project | undefined> {
     const [project] = await db.select({
       id: projects.id,
