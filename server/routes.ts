@@ -1103,13 +1103,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const tickets = await storage.getTicketsByProject(project.id);
           accessibleTickets.push(...tickets);
         }
-      } else if (hasPermission(user.role, 'viewProjects')) {
-        // Employees and sales can see tickets for projects they're assigned to
-        const assignedProjects = allProjects.filter(p => 
-          p.assignedTechnicianId === userId
-        );
-        
-        for (const project of assignedProjects) {
+      } else if (user.role === 'employee') {
+        // Employees can only see tickets assigned to them
+        for (const project of allProjects) {
+          const tickets = await storage.getTicketsByProject(project.id);
+          const assignedTickets = tickets.filter(t => t.assignedToId === userId);
+          accessibleTickets.push(...assignedTickets);
+        }
+      } else if (user.role === 'sales') {
+        // Sales can see tickets for all projects (they have viewProjects permission)
+        for (const project of allProjects) {
           const tickets = await storage.getTicketsByProject(project.id);
           accessibleTickets.push(...tickets);
         }

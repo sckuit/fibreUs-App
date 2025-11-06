@@ -43,7 +43,7 @@ export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicia
       description: ticket?.description || "",
       status: ticket?.status || "open",
       priority: ticket?.priority || "medium",
-      assignedToId: ticket?.assignedToId || "",
+      assignedToId: ticket?.assignedToId || "unassigned",
       dueDate: ticket?.dueDate ? new Date(ticket.dueDate).toISOString().split('T')[0] : "",
     },
   });
@@ -53,7 +53,7 @@ export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicia
       const payload = {
         ...data,
         dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
-        assignedToId: data.assignedToId || undefined,
+        assignedToId: data.assignedToId && data.assignedToId !== "unassigned" ? data.assignedToId : undefined,
       };
       const response = await apiRequest('POST', `/api/projects/${projectId}/tickets`, payload);
       return response.json();
@@ -81,7 +81,7 @@ export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicia
       const payload = {
         ...data,
         dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
-        assignedToId: data.assignedToId || undefined,
+        assignedToId: data.assignedToId && data.assignedToId !== "unassigned" ? data.assignedToId : undefined,
       };
       const response = await apiRequest('PATCH', `/api/tickets/${ticket!.id}`, payload);
       return response.json();
@@ -222,7 +222,7 @@ export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicia
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {technicians.map((tech) => (
                           <SelectItem key={tech.id} value={tech.id}>
                             {tech.fullName}
