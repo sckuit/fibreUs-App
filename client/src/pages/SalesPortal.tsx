@@ -49,6 +49,7 @@ import { format } from "date-fns";
 import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
+import { TicketsManager } from "@/components/TicketsManager";
 
 type SelectSalesRecord = typeof salesRecords.$inferSelect;
 type SelectUser = typeof users.$inferSelect;
@@ -315,6 +316,9 @@ export default function SalesPortal() {
             <TabsTrigger value="messages" data-testid="tab-messages">
               Messages
             </TabsTrigger>
+            <TabsTrigger value="tickets" data-testid="tab-tickets">
+              Tickets
+            </TabsTrigger>
             <TabsTrigger value="visitors" data-testid="tab-visitors">
               Lead Analytics
             </TabsTrigger>
@@ -487,6 +491,10 @@ export default function SalesPortal() {
 
           <TabsContent value="messages" className="space-y-4">
             <MessagesManager />
+          </TabsContent>
+
+          <TabsContent value="tickets" className="space-y-4">
+            {user && <TicketsManager role="sales" userId={user.id} />}
           </TabsContent>
 
           <TabsContent value="visitors" className="space-y-4">

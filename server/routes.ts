@@ -1070,6 +1070,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all tickets (with role-based filtering)
+  app.get("/api/tickets", isSessionAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.role || !userId) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Get all tickets first
+      const allProjects = await storage.getProjects();
+      let accessibleTickets: any[] = [];
+      
+      // Role-based filtering
+      if (user.role === 'client') {
+        // Clients can only see tickets for their own projects
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const clientProjects = allProjects.filter(p => 
+          (p.clientId && clientIds.includes(p.clientId)) ||
+          (p.leadId && leadIds.includes(p.leadId))
+        );
+        
+        for (const project of clientProjects) {
+          const tickets = await storage.getTicketsByProject(project.id);
+          accessibleTickets.push(...tickets);
+        }
+      } else if (hasPermission(user.role, 'viewAllProjects')) {
+        // Managers, admins, project managers can see all tickets
+        for (const project of allProjects) {
+          const tickets = await storage.getTicketsByProject(project.id);
+          accessibleTickets.push(...tickets);
+        }
+      } else if (hasPermission(user.role, 'viewProjects')) {
+        // Employees and sales can see tickets for projects they're assigned to
+        const assignedProjects = allProjects.filter(p => 
+          p.assignedTechnicianId === userId
+        );
+        
+        for (const project of assignedProjects) {
+          const tickets = await storage.getTicketsByProject(project.id);
+          accessibleTickets.push(...tickets);
+        }
+      } else {
+        return res.status(403).json({ message: "Permission denied" });
+      }
+      
+      res.json(accessibleTickets);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      res.status(500).json({ message: "Failed to fetch tickets" });
+    }
+  });
+
   // Get tickets for a project
   app.get("/api/projects/:projectId/tickets", isSessionAuthenticated, async (req: any, res) => {
     try {

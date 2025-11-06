@@ -21,6 +21,7 @@ import { UserDialog } from "@/components/UserDialog";
 import { InventoryDialog } from "@/components/InventoryDialog";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
+import { TicketsManager } from "@/components/TicketsManager";
 import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
@@ -374,6 +375,9 @@ export default function AdminPortal() {
               <TabsTrigger value="reports" data-testid="tab-reports">
                 Reports
               </TabsTrigger>
+              <TabsTrigger value="tickets" data-testid="tab-tickets">
+                Tickets
+              </TabsTrigger>
               <TabsTrigger value="inventory" data-testid="tab-inventory">
                 Inventory
               </TabsTrigger>
@@ -655,6 +659,10 @@ export default function AdminPortal() {
 
           <TabsContent value="tasks" className="space-y-4">
             {user && <TasksManager role="admin" userId={user.id} />}
+          </TabsContent>
+
+          <TabsContent value="tickets" className="space-y-4">
+            {user && <TicketsManager role="admin" userId={user.id} />}
           </TabsContent>
 
           <TabsContent value="projects" className="space-y-4">
