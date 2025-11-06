@@ -1314,7 +1314,25 @@ Crawl-delay: 1
         return res.status(403).json({ message: "Permission denied" });
       }
       
-      const updatedTicket = await storage.updateTicket(req.params.id, req.body);
+      // Convert dueDate string to Date object if present
+      const updates = { ...req.body };
+      if (updates.dueDate !== undefined) {
+        if (typeof updates.dueDate === 'string') {
+          // Empty string or whitespace should be null
+          if (!updates.dueDate.trim()) {
+            updates.dueDate = null;
+          } else {
+            const parsedDate = new Date(updates.dueDate);
+            // Validate the date is valid
+            if (isNaN(parsedDate.getTime())) {
+              return res.status(400).json({ message: "Invalid due date format" });
+            }
+            updates.dueDate = parsedDate;
+          }
+        }
+      }
+      
+      const updatedTicket = await storage.updateTicket(req.params.id, updates);
       
       await logActivity(
         userId,
