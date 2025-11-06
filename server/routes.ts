@@ -1279,7 +1279,7 @@ Crawl-delay: 1
           return res.status(403).json({ message: "Access denied" });
         }
       } else {
-        if (!hasPermission(user.role, 'viewProjects')) {
+        if (!hasPermission(user.role, 'viewOwnProjects')) {
           return res.status(403).json({ message: "Permission denied" });
         }
       }
@@ -1403,8 +1403,15 @@ Crawl-delay: 1
         if (!isOwner) {
           return res.status(403).json({ message: "Access denied" });
         }
+      } else if (user.role === 'employee') {
+        // Technicians can view comments if they are assigned to the project or the ticket
+        const isAssigned = project.assignedTechnicianId === userId || ticket.assignedToId === userId;
+        if (!isAssigned) {
+          return res.status(403).json({ message: "You can only view comments on tickets assigned to you" });
+        }
       } else {
-        if (!hasPermission(user.role, 'viewProjects')) {
+        // Managers and admins can always view comments
+        if (!hasPermission(user.role, 'viewOwnProjects')) {
           return res.status(403).json({ message: "Permission denied" });
         }
       }
@@ -1455,7 +1462,7 @@ Crawl-delay: 1
         }
       } else {
         // Managers and admins can always comment
-        if (!hasPermission(user.role, 'viewProjects')) {
+        if (!hasPermission(user.role, 'viewOwnProjects')) {
           return res.status(403).json({ message: "Permission denied" });
         }
       }
