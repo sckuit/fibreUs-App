@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Wrench, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import type { User } from "@shared/schema";
 import ReportsManager from "@/components/ReportsManager";
-import { TicketsManager } from "@/components/TicketsManager";
 
 export default function EmployeePortal() {
   const [activeTab, setActiveTab] = useState("tasks");
@@ -112,9 +111,6 @@ export default function EmployeePortal() {
             <TabsTrigger value="reports" data-testid="tab-reports">
               Work Reports
             </TabsTrigger>
-            <TabsTrigger value="tickets" data-testid="tab-tickets">
-              Tickets
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tasks" className="space-y-4">
@@ -151,10 +147,6 @@ export default function EmployeePortal() {
 
           <TabsContent value="reports" className="space-y-4">
             {user && <ReportsManager role="employee" userId={user.id} />}
-          </TabsContent>
-
-          <TabsContent value="tickets" className="space-y-4">
-            {user && <TicketsManager role="employee" userId={user.id} />}
           </TabsContent>
         </Tabs>
       </div>

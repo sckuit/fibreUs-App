@@ -22,7 +22,7 @@ import {
   DollarSign, MessageSquare, BarChart, Package, Truck,
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
   UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, TrendingDown, Gift,
-  Server, Database, Users2, Gauge, Search, ChevronLeft, ChevronRight
+  Server, Database, Users2, Gauge, Search, ChevronLeft, ChevronRight, Ticket
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
@@ -36,6 +36,7 @@ import { ProjectDialog } from "@/components/ProjectDialog";
 import { ClientDialog } from "@/components/ClientDialog";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
+import { TicketsManager } from "@/components/TicketsManager";
 import MessagesManager from "@/components/MessagesManager";
 import LeadsManager from "@/components/LeadsManager";
 import ClientsManager from "@/components/ClientsManager";
@@ -549,6 +550,12 @@ export default function Dashboard() {
               <TabsTrigger value="projects" data-testid="tab-projects">
                 <Wrench className="w-4 h-4 mr-2" />
                 Projects
+              </TabsTrigger>
+            )}
+            {hasPermission(userRole, 'viewOwnProjects') && (
+              <TabsTrigger value="tickets" data-testid="tab-tickets">
+                <Ticket className="w-4 h-4 mr-2" />
+                Tickets
               </TabsTrigger>
             )}
             {hasPermission(userRole, 'viewActivities') && (
@@ -1164,6 +1171,11 @@ export default function Dashboard() {
                 </TabsContent>
               )}
             </Tabs>
+          </TabsContent>
+
+          {/* Tickets Tab */}
+          <TabsContent value="tickets" className="space-y-4">
+            {typedUser && <TicketsManager role={userRole} userId={typedUser.id} />}
           </TabsContent>
 
           {/* Activities Tab - Nested structure */}

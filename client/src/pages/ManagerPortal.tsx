@@ -16,7 +16,6 @@ import { Users, Briefcase, TrendingUp, DollarSign, Eye } from "lucide-react";
 import type { User, Visitor } from "@shared/schema";
 import ReportsManager from "@/components/ReportsManager";
 import { TasksManager } from "@/components/TasksManager";
-import { TicketsManager } from "@/components/TicketsManager";
 
 export default function ManagerPortal() {
   const [activeTab, setActiveTab] = useState("team");
@@ -134,9 +133,6 @@ export default function ManagerPortal() {
             <TabsTrigger value="tasks" data-testid="tab-tasks">
               Tasks
             </TabsTrigger>
-            <TabsTrigger value="tickets" data-testid="tab-tickets">
-              Tickets
-            </TabsTrigger>
             <TabsTrigger value="analytics" data-testid="tab-analytics">
               Performance
             </TabsTrigger>
@@ -251,10 +247,6 @@ export default function ManagerPortal() {
 
           <TabsContent value="tasks" className="space-y-4">
             {user && <TasksManager role="manager" userId={user.id} />}
-          </TabsContent>
-
-          <TabsContent value="tickets" className="space-y-4">
-            {user && <TicketsManager role="manager" userId={user.id} />}
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
