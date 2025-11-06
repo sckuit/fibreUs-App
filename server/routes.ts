@@ -1631,7 +1631,7 @@ Crawl-delay: 1
     }
   );
 
-  // User management routes (admin only)
+  // User management routes (all authenticated users can read)
   app.get("/api/users", 
     isSessionAuthenticated,
     async (req: any, res) => {
@@ -1639,10 +1639,11 @@ Crawl-delay: 1
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        if (!user || !user.role || !hasPermission(user.role, 'viewUsers')) {
-          return res.status(403).json({ message: "Permission denied" });
+        if (!user || !userId) {
+          return res.status(401).json({ message: "User not found" });
         }
         
+        // All authenticated users can read users table
         const users = await storage.getAllUsers();
         res.json(users);
       } catch (error) {
