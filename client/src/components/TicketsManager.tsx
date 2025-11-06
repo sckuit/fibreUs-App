@@ -20,7 +20,6 @@ type TicketsManagerProps = {
 export function TicketsManager({ role, userId }: TicketsManagerProps) {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedProjectForCreate, setSelectedProjectForCreate] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -132,12 +131,7 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
             </div>
             {canCreateTickets && (
               <Button
-                onClick={() => {
-                  if (projects.length > 0) {
-                    setSelectedProjectForCreate(projects[0].id);
-                    setShowCreateDialog(true);
-                  }
-                }}
+                onClick={() => setShowCreateDialog(true)}
                 disabled={projects.length === 0}
                 data-testid="button-create-ticket"
               >
@@ -315,11 +309,15 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
       )}
 
       {/* Create Ticket Dialog */}
-      {showCreateDialog && selectedProjectForCreate && (
+      {showCreateDialog && (
         <TicketFormDialog
-          projectId={selectedProjectForCreate}
+          projects={projects}
           isOpen={showCreateDialog}
           onClose={() => setShowCreateDialog(false)}
+          technicians={users.filter(u => ['employee', 'sales', 'project_manager', 'manager', 'admin'].includes(u.role || '')).map(u => ({
+            id: u.id,
+            fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email
+          }))}
         />
       )}
     </>
