@@ -7,13 +7,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertTicketSchema, type Ticket } from "@shared/schema";
+import { insertTicketSchema, type Ticket, type Project } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { Search } from "lucide-react";
 
-// Form schema based on insertTicketSchema but with optional fields for editing
+// Form schema - includes projectId when creating from standalone Tickets tab
 const ticketFormSchema = z.object({
+  projectId: z.string().min(1, "Project is required"),
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']),
@@ -26,19 +29,23 @@ type TicketFormData = z.infer<typeof ticketFormSchema>;
 
 interface TicketFormDialogProps {
   ticket?: Ticket | null;
-  projectId: string;
+  projectId?: string; // Optional - when undefined, user selects from projects dropdown
+  projects?: Project[]; // Required when projectId is undefined
   isOpen: boolean;
   onClose: () => void;
   technicians?: Array<{ id: string; fullName: string }>;
 }
 
-export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicians = [] }: TicketFormDialogProps) {
+export function TicketFormDialog({ ticket, projectId, projects = [], isOpen, onClose, technicians = [] }: TicketFormDialogProps) {
   const { toast } = useToast();
   const isEditing = !!ticket;
+  const showProjectSelector = !projectId && !isEditing; // Show dropdown only when creating new ticket without a pre-selected project
+  const [projectSearch, setProjectSearch] = useState("");
 
   const form = useForm<TicketFormData>({
     resolver: zodResolver(ticketFormSchema),
     defaultValues: {
+      projectId: projectId || ticket?.projectId || "",
       title: ticket?.title || "",
       description: ticket?.description || "",
       status: ticket?.status || "open",
@@ -55,15 +62,16 @@ export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicia
         dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
         assignedToId: data.assignedToId && data.assignedToId !== "unassigned" ? data.assignedToId : undefined,
       };
-      const response = await apiRequest('POST', `/api/projects/${projectId}/tickets`, payload);
+      const response = await apiRequest('POST', `/api/projects/${data.projectId}/tickets`, payload);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast({
         title: "Ticket created",
         description: "The ticket has been created successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', variables.projectId, 'tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       onClose();
       form.reset();
     },
@@ -86,13 +94,14 @@ export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicia
       const response = await apiRequest('PATCH', `/api/tickets/${ticket!.id}`, payload);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       toast({
         title: "Ticket updated",
         description: "The ticket has been updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', variables.projectId, 'tickets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/tickets', ticket!.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/tickets'] });
       onClose();
     },
     onError: () => {
@@ -125,6 +134,64 @@ export function TicketFormDialog({ ticket, projectId, isOpen, onClose, technicia
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {showProjectSelector && (
+              <FormField
+                control={form.control}
+                name="projectId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-project">
+                          <SelectValue placeholder="Select a project" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <div className="flex items-center px-2 pb-2">
+                          <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                          <Input
+                            placeholder="Search projects..."
+                            value={projectSearch}
+                            onChange={(e) => setProjectSearch(e.target.value)}
+                            className="h-8"
+                            data-testid="input-project-search"
+                          />
+                        </div>
+                        {projects
+                          .filter((p) => {
+                            if (!projectSearch.trim()) return true;
+                            const search = projectSearch.toLowerCase();
+                            return (
+                              p.projectName?.toLowerCase().includes(search) ||
+                              p.projectNumber?.toLowerCase().includes(search)
+                            );
+                          })
+                          .map((project) => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.projectNumber} - {project.projectName}
+                            </SelectItem>
+                          ))}
+                        {projects.filter((p) => {
+                          if (!projectSearch.trim()) return true;
+                          const search = projectSearch.toLowerCase();
+                          return (
+                            p.projectName?.toLowerCase().includes(search) ||
+                            p.projectNumber?.toLowerCase().includes(search)
+                          );
+                        }).length === 0 && (
+                          <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                            No projects found
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="title"
