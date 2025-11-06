@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, ChevronLeft, ChevronRight, AlertCircle, Eye, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import type { Ticket, User, Project } from "@shared/schema";
+import type { Ticket, TicketWithProject, User, Project } from "@shared/schema";
 import { TicketDetailsModal } from "@/components/TicketDetailsModal";
 import { TicketFormDialog } from "@/components/TicketFormDialog";
 
@@ -30,7 +30,7 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  const { data: tickets = [], isLoading: ticketsLoading } = useQuery<Ticket[]>({
+  const { data: tickets = [], isLoading: ticketsLoading } = useQuery<TicketWithProject[]>({
     queryKey: ["/api/tickets"],
   });
 
@@ -237,7 +237,7 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedTickets.map((ticket: any) => {
+                    {paginatedTickets.map((ticket) => {
                       const assignedUser = users.find(u => u.id === ticket.assignedToId);
                       const projectName = ticket.project?.projectName || ticket.project?.ticketNumber || '-';
                       

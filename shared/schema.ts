@@ -561,6 +561,13 @@ export type ProjectComment = typeof projectComments.$inferSelect;
 export type InsertTicket = typeof tickets.$inferInsert;
 export type Ticket = typeof tickets.$inferSelect;
 
+export type TicketWithProject = Ticket & {
+  project: {
+    projectName: string;
+    ticketNumber: string;
+  } | null;
+};
+
 export type InsertTicketComment = typeof ticketComments.$inferInsert;
 export type TicketComment = typeof ticketComments.$inferSelect;
 
