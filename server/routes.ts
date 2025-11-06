@@ -701,7 +701,7 @@ Crawl-delay: 1
     }
   });
 
-  // Projects routes
+  // Projects routes (admins/managers/project_managers/sales see all, employees see assigned, clients see their projects)
   app.get("/api/projects", isSessionAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
@@ -711,34 +711,25 @@ Crawl-delay: 1
         return res.status(401).json({ message: "User not found" });
       }
       
-      // Check if user has permission to view projects
-      if (!hasPermission(user.role, 'viewOwnProjects')) {
-        return res.status(403).json({ message: "Permission denied" });
-      }
+      // Admins, managers, project managers, and sales see all projects
+      const canSeeAll = ['admin', 'manager', 'project_manager', 'sales'].includes(user.role);
       
-      // If user can view all projects, get all. Otherwise, filter based on role
-      if (hasPermission(user.role, 'viewAllProjects')) {
+      if (canSeeAll) {
         const projects = await storage.getProjects();
         res.json(projects);
-      } else if (user.role === 'employee') {
-        // For employees, filter by assignedTechnicianId
-        const projects = await storage.getProjects({ assignedTechnicianId: userId });
-        res.json(projects);
       } else if (user.role === 'client') {
-        // For clients, find their client/lead records and filter projects by those IDs
+        // Clients see projects linked to their clientId/leadId
         const { clientIds, leadIds } = await getUserClientLeadIds(userId);
         const allProjects = await storage.getProjects();
-        
-        // Filter projects where clientId or leadId matches any of the user's client/lead IDs
         const userProjects = allProjects.filter(project => 
           (project.clientId && clientIds.includes(project.clientId)) ||
           (project.leadId && leadIds.includes(project.leadId))
         );
-        
         res.json(userProjects);
       } else {
-        // Default: return empty array for other roles without explicit permissions
-        res.json([]);
+        // Employees see only projects assigned to them
+        const projects = await storage.getProjects({ assignedTechnicianId: userId });
+        res.json(projects);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -1092,7 +1083,7 @@ Crawl-delay: 1
     }
   });
 
-  // Get all tickets assigned to the logged-in user
+  // Get tickets (admins/managers/project_managers/sales see all, employees see assigned, clients see tickets from their projects)
   app.get("/api/tickets", isSessionAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
@@ -1105,10 +1096,29 @@ Crawl-delay: 1
       // Get all tickets with project information
       const allTickets = await storage.getAllTicketsWithProject();
       
-      // Filter to only show tickets assigned to the logged-in user
-      const assignedTickets = allTickets.filter(t => t.assignedToId === userId);
+      // Admins, managers, project managers, and sales see all tickets
+      const canSeeAll = ['admin', 'manager', 'project_manager', 'sales'].includes(user.role);
       
-      res.json(assignedTickets);
+      let tickets;
+      if (canSeeAll) {
+        tickets = allTickets;
+      } else if (user.role === 'client') {
+        // Clients see tickets from their projects
+        const { clientIds, leadIds } = await getUserClientLeadIds(userId);
+        const allProjects = await storage.getProjects();
+        const clientProjectIds = allProjects
+          .filter(p => 
+            (p.clientId && clientIds.includes(p.clientId)) ||
+            (p.leadId && leadIds.includes(p.leadId))
+          )
+          .map(p => p.id);
+        tickets = allTickets.filter(t => clientProjectIds.includes(t.projectId));
+      } else {
+        // Employees see only tickets assigned to them
+        tickets = allTickets.filter(t => t.assignedToId === userId);
+      }
+      
+      res.json(tickets);
     } catch (error) {
       console.error("Error fetching tickets:", error);
       res.status(500).json({ message: "Failed to fetch tickets" });
@@ -2071,9 +2081,8 @@ Crawl-delay: 1
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        // Check if user has permission to view tasks (either own or all)
-        if (!user || !user.role || (!hasPermission(user.role, 'viewOwnTasks') && !hasPermission(user.role, 'viewAllTasks'))) {
-          return res.status(403).json({ message: "Permission denied" });
+        if (!user || !user.role || !userId) {
+          return res.status(401).json({ message: "User not found" });
         }
         
         const filters: any = {};
@@ -2081,9 +2090,12 @@ Crawl-delay: 1
         if (req.query.createdById) filters.createdById = req.query.createdById as string;
         if (req.query.status) filters.status = req.query.status;
         
-        // Users with viewOwnTasks (but not viewAllTasks) can only see their own assigned tasks
-        if (hasPermission(user.role, 'viewOwnTasks') && !hasPermission(user.role, 'viewAllTasks')) {
-          filters.assignedToId = userId!;
+        // Admins, managers, project managers, and sales see all tasks
+        const canSeeAll = ['admin', 'manager', 'project_manager', 'sales'].includes(user.role);
+        
+        // Employees and clients see only tasks assigned to them
+        if (!canSeeAll) {
+          filters.assignedToId = userId;
         }
         
         const tasks = await storage.getTasks(filters);
@@ -2218,9 +2230,8 @@ Crawl-delay: 1
         const userId = req.session.userId;
         const user = await storage.getUser(userId);
         
-        // Check if user has permission to view reports (either own or all)
-        if (!user || !user.role || (!hasPermission(user.role, 'viewOwnReports') && !hasPermission(user.role, 'viewAllReports'))) {
-          return res.status(403).json({ message: "Permission denied" });
+        if (!user || !user.role || !userId) {
+          return res.status(401).json({ message: "User not found" });
         }
         
         const filters: any = {};
@@ -2228,8 +2239,11 @@ Crawl-delay: 1
         if (req.query.taskId) filters.taskId = req.query.taskId;
         if (req.query.status) filters.status = req.query.status;
         
-        // Users with viewOwnReports (but not viewAllReports) can only see their own reports
-        if (hasPermission(user.role, 'viewOwnReports') && !hasPermission(user.role, 'viewAllReports')) {
+        // Admins, managers, project managers, and sales see all reports
+        const canSeeAll = ['admin', 'manager', 'project_manager', 'sales'].includes(user.role);
+        
+        // Employees and clients see only reports they submitted
+        if (!canSeeAll) {
           filters.submittedById = userId;
         }
         
