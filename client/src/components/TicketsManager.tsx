@@ -237,9 +237,9 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedTickets.map((ticket) => {
+                    {paginatedTickets.map((ticket: any) => {
                       const assignedUser = users.find(u => u.id === ticket.assignedToId);
-                      const project = projects.find(p => p.id === ticket.projectId);
+                      const projectName = ticket.project?.projectName || ticket.project?.ticketNumber || '-';
                       
                       return (
                         <TableRow
@@ -255,7 +255,7 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
                             {ticket.title}
                           </TableCell>
                           <TableCell className="max-w-xs truncate">
-                            {project?.projectName || '-'}
+                            {projectName}
                           </TableCell>
                           <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                           <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>

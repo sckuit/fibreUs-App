@@ -666,6 +666,34 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(tickets.createdAt));
   }
 
+  async getAllTicketsWithProject(): Promise<any[]> {
+    const result = await db.select({
+      id: tickets.id,
+      ticketNumber: tickets.ticketNumber,
+      projectId: tickets.projectId,
+      title: tickets.title,
+      description: tickets.description,
+      status: tickets.status,
+      priority: tickets.priority,
+      assignedToId: tickets.assignedToId,
+      createdById: tickets.createdById,
+      dueDate: tickets.dueDate,
+      shareToken: tickets.shareToken,
+      shareTokenCreatedAt: tickets.shareTokenCreatedAt,
+      createdAt: tickets.createdAt,
+      updatedAt: tickets.updatedAt,
+      project: {
+        projectName: projects.projectName,
+        ticketNumber: projects.ticketNumber,
+      }
+    })
+    .from(tickets)
+    .leftJoin(projects, eq(tickets.projectId, projects.id))
+    .orderBy(desc(tickets.createdAt));
+    
+    return result;
+  }
+
   async getTicket(id: string): Promise<Ticket | undefined> {
     const [ticket] = await db.select().from(tickets)
       .where(eq(tickets.id, id));

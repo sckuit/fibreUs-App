@@ -1102,42 +1102,32 @@ Crawl-delay: 1
         return res.status(401).json({ message: "User not found" });
       }
       
-      // Get all tickets first
-      const allProjects = await storage.getProjects();
+      // Get all tickets with project information
+      const allTickets = await storage.getAllTicketsWithProject();
       let accessibleTickets: any[] = [];
       
       // Role-based filtering
       if (user.role === 'client') {
         // Clients can only see tickets for their own projects
         const { clientIds, leadIds } = await getUserClientLeadIds(userId);
-        const clientProjects = allProjects.filter(p => 
-          (p.clientId && clientIds.includes(p.clientId)) ||
-          (p.leadId && leadIds.includes(p.leadId))
-        );
+        const allProjects = await storage.getProjects();
+        const clientProjectIds = allProjects
+          .filter(p => 
+            (p.clientId && clientIds.includes(p.clientId)) ||
+            (p.leadId && leadIds.includes(p.leadId))
+          )
+          .map(p => p.id);
         
-        for (const project of clientProjects) {
-          const tickets = await storage.getTicketsByProject(project.id);
-          accessibleTickets.push(...tickets);
-        }
+        accessibleTickets = allTickets.filter(t => clientProjectIds.includes(t.projectId));
       } else if (hasPermission(user.role, 'viewAllProjects')) {
         // Managers, admins, project managers can see all tickets
-        for (const project of allProjects) {
-          const tickets = await storage.getTicketsByProject(project.id);
-          accessibleTickets.push(...tickets);
-        }
+        accessibleTickets = allTickets;
       } else if (user.role === 'employee') {
         // Employees can only see tickets assigned to them
-        for (const project of allProjects) {
-          const tickets = await storage.getTicketsByProject(project.id);
-          const assignedTickets = tickets.filter(t => t.assignedToId === userId);
-          accessibleTickets.push(...assignedTickets);
-        }
+        accessibleTickets = allTickets.filter(t => t.assignedToId === userId);
       } else if (user.role === 'sales') {
-        // Sales can see tickets for all projects (they have viewProjects permission)
-        for (const project of allProjects) {
-          const tickets = await storage.getTicketsByProject(project.id);
-          accessibleTickets.push(...tickets);
-        }
+        // Sales can see tickets for all projects
+        accessibleTickets = allTickets;
       } else {
         return res.status(403).json({ message: "Permission denied" });
       }
