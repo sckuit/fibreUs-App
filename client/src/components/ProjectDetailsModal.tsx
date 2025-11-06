@@ -13,6 +13,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { User as UserType } from "@shared/schema";
+import { ProjectTicketsTab } from "./ProjectTicketsTab";
 
 interface ProjectDetailsModalProps {
   project: Project | null;
@@ -297,6 +298,10 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
               </div>
             </>
           )}
+
+          {/* Project Tickets Section */}
+          <Separator />
+          <ProjectTicketsTab projectId={project.id} />
 
           {/* Project Comments Section */}
           <Separator />
