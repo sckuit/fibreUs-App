@@ -219,13 +219,13 @@ export interface IStorage {
   getClientDashboard(clientId: string): Promise<{
     activeRequests: ServiceRequest[];
     activeProjects: Project[];
-    recentCommunications: Communication[];
+    recentActivities: (Activity & { user?: User })[];
   }>;
   
   getAdminDashboard(): Promise<{
     pendingRequests: ServiceRequest[];
     activeProjects: Project[];
-    recentCommunications: Communication[];
+    recentActivities: (Activity & { user?: User })[];
   }>;
 
   getSystemMetrics(): Promise<{
@@ -912,7 +912,7 @@ export class DatabaseStorage implements IStorage {
   async getClientDashboard(clientId: string): Promise<{
     activeRequests: ServiceRequest[];
     activeProjects: Project[];
-    recentCommunications: Communication[];
+    recentActivities: (Activity & { user?: User })[];
   }> {
     const activeRequests = await db.select().from(serviceRequests)
       .where(and(
@@ -939,23 +939,31 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(projects.createdAt));
 
-    const recentCommunications = await db.select().from(communications)
-      .innerJoin(serviceRequests, eq(communications.serviceRequestId, serviceRequests.id))
-      .where(eq(serviceRequests.clientId, clientId))
-      .orderBy(desc(communications.createdAt))
+    // Get recent activities - for clients, only show activities where the client is the user
+    // This ensures clients only see their own login/logout and other personal activities
+    const recentActivitiesRaw = await db.select()
+      .from(activities)
+      .leftJoin(users, eq(activities.userId, users.id))
+      .where(eq(activities.userId, clientId))
+      .orderBy(desc(activities.timestamp))
       .limit(10);
+
+    const recentActivities = recentActivitiesRaw.map(row => ({
+      ...row.activities,
+      user: row.users || undefined
+    }));
 
     return {
       activeRequests,
       activeProjects: activeProjects.map(row => row.projects),
-      recentCommunications: recentCommunications.map(row => row.communications),
+      recentActivities,
     };
   }
 
   async getAdminDashboard(): Promise<{
     pendingRequests: ServiceRequest[];
     activeProjects: Project[];
-    recentCommunications: Communication[];
+    recentActivities: (Activity & { user?: User })[];
   }> {
     const pendingRequests = await db.select().from(serviceRequests)
       .where(or(
@@ -973,15 +981,22 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(projects.createdAt))
       .limit(20);
 
-    const recentCommunications = await db.select().from(communications)
-      .where(eq(communications.isInternal, false))
-      .orderBy(desc(communications.createdAt))
+    // Get recent system-wide activities with user information
+    const recentActivitiesRaw = await db.select()
+      .from(activities)
+      .leftJoin(users, eq(activities.userId, users.id))
+      .orderBy(desc(activities.timestamp))
       .limit(20);
+
+    const recentActivities = recentActivitiesRaw.map(row => ({
+      ...row.activities,
+      user: row.users || undefined
+    }));
 
     return {
       pendingRequests,
       activeProjects,
-      recentCommunications,
+      recentActivities,
     };
   }
 

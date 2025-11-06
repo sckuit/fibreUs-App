@@ -69,7 +69,7 @@ interface DashboardData {
   pendingRequests?: ServiceRequest[];
   activeRequests?: ServiceRequest[];
   activeProjects?: Project[];
-  recentCommunications?: Communication[];
+  recentActivities?: (ActivityLog & { user?: User })[];
 }
 
 interface SystemMetrics {
@@ -686,19 +686,46 @@ export default function Dashboard() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {dashboardData?.recentCommunications?.length ? (
-                  <div className="space-y-4" data-testid="list-recent-activity">
-                    {dashboardData.recentCommunications.slice(0, 5).map((comm) => (
-                      <div key={comm.id} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50">
-                        <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm">{comm.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {comm.createdAt ? new Date(comm.createdAt).toLocaleDateString() : 'N/A'}
-                          </p>
+                {dashboardData?.recentActivities?.length ? (
+                  <div className="space-y-3" data-testid="list-recent-activity">
+                    {dashboardData.recentActivities.slice(0, 5).map((activity) => {
+                      // Determine icon based on action
+                      const getActionIcon = () => {
+                        switch (activity.action) {
+                          case 'created': return <Plus className="w-4 h-4 text-green-600" />;
+                          case 'updated': return <Edit className="w-4 h-4 text-blue-600" />;
+                          case 'deleted': return <Trash2 className="w-4 h-4 text-red-600" />;
+                          case 'login': return <Users className="w-4 h-4 text-purple-600" />;
+                          case 'logout': return <Users className="w-4 h-4 text-gray-600" />;
+                          default: return <Activity className="w-4 h-4 text-primary" />;
+                        }
+                      };
+
+                      // Format the activity description
+                      const getActivityDescription = () => {
+                        const userName = activity.user ? `${activity.user.firstName} ${activity.user.lastName}` : 'Someone';
+                        const entityType = activity.entityType || 'item';
+                        const action = activity.action || 'modified';
+                        return `${userName} ${action} ${entityType}`;
+                      };
+
+                      return (
+                        <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 hover-elevate">
+                          <div className="mt-0.5">
+                            {getActionIcon()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium">{getActivityDescription()}</p>
+                            {activity.details && (
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{activity.details}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'N/A'}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-8" data-testid="text-no-activity">No recent activity to display</p>

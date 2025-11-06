@@ -610,10 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sanitizeServiceRequest(request, user.role)
         ) || [],
         activeProjects: dashboard.activeProjects || [],
-        recentCommunications: sanitizeCommunications(
-          dashboard.recentCommunications || [], 
-          user.role
-        ),
+        recentActivities: dashboard.recentActivities || [],
       };
       
       res.json(sanitizedDashboard);
@@ -644,10 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sanitizeServiceRequest(request, 'admin')
         ) || [],
         activeProjects: dashboard.activeProjects || [],
-        recentCommunications: sanitizeCommunications(
-          dashboard.recentCommunications || [], 
-          'admin'
-        ),
+        recentActivities: dashboard.recentActivities || [],
       };
       
       res.json(sanitizedDashboard);
