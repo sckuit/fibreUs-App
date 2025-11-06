@@ -1,10 +1,16 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { Invoice } from "@shared/schema";
+import { Separator } from "@/components/ui/separator";
+import type { Invoice, User as UserType } from "@shared/schema";
 import { format } from "date-fns";
-import { Calendar, FileText, DollarSign, CreditCard } from "lucide-react";
+import { Calendar, FileText, DollarSign, CreditCard, Share2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface InvoiceDetailsModalProps {
   invoice: Invoice | null;
@@ -24,9 +30,33 @@ interface InvoiceItem {
 }
 
 export function InvoiceDetailsModal({ invoice, isOpen, onClose, recipientName }: InvoiceDetailsModalProps) {
+  const { user } = useAuth();
+  const typedUser = user as UserType | undefined;
+  const { toast } = useToast();
+
+  const generateShareLinkMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/invoices/${invoice!.id}/share`, {});
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      const shareUrl = `${window.location.origin}/invoice/${data.invoiceNumber}/${data.token}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied to clipboard!" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to generate share link",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!invoice) return null;
 
   const items = Array.isArray(invoice.items) ? (invoice.items as InvoiceItem[]) : [];
+  const isClient = typedUser?.role === 'client';
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -191,6 +221,25 @@ export function InvoiceDetailsModal({ invoice, isOpen, onClose, recipientName }:
               <h4 className="text-sm font-semibold">Notes</h4>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
             </div>
+          )}
+
+          {/* Share Link Button for Staff */}
+          {!isClient && (
+            <>
+              <Separator />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => generateShareLinkMutation.mutate()}
+                  disabled={generateShareLinkMutation.isPending}
+                  data-testid="button-share-invoice-link"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  {generateShareLinkMutation.isPending ? 'Generating...' : 'Share Link'}
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </DialogContent>

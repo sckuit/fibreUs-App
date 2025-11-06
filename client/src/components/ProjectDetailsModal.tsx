@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import type { Project, ProjectComment } from "@shared/schema";
 import { format } from "date-fns";
-import { Calendar, User, FileText, DollarSign, Clock, CheckCircle, XCircle, Star, MessageSquare } from "lucide-react";
+import { Calendar, User, FileText, DollarSign, Clock, CheckCircle, XCircle, Star, MessageSquare, Share2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -82,6 +82,25 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
       toast({
         title: "Error",
         description: "Failed to add comment. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateShareLinkMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/projects/${project!.id}/share`, {});
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      const shareUrl = `${window.location.origin}/project/${data.projectNumber}/${data.token}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied to clipboard!" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to generate share link",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -424,6 +443,25 @@ export function ProjectDetailsModal({ project, isOpen, onClose, clientName, tech
                   data-testid="button-submit-feedback"
                 >
                   {submitFeedbackMutation.isPending ? 'Submitting...' : 'Submit Feedback'}
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* Share Link Button for Staff */}
+          {!isClient && (
+            <>
+              <Separator />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => generateShareLinkMutation.mutate()}
+                  disabled={generateShareLinkMutation.isPending}
+                  data-testid="button-share-project-link"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  {generateShareLinkMutation.isPending ? 'Generating...' : 'Share Link'}
                 </Button>
               </div>
             </>

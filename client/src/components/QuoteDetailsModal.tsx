@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import type { Quote, User as UserType } from "@shared/schema";
 import { format } from "date-fns";
-import { Calendar, FileText, DollarSign, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, FileText, DollarSign, CheckCircle, XCircle, Share2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
@@ -73,6 +73,25 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
       toast({
         title: "Error",
         description: "Failed to reject quote. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateShareLinkMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/quotes/${quote!.id}/share`, {});
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      const shareUrl = `${window.location.origin}/quote/${data.quoteNumber}/${data.token}`;
+      navigator.clipboard.writeText(shareUrl);
+      toast({ title: "Link copied to clipboard!" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to generate share link",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -245,6 +264,25 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
                     {rejectQuoteMutation.isPending ? 'Rejecting...' : 'Reject Quote'}
                   </Button>
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* Share Link Button for Staff */}
+          {!isClient && (
+            <>
+              <Separator />
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => generateShareLinkMutation.mutate()}
+                  disabled={generateShareLinkMutation.isPending}
+                  data-testid="button-share-quote-link"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  {generateShareLinkMutation.isPending ? 'Generating...' : 'Share Link'}
+                </Button>
               </div>
             </>
           )}
