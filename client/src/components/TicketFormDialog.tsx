@@ -164,12 +164,12 @@ export function TicketFormDialog({ ticket, projectId, projects = [], isOpen, onC
                             const search = projectSearch.toLowerCase();
                             return (
                               p.projectName?.toLowerCase().includes(search) ||
-                              p.projectNumber?.toLowerCase().includes(search)
+                              p.ticketNumber?.toLowerCase().includes(search)
                             );
                           })
                           .map((project) => (
                             <SelectItem key={project.id} value={project.id}>
-                              {project.projectNumber} - {project.projectName}
+                              {project.ticketNumber} - {project.projectName}
                             </SelectItem>
                           ))}
                         {projects.filter((p) => {
@@ -177,7 +177,7 @@ export function TicketFormDialog({ ticket, projectId, projects = [], isOpen, onC
                           const search = projectSearch.toLowerCase();
                           return (
                             p.projectName?.toLowerCase().includes(search) ||
-                            p.projectNumber?.toLowerCase().includes(search)
+                            p.ticketNumber?.toLowerCase().includes(search)
                           );
                         }).length === 0 && (
                           <div className="px-2 py-4 text-sm text-muted-foreground text-center">

@@ -314,10 +314,13 @@ export function TicketsManager({ role, userId }: TicketsManagerProps) {
           projects={projects}
           isOpen={showCreateDialog}
           onClose={() => setShowCreateDialog(false)}
-          technicians={users.filter(u => ['employee', 'sales', 'project_manager', 'manager', 'admin'].includes(u.role || '')).map(u => ({
-            id: u.id,
-            fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email
-          }))}
+          technicians={users
+            .filter(u => ['employee', 'sales', 'project_manager', 'manager', 'admin'].includes(u.role || ''))
+            .map(u => ({
+              id: u.id,
+              fullName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown'
+            }))
+          }
         />
       )}
     </>
