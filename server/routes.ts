@@ -171,6 +171,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
+  // SEO: Serve robots.txt for search engine crawlers
+  app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send(`# FibreUS Electronic Security & Fiber Optic Services
+# Robots.txt - Search Engine Crawler Configuration
+
+# Allow all crawlers to access public pages
+User-agent: *
+Allow: /
+Allow: /quote/
+Allow: /invoice/
+Allow: /project/
+Allow: /ticket/
+
+# Block crawlers from private areas
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+
+# Crawl delay (optional - 1 second between requests)
+Crawl-delay: 1
+
+# Sitemap location (update when sitemap is implemented)
+# Sitemap: https://fibreus.replit.app/sitemap.xml
+`);
+  });
+
   // Session-based authentication middleware (email/password only)
   const isSessionAuthenticated = (req: any, res: any, next: any) => {
     if (req.session?.userId) {
