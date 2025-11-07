@@ -234,16 +234,53 @@ Sitemap: https://${req.get('host')}/sitemap.xml
         }).from(tickets).where(sql`${tickets.shareToken} IS NOT NULL`),
       ]);
 
+      // Helper function to add URL to sitemap
+      const addUrl = (loc: string, changefreq: string, priority: number) => {
+        return `  <url>
+    <loc>${baseUrl}${loc}</loc>
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
+  </url>\n`;
+      };
+
       // Build sitemap XML
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
       xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
       
       // Add homepage
-      xml += '  <url>\n';
-      xml += `    <loc>${baseUrl}/</loc>\n`;
-      xml += '    <changefreq>weekly</changefreq>\n';
-      xml += '    <priority>1.0</priority>\n';
-      xml += '  </url>\n';
+      xml += addUrl('/', 'weekly', 1.0);
+      
+      // Add service pages (highest priority for SEO)
+      xml += addUrl('/services/cctv-installation', 'monthly', 0.9);
+      xml += addUrl('/services/alarm-systems', 'monthly', 0.9);
+      xml += addUrl('/services/access-control', 'monthly', 0.9);
+      xml += addUrl('/services/intercom-systems', 'monthly', 0.9);
+      xml += addUrl('/services/cloud-storage', 'monthly', 0.9);
+      xml += addUrl('/services/remote-monitoring', 'monthly', 0.9);
+      
+      // Add company pages
+      xml += addUrl('/company/about-us', 'monthly', 0.8);
+      xml += addUrl('/company/our-team', 'monthly', 0.8);
+      xml += addUrl('/company/certifications', 'monthly', 0.8);
+      xml += addUrl('/company/case-studies', 'monthly', 0.8);
+      xml += addUrl('/company/careers', 'monthly', 0.8);
+      xml += addUrl('/company/news-updates', 'weekly', 0.8);
+      
+      // Add support pages
+      xml += addUrl('/support/system-status', 'daily', 0.7);
+      xml += addUrl('/support/technical-support', 'monthly', 0.7);
+      xml += addUrl('/support/emergency-service', 'monthly', 0.7);
+      xml += addUrl('/support/maintenance', 'monthly', 0.7);
+      xml += addUrl('/support/training', 'monthly', 0.7);
+      
+      // Add referral program
+      xml += addUrl('/referral-program', 'monthly', 0.6);
+      
+      // Add legal pages
+      xml += addUrl('/legal/privacy-policy', 'yearly', 0.5);
+      xml += addUrl('/legal/terms-of-service', 'yearly', 0.5);
+      xml += addUrl('/legal/service-agreement', 'yearly', 0.5);
+      xml += addUrl('/legal/warranty-information', 'yearly', 0.5);
       
       // Add public quote URLs
       for (const quote of publicQuotes) {
