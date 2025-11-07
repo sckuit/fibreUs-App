@@ -5987,19 +5987,11 @@ Sitemap: https://${req.get('host')}/sitemap.xml
         serviceType,
         address,
         notes: `Quote Request - Property Type: ${propertyType}\n\nPreferred Contact: ${preferredContact}\n\nDescription: ${description}`,
-        source: 'web_form' as const,
+        source: 'website' as const,
         status: 'new' as const,
       };
       
       const lead = await storage.createLead(leadData);
-      
-      // Log activity
-      await storage.createActivity({
-        entityType: 'lead',
-        entityId: lead.id,
-        action: 'created',
-        description: `New quote request received from ${name}`,
-      });
       
       res.json({ success: true, leadId: lead.id });
     } catch (error) {
@@ -6021,19 +6013,11 @@ Sitemap: https://${req.get('host')}/sitemap.xml
         company: company || null,
         serviceType: appointmentType,
         notes: `Appointment Request - Type: ${appointmentType}\n\nPreferred Date: ${preferredDate}\nPreferred Time: ${preferredTime}\n\nNotes: ${notes || 'None'}`,
-        source: 'web_form' as const,
+        source: 'website' as const,
         status: 'new' as const,
       };
       
       const lead = await storage.createLead(leadData);
-      
-      // Log activity
-      await storage.createActivity({
-        entityType: 'lead',
-        entityId: lead.id,
-        action: 'created',
-        description: `New appointment request from ${name} for ${preferredDate}`,
-      });
       
       res.json({ success: true, leadId: lead.id });
     } catch (error) {
@@ -6056,19 +6040,11 @@ Sitemap: https://${req.get('host')}/sitemap.xml
         serviceType: serviceInterest,
         address: propertyAddress,
         notes: `Site Visit Request - Property Type: ${propertyType}\n\nSquare Footage: ${squareFootage || 'Not specified'}\nPreferred Date: ${preferredDate}\nPreferred Time: ${preferredTime}\n\nSpecial Requirements: ${specialRequirements || 'None'}`,
-        source: 'web_form' as const,
+        source: 'website' as const,
         status: 'new' as const,
       };
       
       const lead = await storage.createLead(leadData);
-      
-      // Log activity
-      await storage.createActivity({
-        entityType: 'lead',
-        entityId: lead.id,
-        action: 'created',
-        description: `New site visit request from ${name} at ${propertyAddress}`,
-      });
       
       res.json({ success: true, leadId: lead.id });
     } catch (error) {
@@ -6091,19 +6067,11 @@ Sitemap: https://${req.get('host')}/sitemap.xml
         serviceType: systemType,
         address,
         notes: `Service Request - Type: ${serviceType}\n\nSystem: ${systemType}\nUrgency: ${urgency}\nPreferred Date: ${preferredDate}\nPreferred Time: ${preferredTime}\n\nIssue: ${issueDescription}`,
-        source: 'web_form' as const,
+        source: 'website' as const,
         status: 'new' as const,
       };
       
       const lead = await storage.createLead(leadData);
-      
-      // Log activity
-      await storage.createActivity({
-        entityType: 'lead',
-        entityId: lead.id,
-        action: 'created',
-        description: `New ${urgency} priority service request from ${name}`,
-      });
       
       res.json({ success: true, leadId: lead.id });
     } catch (error) {
