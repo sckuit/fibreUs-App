@@ -5965,6 +5965,147 @@ Sitemap: https://${req.get('host')}/sitemap.xml
     }
   });
 
+  // Public form submission endpoints (no authentication required)
+  
+  // POST /api/public/quote-request - Submit quote request form
+  app.post('/api/public/quote-request', async (req: any, res) => {
+    try {
+      const { name, email, phone, company, serviceType, propertyType, address, description, preferredContact } = req.body;
+      
+      // Create lead from quote request
+      const leadData = {
+        name,
+        email,
+        phone,
+        company: company || null,
+        serviceType,
+        address,
+        notes: `Quote Request - Property Type: ${propertyType}\n\nPreferred Contact: ${preferredContact}\n\nDescription: ${description}`,
+        source: 'web_form' as const,
+        status: 'new' as const,
+      };
+      
+      const lead = await storage.createLead(leadData);
+      
+      // Log activity
+      await storage.createActivity({
+        entityType: 'lead',
+        entityId: lead.id,
+        action: 'created',
+        description: `New quote request received from ${name}`,
+      });
+      
+      res.json({ success: true, leadId: lead.id });
+    } catch (error) {
+      console.error('Error creating quote request:', error);
+      res.status(500).json({ message: 'Failed to submit quote request' });
+    }
+  });
+
+  // POST /api/public/appointment - Submit appointment request
+  app.post('/api/public/appointment', async (req: any, res) => {
+    try {
+      const { name, email, phone, company, appointmentType, preferredDate, preferredTime, notes } = req.body;
+      
+      // Create lead from appointment request
+      const leadData = {
+        name,
+        email,
+        phone,
+        company: company || null,
+        serviceType: appointmentType,
+        notes: `Appointment Request - Type: ${appointmentType}\n\nPreferred Date: ${preferredDate}\nPreferred Time: ${preferredTime}\n\nNotes: ${notes || 'None'}`,
+        source: 'web_form' as const,
+        status: 'new' as const,
+      };
+      
+      const lead = await storage.createLead(leadData);
+      
+      // Log activity
+      await storage.createActivity({
+        entityType: 'lead',
+        entityId: lead.id,
+        action: 'created',
+        description: `New appointment request from ${name} for ${preferredDate}`,
+      });
+      
+      res.json({ success: true, leadId: lead.id });
+    } catch (error) {
+      console.error('Error creating appointment request:', error);
+      res.status(500).json({ message: 'Failed to submit appointment request' });
+    }
+  });
+
+  // POST /api/public/site-visit - Submit site visit request
+  app.post('/api/public/site-visit', async (req: any, res) => {
+    try {
+      const { name, email, phone, company, propertyAddress, propertyType, serviceInterest, squareFootage, preferredDate, preferredTime, specialRequirements } = req.body;
+      
+      // Create lead from site visit request
+      const leadData = {
+        name,
+        email,
+        phone,
+        company: company || null,
+        serviceType: serviceInterest,
+        address: propertyAddress,
+        notes: `Site Visit Request - Property Type: ${propertyType}\n\nSquare Footage: ${squareFootage || 'Not specified'}\nPreferred Date: ${preferredDate}\nPreferred Time: ${preferredTime}\n\nSpecial Requirements: ${specialRequirements || 'None'}`,
+        source: 'web_form' as const,
+        status: 'new' as const,
+      };
+      
+      const lead = await storage.createLead(leadData);
+      
+      // Log activity
+      await storage.createActivity({
+        entityType: 'lead',
+        entityId: lead.id,
+        action: 'created',
+        description: `New site visit request from ${name} at ${propertyAddress}`,
+      });
+      
+      res.json({ success: true, leadId: lead.id });
+    } catch (error) {
+      console.error('Error creating site visit request:', error);
+      res.status(500).json({ message: 'Failed to submit site visit request' });
+    }
+  });
+
+  // POST /api/public/service-request - Submit service call request
+  app.post('/api/public/service-request', async (req: any, res) => {
+    try {
+      const { name, email, phone, company, serviceType, systemType, urgency, address, issueDescription, preferredDate, preferredTime } = req.body;
+      
+      // Create lead from service request
+      const leadData = {
+        name,
+        email,
+        phone,
+        company: company || null,
+        serviceType: systemType,
+        address,
+        notes: `Service Request - Type: ${serviceType}\n\nSystem: ${systemType}\nUrgency: ${urgency}\nPreferred Date: ${preferredDate}\nPreferred Time: ${preferredTime}\n\nIssue: ${issueDescription}`,
+        source: 'web_form' as const,
+        status: 'new' as const,
+      };
+      
+      const lead = await storage.createLead(leadData);
+      
+      // Log activity
+      await storage.createActivity({
+        entityType: 'lead',
+        entityId: lead.id,
+        action: 'created',
+        description: `New ${urgency} priority service request from ${name}`,
+      });
+      
+      res.json({ success: true, leadId: lead.id });
+    } catch (error) {
+      console.error('Error creating service request:', error);
+      res.status(500).json({ message: 'Failed to submit service request' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
