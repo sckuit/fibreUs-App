@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, MapPin } from "lucide-react";
+import type { SystemConfig } from "@shared/schema";
 
 const siteVisitFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -58,6 +60,10 @@ type SiteVisitFormData = z.infer<typeof siteVisitFormSchema>;
 export default function ScheduleSiteVisit() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
 
   const form = useForm<SiteVisitFormData>({
     resolver: zodResolver(siteVisitFormSchema),
@@ -67,7 +73,11 @@ export default function ScheduleSiteVisit() {
       phone: "",
       company: "",
       propertyAddress: "",
+      propertyType: "residential",
+      serviceInterest: "cctv",
       squareFootage: "",
+      preferredDate: "",
+      preferredTime: "morning",
       specialRequirements: "",
     },
   });
@@ -392,7 +402,8 @@ export default function ScheduleSiteVisit() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          Questions about site surveys? Call us at <strong>(555) 123-4567</strong>
+          Questions about site surveys? Call us at{" "}
+          <strong>{systemConfig?.phoneNumber || "(555) 123-4567"}</strong>
         </p>
       </div>
     </div>

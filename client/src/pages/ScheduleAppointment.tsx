@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, Calendar } from "lucide-react";
+import type { SystemConfig } from "@shared/schema";
 
 const appointmentFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -50,6 +52,10 @@ type AppointmentFormData = z.infer<typeof appointmentFormSchema>;
 export default function ScheduleAppointment() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
 
   const form = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentFormSchema),
@@ -58,6 +64,9 @@ export default function ScheduleAppointment() {
       email: "",
       phone: "",
       company: "",
+      appointmentType: "consultation",
+      preferredDate: "",
+      preferredTime: "morning",
       notes: "",
     },
   });
@@ -317,7 +326,8 @@ export default function ScheduleAppointment() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          Need immediate assistance? Call us at <strong>(555) 123-4567</strong>
+          Need immediate assistance? Call us at{" "}
+          <strong>{systemConfig?.phoneNumber || "(555) 123-4567"}</strong>
         </p>
       </div>
     </div>

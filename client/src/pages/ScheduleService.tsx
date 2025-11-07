@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, Wrench } from "lucide-react";
+import type { SystemConfig } from "@shared/schema";
 
 const serviceFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -65,6 +67,10 @@ type ServiceFormData = z.infer<typeof serviceFormSchema>;
 export default function ScheduleService() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
 
   const form = useForm<ServiceFormData>({
     resolver: zodResolver(serviceFormSchema),
@@ -73,8 +79,13 @@ export default function ScheduleService() {
       email: "",
       phone: "",
       company: "",
+      serviceType: "repair",
+      systemType: "cctv",
+      urgency: "medium",
       address: "",
       issueDescription: "",
+      preferredDate: "",
+      preferredTime: "morning",
     },
   });
 
@@ -410,7 +421,10 @@ export default function ScheduleService() {
           <h3 className="font-semibold text-destructive mb-2">Emergency Service</h3>
           <p className="text-sm text-muted-foreground">
             If you have an emergency situation (security breach, system failure), please call our
-            24/7 emergency hotline at <strong className="text-foreground">(555) 911-SECURE</strong>
+            24/7 emergency hotline at{" "}
+            <strong className="text-foreground">
+              {systemConfig?.emergencyPhone || "(555) 911-SECURE"}
+            </strong>
           </p>
         </div>
       </div>

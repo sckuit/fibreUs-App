@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -24,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, FileText } from "lucide-react";
+import type { SystemConfig } from "@shared/schema";
 
 const quoteFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -55,6 +57,10 @@ type QuoteFormData = z.infer<typeof quoteFormSchema>;
 export default function GetQuote() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const { toast } = useToast();
+  
+  const { data: systemConfig } = useQuery<SystemConfig>({
+    queryKey: ['/api/system-config'],
+  });
 
   const form = useForm<QuoteFormData>({
     resolver: zodResolver(quoteFormSchema),
@@ -63,8 +69,11 @@ export default function GetQuote() {
       email: "",
       phone: "",
       company: "",
+      serviceType: "cctv",
+      propertyType: "residential",
       address: "",
       description: "",
+      preferredContact: "email",
     },
   });
 
@@ -347,8 +356,9 @@ export default function GetQuote() {
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          Need immediate assistance? Call us at <strong>(555) 123-4567</strong> or email{" "}
-          <strong>info@fibreus.com</strong>
+          Need immediate assistance? Call us at{" "}
+          <strong>{systemConfig?.phoneNumber || "(555) 123-4567"}</strong> or email{" "}
+          <strong>{systemConfig?.infoEmail || "info@fibreus.com"}</strong>
         </p>
       </div>
     </div>
