@@ -202,38 +202,11 @@ Sitemap: https://${req.get('host')}/sitemap.xml
 `);
   });
 
-  // SEO: Serve sitemap.xml for search engine crawlers
-  app.get('/sitemap.xml', async (req, res) => {
+  // SEO: Serve sitemap.xml for search engine crawlers (static pages only)
+  app.get('/sitemap.xml', (req, res) => {
     try {
       const baseUrl = `https://${req.get('host')}`;
       
-      // Query all public URLs (items with shareTokens)
-      const [publicQuotes, publicInvoices, publicProjects, publicTickets] = await Promise.all([
-        db.select({
-          quoteNumber: quotes.quoteNumber,
-          shareToken: quotes.shareToken,
-          updatedAt: quotes.updatedAt,
-        }).from(quotes).where(sql`${quotes.shareToken} IS NOT NULL`),
-        
-        db.select({
-          invoiceNumber: invoices.invoiceNumber,
-          shareToken: invoices.shareToken,
-          updatedAt: invoices.updatedAt,
-        }).from(invoices).where(sql`${invoices.shareToken} IS NOT NULL`),
-        
-        db.select({
-          ticketNumber: projects.ticketNumber,
-          shareToken: projects.shareToken,
-          updatedAt: projects.updatedAt,
-        }).from(projects).where(sql`${projects.shareToken} IS NOT NULL`),
-        
-        db.select({
-          ticketNumber: tickets.ticketNumber,
-          shareToken: tickets.shareToken,
-          updatedAt: tickets.updatedAt,
-        }).from(tickets).where(sql`${tickets.shareToken} IS NOT NULL`),
-      ]);
-
       // Helper function to add URL to sitemap
       const addUrl = (loc: string, changefreq: string, priority: number) => {
         return `  <url>
@@ -281,54 +254,6 @@ Sitemap: https://${req.get('host')}/sitemap.xml
       xml += addUrl('/legal/terms-of-service', 'yearly', 0.5);
       xml += addUrl('/legal/service-agreement', 'yearly', 0.5);
       xml += addUrl('/legal/warranty-information', 'yearly', 0.5);
-      
-      // Add public quote URLs
-      for (const quote of publicQuotes) {
-        xml += '  <url>\n';
-        xml += `    <loc>${baseUrl}/quote/${quote.quoteNumber}/${quote.shareToken}</loc>\n`;
-        if (quote.updatedAt) {
-          xml += `    <lastmod>${quote.updatedAt.toISOString()}</lastmod>\n`;
-        }
-        xml += '    <changefreq>monthly</changefreq>\n';
-        xml += '    <priority>0.8</priority>\n';
-        xml += '  </url>\n';
-      }
-      
-      // Add public invoice URLs
-      for (const invoice of publicInvoices) {
-        xml += '  <url>\n';
-        xml += `    <loc>${baseUrl}/invoice/${invoice.invoiceNumber}/${invoice.shareToken}</loc>\n`;
-        if (invoice.updatedAt) {
-          xml += `    <lastmod>${invoice.updatedAt.toISOString()}</lastmod>\n`;
-        }
-        xml += '    <changefreq>monthly</changefreq>\n';
-        xml += '    <priority>0.8</priority>\n';
-        xml += '  </url>\n';
-      }
-      
-      // Add public project URLs
-      for (const project of publicProjects) {
-        xml += '  <url>\n';
-        xml += `    <loc>${baseUrl}/project/${project.ticketNumber}/${project.shareToken}</loc>\n`;
-        if (project.updatedAt) {
-          xml += `    <lastmod>${project.updatedAt.toISOString()}</lastmod>\n`;
-        }
-        xml += '    <changefreq>weekly</changefreq>\n';
-        xml += '    <priority>0.7</priority>\n';
-        xml += '  </url>\n';
-      }
-      
-      // Add public ticket URLs
-      for (const ticket of publicTickets) {
-        xml += '  <url>\n';
-        xml += `    <loc>${baseUrl}/ticket/${ticket.ticketNumber}/${ticket.shareToken}</loc>\n`;
-        if (ticket.updatedAt) {
-          xml += `    <lastmod>${ticket.updatedAt.toISOString()}</lastmod>\n`;
-        }
-        xml += '    <changefreq>weekly</changefreq>\n';
-        xml += '    <priority>0.6</priority>\n';
-        xml += '  </url>\n';
-      }
       
       xml += '</urlset>';
       
