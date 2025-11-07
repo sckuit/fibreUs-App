@@ -255,6 +255,12 @@ Sitemap: https://${req.get('host')}/sitemap.xml
       xml += addUrl('/legal/service-agreement', 'yearly', 0.5);
       xml += addUrl('/legal/warranty-information', 'yearly', 0.5);
       
+      // Add public form pages (high priority for lead generation)
+      xml += addUrl('/get-quote', 'monthly', 0.9);
+      xml += addUrl('/get-appointment', 'monthly', 0.8);
+      xml += addUrl('/site-visit', 'monthly', 0.8);
+      xml += addUrl('/get-service', 'monthly', 0.8);
+      
       xml += '</urlset>';
       
       res.type('application/xml');

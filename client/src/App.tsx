@@ -53,6 +53,12 @@ import TermsOfService from "@/pages/legal/TermsOfService";
 import ServiceAgreement from "@/pages/legal/ServiceAgreement";
 import WarrantyInformation from "@/pages/legal/WarrantyInformation";
 
+// Public form pages
+import GetQuote from "@/pages/GetQuote";
+import ScheduleAppointment from "@/pages/ScheduleAppointment";
+import ScheduleSiteVisit from "@/pages/ScheduleSiteVisit";
+import ScheduleService from "@/pages/ScheduleService";
+
 // Public view pages (for share links)
 import PublicQuoteView from "@/pages/PublicQuoteView";
 import PublicInvoiceView from "@/pages/PublicInvoiceView";
@@ -295,6 +301,28 @@ function Router() {
       <Route path="/legal/warranty-information" component={() => (
         <PublicLayout>
           <WarrantyInformation />
+        </PublicLayout>
+      )} />
+      
+      {/* Public form pages */}
+      <Route path="/get-quote" component={() => (
+        <PublicLayout>
+          <GetQuote />
+        </PublicLayout>
+      )} />
+      <Route path="/get-appointment" component={() => (
+        <PublicLayout>
+          <ScheduleAppointment />
+        </PublicLayout>
+      )} />
+      <Route path="/site-visit" component={() => (
+        <PublicLayout>
+          <ScheduleSiteVisit />
+        </PublicLayout>
+      )} />
+      <Route path="/get-service" component={() => (
+        <PublicLayout>
+          <ScheduleService />
         </PublicLayout>
       )} />
       
