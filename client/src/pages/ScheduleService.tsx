@@ -91,11 +91,7 @@ export default function ScheduleService() {
 
   const onSubmit = async (data: ServiceFormData) => {
     try {
-      await apiRequest("/api/public/service-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/public/service-request", data);
 
       setIsSubmitted(true);
       form.reset();

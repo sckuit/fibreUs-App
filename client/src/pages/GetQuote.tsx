@@ -79,11 +79,7 @@ export default function GetQuote() {
 
   const onSubmit = async (data: QuoteFormData) => {
     try {
-      await apiRequest("/api/public/quote-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/public/quote-request", data);
 
       setIsSubmitted(true);
       form.reset();

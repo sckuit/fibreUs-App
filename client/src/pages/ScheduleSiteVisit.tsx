@@ -84,11 +84,7 @@ export default function ScheduleSiteVisit() {
 
   const onSubmit = async (data: SiteVisitFormData) => {
     try {
-      await apiRequest("/api/public/site-visit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/public/site-visit", data);
 
       setIsSubmitted(true);
       form.reset();

@@ -73,11 +73,7 @@ export default function ScheduleAppointment() {
 
   const onSubmit = async (data: AppointmentFormData) => {
     try {
-      await apiRequest("/api/public/appointment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      await apiRequest("POST", "/api/public/appointment", data);
 
       setIsSubmitted(true);
       form.reset();
