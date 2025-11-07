@@ -6,6 +6,9 @@ import { trackVisitor } from "./visitorMiddleware";
 import { hashPassword, verifyPassword, generateResetToken } from "./passwordUtils";
 import { hasPermission } from "@shared/permissions";
 import { getSession } from "./replitAuth";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
+import { quotes, invoices, projects, tickets } from "@shared/schema";
 import { 
   clientInsertServiceRequestSchema, 
   updateServiceRequestSchema, 
@@ -194,9 +197,110 @@ Disallow: /register
 # Crawl delay (optional - 1 second between requests)
 Crawl-delay: 1
 
-# Sitemap location (update when sitemap is implemented)
-# Sitemap: https://fibreus.replit.app/sitemap.xml
+# Sitemap location
+Sitemap: https://${req.get('host')}/sitemap.xml
 `);
+  });
+
+  // SEO: Serve sitemap.xml for search engine crawlers
+  app.get('/sitemap.xml', async (req, res) => {
+    try {
+      const baseUrl = `https://${req.get('host')}`;
+      
+      // Query all public URLs (items with shareTokens)
+      const [publicQuotes, publicInvoices, publicProjects, publicTickets] = await Promise.all([
+        db.select({
+          quoteNumber: quotes.quoteNumber,
+          shareToken: quotes.shareToken,
+          updatedAt: quotes.updatedAt,
+        }).from(quotes).where(sql`${quotes.shareToken} IS NOT NULL`),
+        
+        db.select({
+          invoiceNumber: invoices.invoiceNumber,
+          shareToken: invoices.shareToken,
+          updatedAt: invoices.updatedAt,
+        }).from(invoices).where(sql`${invoices.shareToken} IS NOT NULL`),
+        
+        db.select({
+          ticketNumber: projects.ticketNumber,
+          shareToken: projects.shareToken,
+          updatedAt: projects.updatedAt,
+        }).from(projects).where(sql`${projects.shareToken} IS NOT NULL`),
+        
+        db.select({
+          ticketNumber: tickets.ticketNumber,
+          shareToken: tickets.shareToken,
+          updatedAt: tickets.updatedAt,
+        }).from(tickets).where(sql`${tickets.shareToken} IS NOT NULL`),
+      ]);
+
+      // Build sitemap XML
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+      
+      // Add homepage
+      xml += '  <url>\n';
+      xml += `    <loc>${baseUrl}/</loc>\n`;
+      xml += '    <changefreq>weekly</changefreq>\n';
+      xml += '    <priority>1.0</priority>\n';
+      xml += '  </url>\n';
+      
+      // Add public quote URLs
+      for (const quote of publicQuotes) {
+        xml += '  <url>\n';
+        xml += `    <loc>${baseUrl}/quote/${quote.quoteNumber}/${quote.shareToken}</loc>\n`;
+        if (quote.updatedAt) {
+          xml += `    <lastmod>${quote.updatedAt.toISOString()}</lastmod>\n`;
+        }
+        xml += '    <changefreq>monthly</changefreq>\n';
+        xml += '    <priority>0.8</priority>\n';
+        xml += '  </url>\n';
+      }
+      
+      // Add public invoice URLs
+      for (const invoice of publicInvoices) {
+        xml += '  <url>\n';
+        xml += `    <loc>${baseUrl}/invoice/${invoice.invoiceNumber}/${invoice.shareToken}</loc>\n`;
+        if (invoice.updatedAt) {
+          xml += `    <lastmod>${invoice.updatedAt.toISOString()}</lastmod>\n`;
+        }
+        xml += '    <changefreq>monthly</changefreq>\n';
+        xml += '    <priority>0.8</priority>\n';
+        xml += '  </url>\n';
+      }
+      
+      // Add public project URLs
+      for (const project of publicProjects) {
+        xml += '  <url>\n';
+        xml += `    <loc>${baseUrl}/project/${project.ticketNumber}/${project.shareToken}</loc>\n`;
+        if (project.updatedAt) {
+          xml += `    <lastmod>${project.updatedAt.toISOString()}</lastmod>\n`;
+        }
+        xml += '    <changefreq>weekly</changefreq>\n';
+        xml += '    <priority>0.7</priority>\n';
+        xml += '  </url>\n';
+      }
+      
+      // Add public ticket URLs
+      for (const ticket of publicTickets) {
+        xml += '  <url>\n';
+        xml += `    <loc>${baseUrl}/ticket/${ticket.ticketNumber}/${ticket.shareToken}</loc>\n`;
+        if (ticket.updatedAt) {
+          xml += `    <lastmod>${ticket.updatedAt.toISOString()}</lastmod>\n`;
+        }
+        xml += '    <changefreq>weekly</changefreq>\n';
+        xml += '    <priority>0.6</priority>\n';
+        xml += '  </url>\n';
+      }
+      
+      xml += '</urlset>';
+      
+      res.type('application/xml');
+      res.send(xml);
+    } catch (error) {
+      console.error('Error generating sitemap:', error);
+      res.status(500).send('Error generating sitemap');
+    }
   });
 
   // Session-based authentication middleware (email/password only)
