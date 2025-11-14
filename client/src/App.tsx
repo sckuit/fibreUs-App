@@ -67,6 +67,10 @@ import PublicTicketView from "@/pages/PublicTicketView";
 import LegacyPublicQuoteRedirect from "@/pages/LegacyPublicQuoteRedirect";
 import LegacyPublicInvoiceRedirect from "@/pages/LegacyPublicInvoiceRedirect";
 
+// Print pages
+import QuotePrintPage from "@/pages/QuotePrintPage";
+import InvoicePrintPage from "@/pages/InvoicePrintPage";
+
 // Public layout with PublicHeader for non-authenticated pages
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -178,6 +182,10 @@ function Router() {
       <Route path="/invoice/:invoiceNumber/:token" component={PublicInvoiceView} />
       <Route path="/project/:projectNumber/:token" component={PublicProjectView} />
       <Route path="/ticket/:ticketNumber/:token" component={PublicTicketView} />
+      
+      {/* Print pages */}
+      <Route path="/print/quote/:id" component={QuotePrintPage} />
+      <Route path="/print/invoice/:id" component={InvoicePrintPage} />
       
       {/* Public pages */}
       <Route path="/logos" component={() => (

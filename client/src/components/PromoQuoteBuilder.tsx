@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments, User } from "@shared/schema";
 import { insertQuoteSchema } from "@shared/schema";
 import { formatCurrency } from "@/lib/currency";
@@ -23,7 +23,6 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { QuotePreview } from "./QuotePreview";
-import { PrintPreviewDialog } from "./PrintPreviewDialog";
 
 interface PromoQuoteItem {
   priceMatrixId: string;
@@ -41,10 +40,10 @@ interface PromoQuoteItem {
 export default function PromoQuoteBuilder() {
   const { toast } = useToast();
   const [, params] = useRoute("/portal/admin/quotes/:id/edit");
+  const [, setLocation] = useLocation();
   const quoteId = params?.id;
   const [selectedItems, setSelectedItems] = useState<PromoQuoteItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const quotePreviewRef = useRef<HTMLDivElement>(null);
 
@@ -803,8 +802,17 @@ export default function PromoQuoteBuilder() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsPrintDialogOpen(true)}
-                disabled={selectedItems.length === 0}
+                onClick={() => {
+                  if (quoteId) {
+                    setLocation(`/print/quote/${quoteId}`);
+                  } else {
+                    toast({
+                      title: "Please save first",
+                      description: "You need to save the quote before printing",
+                      variant: "destructive",
+                    });
+                  }
+                }}
                 data-testid="button-promo-print"
               >
                 <Printer className="h-4 w-4 mr-2" />
@@ -941,25 +949,6 @@ export default function PromoQuoteBuilder() {
         clientId={form.watch('clientId')}
         quoteNumber={form.watch('quoteNumber')}
       />
-
-      <PrintPreviewDialog
-        open={isPrintDialogOpen}
-        onOpenChange={setIsPrintDialogOpen}
-        title="Print Promotional Quote"
-      >
-        <QuotePreview
-          items={selectedItems}
-          subtotal={form.watch('subtotal') || '0.00'}
-          taxRate={form.watch('taxRate') || '0.00'}
-          taxAmount={form.watch('taxAmount') || '0.00'}
-          total={form.watch('total') || '0.00'}
-          validUntil={form.watch('validUntil')}
-          notes={form.watch('notes')}
-          leadId={form.watch('leadId')}
-          clientId={form.watch('clientId')}
-          quoteNumber={form.watch('quoteNumber')}
-        />
-      </PrintPreviewDialog>
     </div>
   );
 }

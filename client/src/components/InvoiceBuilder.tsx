@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import type { PriceMatrix, Lead, Client, Quote, Invoice, InsertInvoiceType, SystemConfig, LegalDocuments, User } from "@shared/schema";
 import { insertInvoiceSchema } from "@shared/schema";
 import { formatCurrency } from "@/lib/currency";
@@ -23,7 +23,6 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { InvoicePreview } from "./InvoicePreview";
-import { PrintPreviewDialog } from "./PrintPreviewDialog";
 
 interface InvoiceItem {
   priceMatrixId: string;
@@ -38,10 +37,10 @@ interface InvoiceItem {
 export default function InvoiceBuilder() {
   const { toast } = useToast();
   const [, params] = useRoute("/portal/admin/invoices/:id/edit");
+  const [, setLocation] = useLocation();
   const invoiceId = params?.id;
   const [selectedItems, setSelectedItems] = useState<InvoiceItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
 
@@ -804,7 +803,17 @@ export default function InvoiceBuilder() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsPrintPreviewOpen(true)}
+                  onClick={() => {
+                    if (invoiceId) {
+                      setLocation(`/print/invoice/${invoiceId}`);
+                    } else {
+                      toast({
+                        title: "Please save first",
+                        description: "You need to save the invoice before printing",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                   data-testid="button-print"
                 >
                   <Printer className="w-4 h-4 mr-2" />
@@ -855,29 +864,6 @@ export default function InvoiceBuilder() {
         invoiceNumber={form.watch('invoiceNumber')}
         quoteId={form.watch('quoteId')}
       />
-
-      <PrintPreviewDialog
-        open={isPrintPreviewOpen}
-        onOpenChange={setIsPrintPreviewOpen}
-        title="Print Invoice Preview"
-      >
-        <InvoicePreview
-          items={selectedItems}
-          subtotal={subtotalValue}
-          taxRate={taxRateValue}
-          taxAmount={taxAmountValue}
-          total={totalValue}
-          amountPaid={amountPaidValue}
-          balanceDue={balanceDueValue}
-          paymentStatus={form.watch('paymentStatus')}
-          dueDate={form.watch('dueDate')}
-          notes={form.watch('notes')}
-          leadId={form.watch('leadId')}
-          clientId={form.watch('clientId')}
-          invoiceNumber={form.watch('invoiceNumber')}
-          quoteId={form.watch('quoteId')}
-        />
-      </PrintPreviewDialog>
 
       {/* Add Item Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
