@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 - **Ticket Management System**: Project-based issue tracking with CRUD, status workflow, priorities, assignee management, due dates, comments, and share links.
 - **Project Share Links**: Secure token generation for project sharing.
 - **Public Quote/Invoice URLs**: Hybrid URL structure for public access with security tokens.
-- **Print Functionality**: Browser-native printing for quotes/invoices with configurable orientation and margins.
+- **Print Functionality**: Dedicated print pages (`/print/quote/:id`, `/print/invoice/:id`) with branded blue header/footer, white background, and browser-native printing (Ctrl+P). Print buttons navigate to print pages instead of dialogs, with toast messages for unsaved documents.
 - **Quote/Invoice PDF Generation**: Uses `html2canvas` for pixel-perfect PDF capture.
 - **Lead Generation**: Public lead generation forms with backend API integration for various service requests.
 - **SEO Optimization**: Static `sitemap.xml` endpoint and `robots.txt` for crawler control.
