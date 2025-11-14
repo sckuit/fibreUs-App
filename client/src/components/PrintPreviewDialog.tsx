@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -51,54 +51,57 @@ export function PrintPreviewDialog({ open, onOpenChange, title, children }: Prin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto print-preview-dialog">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto print-preview-dialog bg-white dark:bg-white text-slate-900 dark:text-slate-900">
         <DialogHeader className="print:hidden">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <DialogTitle>{title}</DialogTitle>
-              <Button 
-                onClick={handlePrint} 
-                size="sm"
-                data-testid="button-dialog-print"
-              >
-                <Printer className="w-4 h-4 mr-2" />
-                Print
-              </Button>
+          <DialogTitle className="text-slate-900">{title}</DialogTitle>
+        </DialogHeader>
+        
+        <div className="print:hidden space-y-4 pb-4">
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <Label htmlFor="orientation-select" className="text-sm text-slate-700">Orientation</Label>
+              <Select value={orientation} onValueChange={(value: 'portrait' | 'landscape') => setOrientation(value)}>
+                <SelectTrigger id="orientation-select" className="mt-1" data-testid="select-orientation">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="portrait">Portrait</SelectItem>
+                  <SelectItem value="landscape">Landscape</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <Label htmlFor="orientation-select" className="text-sm">Orientation</Label>
-                <Select value={orientation} onValueChange={(value: 'portrait' | 'landscape') => setOrientation(value)}>
-                  <SelectTrigger id="orientation-select" className="mt-1" data-testid="select-orientation">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="portrait">Portrait</SelectItem>
-                    <SelectItem value="landscape">Landscape</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex-1">
-                <Label htmlFor="margin-select" className="text-sm">Margins</Label>
-                <Select value={margin} onValueChange={(value: '0.5in' | '1in' | '1.5in') => setMargin(value)}>
-                  <SelectTrigger id="margin-select" className="mt-1" data-testid="select-margins">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0.5in">0.5 inch (Narrow)</SelectItem>
-                    <SelectItem value="1in">1 inch (Normal)</SelectItem>
-                    <SelectItem value="1.5in">1.5 inch (Wide)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex-1">
+              <Label htmlFor="margin-select" className="text-sm text-slate-700">Margins</Label>
+              <Select value={margin} onValueChange={(value: '0.5in' | '1in' | '1.5in') => setMargin(value)}>
+                <SelectTrigger id="margin-select" className="mt-1" data-testid="select-margins">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0.5in">0.5 inch (Narrow)</SelectItem>
+                  <SelectItem value="1in">1 inch (Normal)</SelectItem>
+                  <SelectItem value="1.5in">1.5 inch (Wide)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </DialogHeader>
-        <div ref={printRef} className="print-content mt-6">
+        </div>
+
+        <div ref={printRef} className="print-content">
           {children}
         </div>
+
+        <DialogFooter className="print:hidden">
+          <Button 
+            onClick={handlePrint} 
+            className="w-full"
+            data-testid="button-dialog-print"
+          >
+            <Printer className="w-4 h-4 mr-2" />
+            Print
+          </Button>
+        </DialogFooter>
+
         <style ref={styleRef}>{`
           @media print {
             /* Hide everything except the dialog content when printing */
@@ -106,9 +109,13 @@ export function PrintPreviewDialog({ open, onOpenChange, title, children }: Prin
               overflow: visible !important;
             }
             
-            /* Hide all non-dialog elements */
-            body.printing > *:not([data-radix-portal]) {
+            /* Hide all non-portal elements - preserve portal and its descendants */
+            body.printing > * {
               display: none !important;
+            }
+            
+            body.printing > [data-radix-portal] {
+              display: block !important;
             }
             
             /* Ensure Radix portal is visible and takes full page */
@@ -135,6 +142,7 @@ export function PrintPreviewDialog({ open, onOpenChange, title, children }: Prin
             
             /* Hide dialog chrome */
             body.printing [class*="DialogHeader"],
+            body.printing [class*="DialogFooter"],
             body.printing button,
             body.printing .print\\:hidden {
               display: none !important;
