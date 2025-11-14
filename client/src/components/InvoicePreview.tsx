@@ -265,7 +265,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
       {/* QR Codes Section */}
       {(companyPhone || companyWebsite || shareToken) && (
         <div className="px-6 py-4 border-t">
-          <div className="flex items-center justify-center gap-8">
+          <div className="flex items-center justify-evenly">
             {companyPhone && (
               <div className="flex flex-col items-center gap-2">
                 <QRCodeSVG value={`tel:${companyPhone}`} size={80} level="M" />
