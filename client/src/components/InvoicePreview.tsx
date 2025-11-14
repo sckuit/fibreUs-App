@@ -4,6 +4,7 @@ import type { SystemConfig, LegalDocuments, Lead, Client } from "@shared/schema"
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ServiceType {
   id: string;
@@ -36,6 +37,8 @@ interface InvoicePreviewProps {
   leadId?: string;
   clientId?: string;
   invoiceNumber?: string;
+  invoiceId?: string;
+  shareToken?: string;
   quoteId?: string;
   renderActions?: () => React.ReactNode;
 }
@@ -54,6 +57,8 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
   leadId,
   clientId,
   invoiceNumber,
+  invoiceId,
+  shareToken,
   renderActions,
 }, ref) => {
   const { data: systemConfig } = useQuery<SystemConfig>({
@@ -256,6 +261,32 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
           )}
         </div>
       </CardContent>
+
+      {/* QR Codes Section */}
+      {(companyPhone || companyWebsite || shareToken) && (
+        <div className="px-6 py-4 border-t">
+          <div className="flex items-center justify-center gap-8">
+            {companyPhone && (
+              <div className="flex flex-col items-center gap-2">
+                <QRCodeSVG value={`tel:${companyPhone}`} size={80} level="M" />
+                <p className="text-xs text-muted-foreground">Call Us</p>
+              </div>
+            )}
+            {companyWebsite && (
+              <div className="flex flex-col items-center gap-2">
+                <QRCodeSVG value={companyWebsite.startsWith('http') ? companyWebsite : `https://${companyWebsite}`} size={80} level="M" />
+                <p className="text-xs text-muted-foreground">Visit Website</p>
+              </div>
+            )}
+            {shareToken && typeof window !== 'undefined' && (
+              <div className="flex flex-col items-center gap-2">
+                <QRCodeSVG value={`${window.location.origin}/public/invoice/${shareToken}`} size={80} level="M" />
+                <p className="text-xs text-muted-foreground">View Invoice</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Services Footer - Blue on Print */}
       <div className="p-4 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">

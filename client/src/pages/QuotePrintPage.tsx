@@ -48,6 +48,8 @@ export default function QuotePrintPage() {
         leadId={quote.leadId || undefined}
         clientId={quote.clientId || undefined}
         quoteNumber={quote.quoteNumber || undefined}
+        quoteId={quoteId}
+        shareToken={quote.shareToken || undefined}
       />
     </PrintLayout>
   );

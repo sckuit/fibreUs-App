@@ -51,6 +51,8 @@ export default function InvoicePrintPage() {
         leadId={invoice.leadId ?? undefined}
         clientId={invoice.clientId ?? ''}
         invoiceNumber={invoice.invoiceNumber ?? undefined}
+        invoiceId={invoiceId}
+        shareToken={invoice.shareToken ?? undefined}
         quoteId={invoice.quoteId ?? undefined}
       />
     </PrintLayout>
