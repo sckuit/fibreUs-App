@@ -18,11 +18,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, FileText, DollarSign, Save, Download, Search, Share2 } from "lucide-react";
+import { Plus, Trash2, FileText, DollarSign, Save, Download, Search, Share2, Printer } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { InvoicePreview } from "./InvoicePreview";
+import { PrintPreviewDialog } from "./PrintPreviewDialog";
 
 interface InvoiceItem {
   priceMatrixId: string;
@@ -40,6 +41,7 @@ export default function InvoiceBuilder() {
   const invoiceId = params?.id;
   const [selectedItems, setSelectedItems] = useState<InvoiceItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
 
@@ -802,6 +804,15 @@ export default function InvoiceBuilder() {
                 <Button
                   type="button"
                   variant="outline"
+                  onClick={() => setIsPrintPreviewOpen(true)}
+                  data-testid="button-print"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={handleDownloadPDF}
                   data-testid="button-download"
                 >
@@ -844,6 +855,29 @@ export default function InvoiceBuilder() {
         invoiceNumber={form.watch('invoiceNumber')}
         quoteId={form.watch('quoteId')}
       />
+
+      <PrintPreviewDialog
+        open={isPrintPreviewOpen}
+        onOpenChange={setIsPrintPreviewOpen}
+        title="Print Invoice Preview"
+      >
+        <InvoicePreview
+          items={selectedItems}
+          subtotal={subtotalValue}
+          taxRate={taxRateValue}
+          taxAmount={taxAmountValue}
+          total={totalValue}
+          amountPaid={amountPaidValue}
+          balanceDue={balanceDueValue}
+          paymentStatus={form.watch('paymentStatus')}
+          dueDate={form.watch('dueDate')}
+          notes={form.watch('notes')}
+          leadId={form.watch('leadId')}
+          clientId={form.watch('clientId')}
+          invoiceNumber={form.watch('invoiceNumber')}
+          quoteId={form.watch('quoteId')}
+        />
+      </PrintPreviewDialog>
 
       {/* Add Item Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
