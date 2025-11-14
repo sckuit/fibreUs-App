@@ -95,8 +95,8 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
 
   return (
     <Card className="mt-6" ref={ref}>
-      {/* Professional Header - Dark Blue Background */}
-      <div className="bg-[#1e3a5f] text-white p-6">
+      {/* Professional Header - Blue on Print */}
+      <div className="p-6 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             {darkLogoUrl && (
@@ -257,8 +257,8 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
         </div>
       </CardContent>
 
-      {/* Services Footer */}
-      <div className="bg-[#1e3a5f] text-white p-4">
+      {/* Services Footer - Blue on Print */}
+      <div className="p-4 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
         <h3 className="text-xs font-semibold mb-2 text-center">OUR SERVICES</h3>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
           {serviceTypes.filter(s => s.isActive).map(service => (

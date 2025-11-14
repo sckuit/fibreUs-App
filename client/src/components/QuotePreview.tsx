@@ -92,8 +92,8 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
   return (
     <Card className="mt-6" ref={ref}>
-      {/* Professional Header - Dark Blue Background */}
-      <div className="bg-[#1e3a5f] text-white p-6">
+      {/* Professional Header - Blue on Print */}
+      <div className="p-6 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             {darkLogoUrl && (
@@ -292,9 +292,9 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
         )}
       </CardContent>
 
-      {/* Services Section - Blue Background Footer */}
+      {/* Services Section - Blue on Print */}
       {serviceTypes.filter(s => s.isActive).length > 0 && (
-        <div className="bg-[#1e3a5f] text-white p-4 rounded-b-lg">
+        <div className="p-4 rounded-b-lg bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
           <h3 className="font-semibold text-sm mb-3">OUR SERVICES</h3>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {serviceTypes
