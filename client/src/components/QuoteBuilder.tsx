@@ -17,11 +17,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, DollarSign, Save, Download, Search, Share2 } from "lucide-react";
+import { Plus, Trash2, FileText, DollarSign, Save, Download, Search, Share2, Printer } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { QuotePreview } from "./QuotePreview";
+import { PrintPreviewDialog } from "./PrintPreviewDialog";
 
 interface QuoteItem {
   priceMatrixId: string;
@@ -39,6 +40,7 @@ export default function QuoteBuilder() {
   const quoteId = params?.id;
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const quotePreviewRef = useRef<HTMLDivElement>(null);
 
@@ -719,6 +721,16 @@ export default function QuoteBuilder() {
               <Button
                 type="button"
                 variant="outline"
+                onClick={() => setIsPrintPreviewOpen(true)}
+                disabled={selectedItems.length === 0}
+                data-testid="button-print"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleDownloadPDF}
                 disabled={selectedItems.length === 0}
                 data-testid="button-download-pdf"
@@ -847,6 +859,25 @@ export default function QuoteBuilder() {
         clientId={form.watch('clientId')}
         quoteNumber={form.watch('quoteNumber')}
       />
+
+      <PrintPreviewDialog
+        open={isPrintPreviewOpen}
+        onOpenChange={setIsPrintPreviewOpen}
+        title="Print Quote Preview"
+      >
+        <QuotePreview
+          items={selectedItems}
+          subtotal={form.watch('subtotal') || '0.00'}
+          taxRate={form.watch('taxRate') || '0.00'}
+          taxAmount={form.watch('taxAmount') || '0.00'}
+          total={form.watch('total') || '0.00'}
+          validUntil={form.watch('validUntil')}
+          notes={form.watch('notes')}
+          leadId={form.watch('leadId')}
+          clientId={form.watch('clientId')}
+          quoteNumber={form.watch('quoteNumber')}
+        />
+      </PrintPreviewDialog>
     </div>
   );
 }
