@@ -4,7 +4,7 @@ interface PrintLayoutProps {
 
 export function PrintLayout({ children }: PrintLayoutProps) {
   return (
-    <div className="min-h-screen bg-background p-8">
+    <>
       {children}
 
       <style>{`
@@ -40,6 +40,6 @@ export function PrintLayout({ children }: PrintLayoutProps) {
           }
         }
       `}</style>
-    </div>
+    </>
   );
 }
