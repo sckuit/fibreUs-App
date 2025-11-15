@@ -96,7 +96,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   const hasPromoItems = items.some(item => item.promoEnabled);
 
   return (
-    <Card className="mt-6" ref={ref}>
+    <Card className="mt-6 print:bg-white" ref={ref}>
       {/* Professional Header - Blue on Print */}
       <div className="p-6 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
         <div className="flex items-start justify-between">
@@ -112,7 +112,6 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           <div className="text-right text-sm space-y-0.5">
             {companyPhone && <div>{companyPhone}</div>}
             {companyEmail && <div>{companyEmail}</div>}
-            {companyWebsite && <div>{companyWebsite}</div>}
             {companyAddress && <div className="text-xs mt-2">{companyAddress}</div>}
           </div>
         </div>
@@ -317,7 +316,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
             {companyWebsite && (
               <div className="flex flex-col items-center gap-2">
                 <QRCodeSVG value={companyWebsite.startsWith('http') ? companyWebsite : `https://${companyWebsite}`} size={80} level="M" />
-                <p className="text-xs text-muted-foreground">Visit Website</p>
+                <p className="text-xs text-muted-foreground">{companyWebsite}</p>
               </div>
             )}
             {shareToken && typeof window !== 'undefined' && (

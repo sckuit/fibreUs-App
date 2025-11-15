@@ -99,7 +99,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
   const calculatedBalanceDue = balanceDue || (parseFloat(total || "0") - parseFloat(amountPaid || "0")).toString();
 
   return (
-    <Card className="mt-6" ref={ref}>
+    <Card className="mt-6 print:bg-white" ref={ref}>
       {/* Professional Header - Blue on Print */}
       <div className="p-6 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
         <div className="flex items-start justify-between">
@@ -115,7 +115,6 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
           <div className="text-right text-sm space-y-0.5">
             {companyPhone && <div>{companyPhone}</div>}
             {companyEmail && <div>{companyEmail}</div>}
-            {companyWebsite && <div>{companyWebsite}</div>}
             {companyAddress && <div className="text-xs mt-2">{companyAddress}</div>}
           </div>
         </div>
@@ -283,7 +282,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
             {companyWebsite && (
               <div className="flex flex-col items-center gap-2">
                 <QRCodeSVG value={companyWebsite.startsWith('http') ? companyWebsite : `https://${companyWebsite}`} size={80} level="M" />
-                <p className="text-xs text-muted-foreground">Visit Website</p>
+                <p className="text-xs text-muted-foreground">{companyWebsite}</p>
               </div>
             )}
             {shareToken && typeof window !== 'undefined' && (
