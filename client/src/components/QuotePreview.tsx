@@ -96,7 +96,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   const hasPromoItems = items.some(item => item.promoEnabled);
 
   return (
-    <Card className="mt-6 print:bg-white" ref={ref}>
+    <Card className="print:bg-white" ref={ref}>
       {/* Professional Header - Blue on Print */}
       <div className="p-6 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
         <div className="flex items-start justify-between">
