@@ -220,8 +220,8 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <div className="w-full max-w-sm space-y-2">
+        <div className="flex justify-end print:break-inside-avoid">
+          <div className="w-full max-w-sm space-y-2 print:break-inside-avoid">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal:</span>
               <span className="font-medium">{formatCurrency(subtotal)}</span>
@@ -250,7 +250,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
         <Separator />
 
-        <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+        <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900 print:break-inside-avoid">
           <h3 className="font-semibold">ACCEPTANCE</h3>
           {renderActions ? (
             <div className="py-2">
@@ -306,7 +306,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
       {/* QR Codes Section */}
       {(companyPhone || companyWebsite || shareToken) && (
-        <div className="px-6 py-4 border-t">
+        <div className="px-6 py-4 border-t print:break-inside-avoid">
           <div className="flex items-center justify-evenly">
             {companyPhone && (
               <div className="flex flex-col items-center gap-2">
@@ -332,7 +332,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
       {/* Services Section - Blue on Print */}
       {serviceTypes.filter(s => s.isActive).length > 0 && (
-        <div className="p-4 rounded-b-lg bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
+        <div className="p-4 rounded-b-lg bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section print:break-inside-avoid">
           <h3 className="font-semibold text-sm mb-3">OUR SERVICES</h3>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {serviceTypes

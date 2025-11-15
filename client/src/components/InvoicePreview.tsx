@@ -184,8 +184,8 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
         </div>
 
         {/* Totals Section */}
-        <div className="flex justify-end">
-          <div className="w-80 space-y-2 text-sm">
+        <div className="flex justify-end print:break-inside-avoid">
+          <div className="w-80 space-y-2 text-sm print:break-inside-avoid">
             <div className="flex justify-between py-1">
               <span>Subtotal:</span>
               <span>{formatCurrency(parseFloat(subtotal))}</span>
@@ -246,7 +246,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
         )}
 
         {/* Payment/Actions Section or Signature Section */}
-        <div className="pt-6">
+        <div className="pt-6 print:break-inside-avoid">
           {renderActions ? (
             <div>
               {renderActions()}
@@ -272,7 +272,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
 
       {/* QR Codes Section */}
       {(companyPhone || companyWebsite || shareToken) && (
-        <div className="px-6 py-4 border-t">
+        <div className="px-6 py-4 border-t print:break-inside-avoid">
           <div className="flex items-center justify-evenly">
             {companyPhone && (
               <div className="flex flex-col items-center gap-2">
@@ -297,7 +297,7 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
       )}
 
       {/* Services Footer - Blue on Print */}
-      <div className="p-4 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section">
+      <div className="p-4 bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section print:break-inside-avoid">
         <h3 className="text-xs font-semibold mb-2 text-center">OUR SERVICES</h3>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
           {serviceTypes.filter(s => s.isActive).map(service => (

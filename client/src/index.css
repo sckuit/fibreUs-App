@@ -326,3 +326,63 @@
     inset: -1px;
   }
 }
+
+/* ============================================
+   PRINT STYLESHEET - PAGINATION & MARGINS
+   ============================================ */
+
+/* @page must be at top level, not inside @media print */
+@page {
+  size: Letter portrait;
+  margin: 0;
+}
+
+@media print {
+  /* Root elements */
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Preserve colors and backgrounds in print */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+  
+  /* Avoid awkward page breaks */
+  table, figure, img {
+    break-inside: avoid;
+    page-break-inside: avoid; /* Fallback */
+  }
+  
+  /* Keep table rows intact */
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  /* Repeat table headers on each page */
+  thead {
+    display: table-header-group;
+  }
+  
+  tfoot {
+    display: table-footer-group;
+  }
+  
+  /* Keep headers with following content */
+  h1, h2, h3, h4, h5, h6 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  
+  /* Paragraph orphan/widow control */
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+}
