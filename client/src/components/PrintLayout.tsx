@@ -10,7 +10,7 @@ export function PrintLayout({ children }: PrintLayoutProps) {
       <style>{`
         @media print {
           @page {
-            margin: 0.5in;
+            margin: 0;
             size: letter portrait;
           }
           
