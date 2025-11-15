@@ -138,9 +138,17 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(({
           <div>
             <h3 className="font-bold text-sm mb-2">Bill To:</h3>
             <div className="space-y-0.5 text-sm">
-              <div className="font-medium">{customer.name}</div>
-              {customer.email && <div>{customer.email}</div>}
-              {customer.phone && <div>{customer.phone}</div>}
+              <div className="font-medium">
+                {customer.name}
+                {customer.company && ` | ${customer.company}`}
+              </div>
+              {(customer.email || customer.phone) && (
+                <div>
+                  {customer.email && customer.phone && `${customer.email} | ${customer.phone}`}
+                  {customer.email && !customer.phone && customer.email}
+                  {!customer.email && customer.phone && customer.phone}
+                </div>
+              )}
               {customer.address && <div>{customer.address}</div>}
             </div>
           </div>
