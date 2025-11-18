@@ -74,9 +74,6 @@ export default function Services() {
                   Get Free Quote
                 </Button>
               </GetQuoteDialog>
-              <Button size="lg" variant="outline" asChild data-testid="button-view-projects">
-                <Link href="/company/case-studies">View Case Studies</Link>
-              </Button>
             </div>
           </div>
         </div>
