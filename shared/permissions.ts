@@ -212,10 +212,10 @@ export const rolePermissions: Record<UserRole, Permission> = {
   
   sales: {
     // Service requests - no access
-    viewOwnRequests: false,
-    viewAllRequests: false,
-    createRequests: false,
-    editOwnRequests: false,
+    viewOwnRequests: true,
+    viewAllRequests: true,
+    createRequests: true,
+    editOwnRequests: true,
     editAllRequests: false,
     deleteRequests: false,
     
@@ -236,8 +236,8 @@ export const rolePermissions: Record<UserRole, Permission> = {
     viewOwnReports: true,
     viewAllReports: true,
     manageOwnReports: true,
-    manageAllReports: true,
-    approveReports: true,
+    manageAllReports: false,
+    approveReports: false,
     
     // Inventory - no access
     viewInventory: false,
