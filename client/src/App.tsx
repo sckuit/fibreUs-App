@@ -22,6 +22,7 @@ import AdminPortal from "@/pages/AdminPortal";
 import SalesPortal from "@/pages/SalesPortal";
 import PromoQuoteBuilder from "@/components/PromoQuoteBuilder";
 import InvoiceBuilder from "@/components/InvoiceBuilder";
+import Services from "@/pages/Services";
 
 // Services pages
 import CCTVInstallation from "@/pages/services/CCTVInstallation";
@@ -195,6 +196,11 @@ function Router() {
       )} />
       
       {/* Services routes */}
+      <Route path="/services" component={() => (
+        <PublicLayout>
+          <Services />
+        </PublicLayout>
+      )} />
       <Route path="/services/cctv-installation" component={() => (
         <PublicLayout>
           <CCTVInstallation />

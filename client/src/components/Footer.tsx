@@ -31,6 +31,7 @@ export default function Footer() {
   ];
 
   const company = [
+    { name: "Services", url: "/services" },
     { name: "About Us", url: "/company/about-us" },
     { name: "Our Team", url: "/company/our-team" },
     { name: "Certifications", url: "/company/certifications" },
