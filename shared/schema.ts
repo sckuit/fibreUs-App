@@ -979,6 +979,8 @@ export const priceMatrix = pgTable("price_matrix", {
   costPrice: decimal("cost_price", { precision: 10, scale: 2 }).notNull(),
   customerPrice: decimal("customer_price", { precision: 10, scale: 2 }).notNull(),
   year: integer("year").notNull(),
+  vendor: text("vendor"),
+  url: text("url"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -1227,13 +1229,17 @@ export const insertPriceMatrixSchema = createInsertSchema(priceMatrix).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  url: z.string().url().optional().or(z.literal('')),
 });
 
 export const updatePriceMatrixSchema = createInsertSchema(priceMatrix).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-}).partial();
+}).partial().extend({
+  url: z.string().url().optional().or(z.literal('')),
+});
 
 export type PriceMatrix = typeof priceMatrix.$inferSelect;
 export type InsertPriceMatrixType = z.infer<typeof insertPriceMatrixSchema>;

@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPriceMatrixSchema, updatePriceMatrixSchema } from "@shared/schema";
-import { Plus, Edit, Trash2, DollarSign, Upload, Download, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, Upload, Download, Search, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function PriceMatrixManager() {
@@ -69,6 +69,8 @@ export function PriceMatrixManager() {
       costPrice: '0.00',
       customerPrice: '0.00',
       year: new Date().getFullYear(),
+      vendor: '',
+      url: '',
       isActive: true,
     },
   });
@@ -151,6 +153,8 @@ export function PriceMatrixManager() {
         costPrice: item.costPrice || '0.00',
         customerPrice: item.customerPrice,
         year: item.year,
+        vendor: item.vendor || '',
+        url: item.url || '',
         isActive: item.isActive,
       });
     } else {
@@ -163,6 +167,8 @@ export function PriceMatrixManager() {
         costPrice: '0.00',
         customerPrice: '0.00',
         year: new Date().getFullYear(),
+        vendor: '',
+        url: '',
         isActive: true,
       });
     }
@@ -193,10 +199,12 @@ export function PriceMatrixManager() {
       return;
     }
 
-    const headers = ['Item', 'Description', 'Unit', 'Unit Price', 'Cost Price', 'Customer Price', 'Year', 'Status'];
+    const headers = ['Item', 'Description', 'Vendor', 'URL', 'Unit', 'Unit Price', 'Cost Price', 'Customer Price', 'Year', 'Status'];
     const rows = filteredItems.map(item => [
       item.item,
       item.description || '',
+      item.vendor || '',
+      item.url || '',
       item.unit,
       item.unitPrice,
       item.costPrice || '0.00',
@@ -244,18 +252,24 @@ export function PriceMatrixManager() {
         let errorCount = 0;
 
         for (const row of rows) {
-          if (row.length < 7) continue;
+          if (row.length < 10) {
+            console.warn('Skipping row with insufficient columns:', row);
+            errorCount++;
+            continue;
+          }
 
           try {
             const itemData: InsertPriceMatrixType = {
               item: row[0],
               description: row[1] || '',
-              unit: row[2],
-              unitPrice: row[3],
-              costPrice: row[4] || '0.00',
-              customerPrice: row[5],
-              year: parseInt(row[6]) || new Date().getFullYear(),
-              isActive: row[7]?.toLowerCase() !== 'inactive',
+              vendor: row[2] || '',
+              url: row[3] || '',
+              unit: row[4],
+              unitPrice: row[5],
+              costPrice: row[6] || '0.00',
+              customerPrice: row[7],
+              year: parseInt(row[8]) || new Date().getFullYear(),
+              isActive: row[9]?.toLowerCase() !== 'inactive',
             };
 
             await apiRequest('POST', '/api/price-matrix', itemData);
@@ -368,6 +382,7 @@ export function PriceMatrixManager() {
                   <TableRow>
                     <TableHead>Item</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead>Vendor</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead>Unit Price</TableHead>
                     <TableHead>Cost Price</TableHead>
@@ -382,6 +397,22 @@ export function PriceMatrixManager() {
                     <TableRow key={item.id} data-testid={`row-item-${item.id}`}>
                       <TableCell className="font-medium">{item.item}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{item.description}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {item.vendor && <span className="text-sm">{item.vendor}</span>}
+                          {item.url && (
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-primary/80"
+                              data-testid={`link-url-${item.id}`}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -661,6 +692,47 @@ export function PriceMatrixManager() {
                             data-testid="input-customer-price"
                           />
                         </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="vendor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vendor (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ''}
+                          placeholder="e.g., Home Depot, Amazon"
+                          data-testid="input-vendor"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ''}
+                          type="url"
+                          placeholder="https://example.com/product"
+                          data-testid="input-url"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
