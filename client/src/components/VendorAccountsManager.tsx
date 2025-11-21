@@ -438,14 +438,13 @@ export function VendorAccountsManager() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Staff Contact</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
                         <FormControl>
                           <SelectTrigger data-testid="select-staff-contact">
-                            <SelectValue placeholder="Select staff member" />
+                            <SelectValue placeholder="No staff assigned" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
                           {users
                             .filter(u => u.role && ['admin', 'manager', 'employee'].includes(u.role))
                             .map(user => (

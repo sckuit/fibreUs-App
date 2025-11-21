@@ -1303,7 +1303,7 @@ export default function Dashboard() {
               {/* Tickets Sub-Tab */}
               {hasPermission(userRole, 'viewOwnProjects') && (
                 <TabsContent value="tickets" className="mt-4">
-                  {typedUser && <TicketsManager role={userRole} userId={typedUser.id} />}
+                  {typedUser && <TicketsManager role={userRole as 'employee' | 'sales' | 'project_manager' | 'manager' | 'admin'} userId={typedUser.id} />}
                 </TabsContent>
               )}
             </Tabs>
