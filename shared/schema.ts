@@ -393,6 +393,22 @@ export const suppliers = pgTable("suppliers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Vendor Accounts - credentials for accounts with vendors/suppliers
+export const vendorAccounts = pgTable("vendor_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  vendorName: varchar("vendor_name").notNull(),
+  username: varchar("username").notNull(),
+  email: varchar("email").notNull(),
+  staffContactId: varchar("staff_contact_id").references(() => users.id),
+  vendorContactPerson: varchar("vendor_contact_person"),
+  vendorUrl: varchar("vendor_url"),
+  specialty: varchar("specialty"),
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Activities - audit log for system actions
 export const activities = pgTable("activities", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -863,6 +879,28 @@ export const updateSupplierSchema = createInsertSchema(suppliers).omit({
   contractStartDate: z.coerce.date().optional(),
   contractEndDate: z.coerce.date().optional(),
 }).partial();
+
+export const insertVendorAccountSchema = createInsertSchema(vendorAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  email: z.string().email("Invalid email address"),
+  vendorUrl: z.string().url("Invalid URL").optional().or(z.literal('')),
+});
+
+export const updateVendorAccountSchema = createInsertSchema(vendorAccounts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  email: z.string().email("Invalid email address").optional(),
+  vendorUrl: z.string().url("Invalid URL").optional().or(z.literal('')),
+}).partial();
+
+export type VendorAccount = typeof vendorAccounts.$inferSelect;
+export type InsertVendorAccountType = z.infer<typeof insertVendorAccountSchema>;
+export type UpdateVendorAccountType = z.infer<typeof updateVendorAccountSchema>;
 
 export type InsertTaskType = z.infer<typeof insertTaskSchema>;
 export type UpdateTaskType = z.infer<typeof updateTaskSchema>;

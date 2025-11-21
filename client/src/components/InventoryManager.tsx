@@ -1,19 +1,49 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { InventoryItem } from "@shared/schema";
+import type { InventoryItem, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Download, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { InventoryDialog } from "./InventoryDialog";
+import { VendorAccountsManager } from "./VendorAccountsManager";
 import { exportToCSV, downloadInventoryTemplate, parseCSV } from "@/lib/exportUtils";
 
 export function InventoryManager() {
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ['/api/auth/user'],
+  });
+  
+  // Only show Accounts tab to admin and manager roles
+  const canViewAccounts = currentUser && currentUser.role && ['admin', 'manager'].includes(currentUser.role);
+  
+  return (
+    <Tabs defaultValue="inventory" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="inventory" data-testid="tab-inventory">Inventory</TabsTrigger>
+        {canViewAccounts && <TabsTrigger value="accounts" data-testid="tab-accounts">Accounts</TabsTrigger>}
+      </TabsList>
+      
+      <TabsContent value="inventory">
+        <InventoryContent />
+      </TabsContent>
+      
+      {canViewAccounts && (
+        <TabsContent value="accounts">
+          <VendorAccountsManager />
+        </TabsContent>
+      )}
+    </Tabs>
+  );
+}
+
+function InventoryContent() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | undefined>();

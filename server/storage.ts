@@ -18,6 +18,7 @@ import {
   leads,
   clients,
   suppliers,
+  vendorAccounts,
   activities,
   systemConfig,
   serviceTypes,
@@ -79,6 +80,9 @@ import {
   type Supplier,
   type InsertSupplierType,
   type UpdateSupplierType,
+  type VendorAccount,
+  type InsertVendorAccountType,
+  type UpdateVendorAccountType,
   type Activity,
   type InsertActivityType,
   type SystemConfig,
@@ -302,6 +306,13 @@ export interface IStorage {
   getSupplier(id: string): Promise<Supplier | undefined>;
   updateSupplier(id: string, updates: UpdateSupplierType): Promise<Supplier | undefined>;
   deleteSupplier(id: string): Promise<void>;
+
+  // Vendor Account operations (credentials for vendor accounts)
+  createVendorAccount(account: InsertVendorAccountType): Promise<VendorAccount>;
+  getVendorAccounts(filters?: { isActive?: boolean }): Promise<VendorAccount[]>;
+  getVendorAccount(id: string): Promise<VendorAccount | undefined>;
+  updateVendorAccount(id: string, updates: UpdateVendorAccountType): Promise<VendorAccount | undefined>;
+  deleteVendorAccount(id: string): Promise<void>;
 
   // System Configuration operations
   getSystemConfig(): Promise<SystemConfig | undefined>;
@@ -1836,6 +1847,40 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupplier(id: string): Promise<void> {
     await db.delete(suppliers).where(eq(suppliers.id, id));
+  }
+
+  // Vendor Account operations
+  async createVendorAccount(account: InsertVendorAccountType): Promise<VendorAccount> {
+    const [result] = await db.insert(vendorAccounts).values(account).returning();
+    return result;
+  }
+
+  async getVendorAccounts(filters?: { isActive?: boolean }): Promise<VendorAccount[]> {
+    let query = db.select().from(vendorAccounts);
+    
+    if (filters?.isActive !== undefined) {
+      query = query.where(eq(vendorAccounts.isActive, filters.isActive));
+    }
+    
+    return query.orderBy(desc(vendorAccounts.createdAt));
+  }
+
+  async getVendorAccount(id: string): Promise<VendorAccount | undefined> {
+    const [result] = await db.select().from(vendorAccounts).where(eq(vendorAccounts.id, id));
+    return result;
+  }
+
+  async updateVendorAccount(id: string, updates: UpdateVendorAccountType): Promise<VendorAccount | undefined> {
+    const [result] = await db
+      .update(vendorAccounts)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(vendorAccounts.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteVendorAccount(id: string): Promise<void> {
+    await db.delete(vendorAccounts).where(eq(vendorAccounts.id, id));
   }
 
   // System Configuration operations

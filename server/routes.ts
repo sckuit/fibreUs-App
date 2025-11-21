@@ -38,6 +38,8 @@ import {
   updateClientSchema,
   insertSupplierSchema,
   updateSupplierSchema,
+  insertVendorAccountSchema,
+  updateVendorAccountSchema,
   insertSystemConfigSchema,
   updateSystemConfigSchema,
   insertServiceTypeSchema,
@@ -3196,6 +3198,130 @@ Sitemap: https://${req.get('host')}/sitemap.xml
       } catch (error) {
         console.error("Error deleting supplier:", error);
         res.status(500).json({ message: "Failed to delete supplier" });
+      }
+    }
+  );
+
+  // ===== Vendor Account Routes (Credentials for vendor accounts) =====
+  app.post("/api/vendor-accounts",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = insertVendorAccountSchema.parse(req.body);
+        const account = await storage.createVendorAccount(validatedData);
+        
+        res.status(201).json(account);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid vendor account data", errors: error.errors });
+        }
+        console.error("Error creating vendor account:", error);
+        res.status(500).json({ message: "Failed to create vendor account" });
+      }
+    }
+  );
+
+  app.get("/api/vendor-accounts",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const filters: any = {};
+        if (req.query.isActive !== undefined) {
+          filters.isActive = req.query.isActive === 'true';
+        }
+        
+        const accounts = await storage.getVendorAccounts(filters);
+        res.json(accounts);
+      } catch (error) {
+        console.error("Error fetching vendor accounts:", error);
+        res.status(500).json({ message: "Failed to fetch vendor accounts" });
+      }
+    }
+  );
+
+  app.get("/api/vendor-accounts/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const account = await storage.getVendorAccount(req.params.id);
+        if (!account) {
+          return res.status(404).json({ message: "Vendor account not found" });
+        }
+        
+        res.json(account);
+      } catch (error) {
+        console.error("Error fetching vendor account:", error);
+        res.status(500).json({ message: "Failed to fetch vendor account" });
+      }
+    }
+  );
+
+  app.patch("/api/vendor-accounts/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        const validatedData = updateVendorAccountSchema.parse(req.body);
+        const account = await storage.updateVendorAccount(req.params.id, validatedData);
+        
+        if (!account) {
+          return res.status(404).json({ message: "Vendor account not found" });
+        }
+        
+        res.json(account);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid update data", errors: error.errors });
+        }
+        console.error("Error updating vendor account:", error);
+        res.status(500).json({ message: "Failed to update vendor account" });
+      }
+    }
+  );
+
+  app.delete("/api/vendor-accounts/:id",
+    isSessionAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        
+        if (!user || !hasPermission(user.role, 'manageInventory')) {
+          return res.status(403).json({ message: "Permission denied" });
+        }
+        
+        await storage.deleteVendorAccount(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting vendor account:", error);
+        res.status(500).json({ message: "Failed to delete vendor account" });
       }
     }
   );
