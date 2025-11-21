@@ -22,7 +22,7 @@ import {
   DollarSign, MessageSquare, BarChart, Package, Truck,
   Home, UserCircle, Eye, Activity, Settings, Edit, Trash2,
   UserPlus, Download, AlertTriangle, FileDown, Upload, TrendingUp, TrendingDown, Gift,
-  Server, Database, Users2, Gauge, Search, ChevronLeft, ChevronRight, Ticket
+  Server, Database, Users2, Gauge, Search, ChevronLeft, ChevronRight, Ticket, KeyRound
 } from "lucide-react";
 import type { User, ServiceRequest, Project, Communication, Visitor, InventoryItem, FinancialLog, Activity as ActivityLog } from "@shared/schema";
 import { hasPermission } from "@shared/permissions";
@@ -44,6 +44,7 @@ import UsersManager from "@/components/UsersManager";
 import SuppliersManager from "@/components/SuppliersManager";
 import ActivitiesManager from "@/components/ActivitiesManager";
 import VisitorsManager from "@/components/VisitorsManager";
+import { VendorAccountsManager } from "@/components/VendorAccountsManager";
 import { ServiceTypesManager } from "@/components/ServiceTypesManager";
 import { AppConfigDialog } from "@/components/AppConfigDialog";
 import { LogoUploadDialog } from "@/components/LogoUploadDialog";
@@ -1352,6 +1353,12 @@ export default function Dashboard() {
                     Suppliers
                   </TabsTrigger>
                 )}
+                {hasPermission(userRole, 'manageInventory') && (
+                  <TabsTrigger value="accounts" data-testid="tab-inventory-accounts">
+                    <KeyRound className="w-4 h-4 mr-2" />
+                    Accounts
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {/* Stock Sub-Tab */}
@@ -1518,6 +1525,13 @@ export default function Dashboard() {
               {hasPermission(userRole, 'viewSuppliers') && (
                 <TabsContent value="suppliers" className="mt-4 space-y-4">
                   <SuppliersManager />
+                </TabsContent>
+              )}
+
+              {/* Vendor Accounts Sub-Tab */}
+              {hasPermission(userRole, 'manageInventory') && (
+                <TabsContent value="accounts" className="mt-4 space-y-4">
+                  <VendorAccountsManager />
                 </TabsContent>
               )}
             </Tabs>
