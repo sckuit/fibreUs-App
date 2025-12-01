@@ -1030,6 +1030,7 @@ export const quotes = pgTable("quotes", {
   quoteNumber: varchar("quote_number").notNull().unique(),
   leadId: varchar("lead_id").references(() => leads.id),
   clientId: varchar("client_id").references(() => clients.id),
+  projectId: varchar("project_id").references(() => projects.id),
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   status: quoteStatusEnum("status").default('draft').notNull(),
   items: jsonb("items").notNull(), // Array of {priceMatrixId, quantity, lineTotal}
