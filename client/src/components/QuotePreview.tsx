@@ -175,7 +175,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                 ) : (
                   items.map((item, index) => (
                     <tr key={index} className="border-b">
-                      <td className="py-3 text-center align-top">{item.quantity}</td>
+                      <td className="py-3 text-center align-top text-[12px]">{item.quantity}</td>
                       <td className="py-3 align-top text-[12px]">
                         {item.itemName}
                         {item.promoEnabled && (
@@ -188,7 +188,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                       </td>
                       <td className="py-3 text-right align-top text-[12px]">{formatCurrency(item.unitPrice)}</td>
                       {hasPromoItems && (
-                        <td className="py-3 text-right align-top">
+                        <td className="py-3 text-right align-top text-[12px]">
                           {item.promoEnabled && item.promoPercent ? (
                             <span className="text-green-600 font-medium">{item.promoPercent}% OFF</span>
                           ) : (
