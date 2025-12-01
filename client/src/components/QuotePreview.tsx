@@ -325,7 +325,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(
             </>
           )}
 
-          <Separator className="mt-[8px] mb-[8px]" />
+          <Separator className="mt-[4px] mb-[4px]" />
 
           <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900 print:break-inside-avoid pt-[4px] pb-[4px] mt-[8px] mb-[8px] pl-[16px] pr-[16px]">
             <h3 className="font-semibold">APPROVAL</h3>
