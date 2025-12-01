@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useRoute, useLocation } from "wouter";
-import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments, User } from "@shared/schema";
+import type { PriceMatrix, Lead, Client, Quote, InsertQuoteType, SystemConfig, LegalDocuments, User, Project } from "@shared/schema";
 import { insertQuoteSchema } from "@shared/schema";
 import { formatCurrency } from "@/lib/currency";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,6 +56,10 @@ export default function QuoteBuilder() {
     queryKey: ['/api/clients'],
   });
 
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+  });
+
   const { data: systemConfig } = useQuery<SystemConfig>({
     queryKey: ['/api/system-config'],
   });
@@ -80,6 +84,7 @@ export default function QuoteBuilder() {
       quoteNumber: '',
       leadId: '',
       clientId: '',
+      projectId: '',
       items: [],
       subtotal: '0.00',
       taxRate: '0.00',
@@ -144,6 +149,7 @@ export default function QuoteBuilder() {
         quoteNumber: existingQuote.quoteNumber || '',
         leadId: existingQuote.leadId || '',
         clientId: existingQuote.clientId || '',
+        projectId: existingQuote.projectId || '',
         items: existingQuote.items as any,
         subtotal: existingQuote.subtotal,
         taxRate: existingQuote.taxRate || '0.00',
@@ -535,6 +541,37 @@ export default function QuoteBuilder() {
               />
             </div>
 
+            <FormField
+              control={form.control}
+              name="projectId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project</FormLabel>
+                  <Select
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger data-testid="select-project">
+                        <SelectValue placeholder="Select a project (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.projectName} - {project.ticketNumber}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Link this quote to an existing project
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -865,6 +902,7 @@ export default function QuoteBuilder() {
         notes={form.watch('notes')}
         leadId={form.watch('leadId')}
         clientId={form.watch('clientId')}
+        projectId={form.watch('projectId')}
         quoteNumber={form.watch('quoteNumber')}
       />
     </div>
