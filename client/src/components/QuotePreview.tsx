@@ -212,7 +212,6 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(
                 {selectedProject.projectName}
               </div>
             )}
-            <h3 className="font-semibold mb-4 text-[12px]">ITEMS</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
