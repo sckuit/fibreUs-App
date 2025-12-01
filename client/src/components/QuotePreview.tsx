@@ -231,7 +231,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
         <div className="flex justify-end print:break-inside-avoid">
           <div className="w-full max-w-sm space-y-2 print:break-inside-avoid">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-[13px]">
               <span className="text-muted-foreground">Subtotal:</span>
               <span className="font-medium">{formatCurrency(subtotal)}</span>
             </div>
