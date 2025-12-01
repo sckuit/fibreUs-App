@@ -164,7 +164,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
               <span className="font-semibold">Project:</span> {selectedProject.projectName}
             </div>
           )}
-          <h3 className="font-semibold mb-4">ITEMS</h3>
+          <h3 className="font-semibold mb-4 text-[12px]">ITEMS</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
