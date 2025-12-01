@@ -240,7 +240,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
               <span className="font-medium">{formatCurrency(taxAmount)}</span>
             </div>
             <Separator />
-            <div className="flex justify-between text-lg font-bold">
+            <div className="flex justify-between font-bold text-[14px]">
               <span>Total:</span>
               <span>{formatCurrency(total)}</span>
             </div>
