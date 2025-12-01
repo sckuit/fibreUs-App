@@ -137,7 +137,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
         {/* Bill To Section */}
         {customer && (
-          <div className="mt-[4px] mb-[4px]">
+          <div className="mt-[2px] mb-[2px]">
             <h3 className="font-bold text-sm mb-2">Bill To:</h3>
             <div className="space-y-0.5 text-sm">
               <div className="font-medium">
