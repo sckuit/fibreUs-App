@@ -175,7 +175,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                 ) : (
                   items.map((item, index) => (
                     <tr key={index} className="border-b">
-                      <td className="py-3 align-top">
+                      <td className="py-3 align-top text-[12px]">
                         {item.itemName}
                         {item.promoEnabled && (
                           <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">PROMO</span>
