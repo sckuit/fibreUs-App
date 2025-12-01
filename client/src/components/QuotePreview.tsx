@@ -116,7 +116,6 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           </div>
         </div>
       </div>
-
       <CardContent className="py-6 px-[10%] space-y-6">
         {/* Quote Metadata Section */}
         <div className="flex justify-between items-start pb-4 border-b">
@@ -182,7 +181,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                           <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">PROMO</span>
                         )}
                       </td>
-                      <td className="py-3 align-top text-muted-foreground">
+                      <td className="py-3 align-top text-muted-foreground text-[12px]">
                         {item.description}
                         <span className="text-xs block mt-1">Unit: {item.unit}</span>
                       </td>
@@ -302,7 +301,6 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           </>
         )}
       </CardContent>
-
       {/* QR Codes Section */}
       {(companyPhone || companyWebsite || shareToken) && (
         <div className="px-6 py-4 border-t print:break-inside-avoid">
@@ -328,7 +326,6 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           </div>
         </div>
       )}
-
       {/* Services Section - Blue on Print */}
       {serviceTypes.filter(s => s.isActive).length > 0 && (
         <div className="p-4 rounded-b-lg bg-muted/30 print:bg-primary print:text-primary-foreground print-blue-section print:break-inside-avoid">
