@@ -184,7 +184,6 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                       </td>
                       <td className="py-3 align-top text-muted-foreground text-[12px]">
                         {item.description}
-                        <span className="text-xs block mt-1">Unit: {item.unit}</span>
                       </td>
                       <td className="py-3 text-right align-top text-[12px]">{formatCurrency(item.unitPrice)}</td>
                       {hasPromoItems && (
