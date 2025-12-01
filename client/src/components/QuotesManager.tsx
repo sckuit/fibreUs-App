@@ -1031,6 +1031,7 @@ export default function QuotesManager() {
             notes={downloadingQuote.notes || undefined}
             leadId={downloadingQuote.leadId || undefined}
             clientId={downloadingQuote.clientId || undefined}
+            projectId={downloadingQuote.projectId || undefined}
             quoteNumber={downloadingQuote.quoteNumber}
           />
         </div>

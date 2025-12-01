@@ -316,6 +316,7 @@ export default function PublicQuoteView() {
           notes={quote.notes || undefined}
           leadId={quote.leadId || undefined}
           clientId={quote.clientId || undefined}
+          projectId={quote.projectId || undefined}
           quoteNumber={quote.quoteNumber}
           renderActions={renderActions}
         />

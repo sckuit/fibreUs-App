@@ -155,7 +155,7 @@ export function QuoteDetailsModal({ quote, isOpen, onClose, recipientName }: Quo
                 <Calendar className="w-4 h-4" />
                 <span>Created</span>
               </div>
-              <p className="text-sm font-medium">{format(new Date(quote.createdAt), 'MMM d, yyyy')}</p>
+              <p className="text-sm font-medium">{quote.createdAt ? format(new Date(quote.createdAt), 'MMM d, yyyy') : '-'}</p>
             </div>
 
             {/* Valid Until */}

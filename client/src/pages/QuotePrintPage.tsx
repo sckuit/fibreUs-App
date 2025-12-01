@@ -47,6 +47,7 @@ export default function QuotePrintPage() {
         notes={quote.notes || undefined}
         leadId={quote.leadId || undefined}
         clientId={quote.clientId || undefined}
+        projectId={quote.projectId || undefined}
         quoteNumber={quote.quoteNumber || undefined}
         quoteId={quoteId}
         shareToken={quote.shareToken || undefined}

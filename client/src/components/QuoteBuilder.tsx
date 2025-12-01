@@ -302,6 +302,7 @@ export default function QuoteBuilder() {
     // Add optional fields only if they have values
     if (values.leadId) quoteData.leadId = values.leadId;
     if (values.clientId) quoteData.clientId = values.clientId;
+    if (values.projectId) quoteData.projectId = values.projectId;
     if (values.validUntil && values.validUntil !== '') quoteData.validUntil = values.validUntil;
     if (values.notes && values.notes.trim() !== '') quoteData.notes = values.notes;
 
