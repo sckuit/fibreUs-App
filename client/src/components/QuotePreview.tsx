@@ -156,7 +156,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
           </div>
         )}
 
-        <Separator />
+        <Separator className="mt-[1px] mb-[1px]" />
 
         <div>
           {selectedProject && (
