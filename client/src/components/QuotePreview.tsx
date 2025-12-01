@@ -160,7 +160,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
 
         <div>
           {selectedProject && (
-            <div className="mb-2 text-sm">
+            <div className="mb-2 text-sm text-center">
               <span className="font-semibold">Project:</span> {selectedProject.projectName}
             </div>
           )}
