@@ -118,7 +118,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
       </div>
       <CardContent className="py-6 px-[10%] space-y-6">
         {/* Quote Metadata Section */}
-        <div className="flex justify-between items-start pb-4 border-b">
+        <div className="flex justify-between items-start border-b pt-[2px] pb-[2px]">
           <div>
             <div className="text-sm"><span className="font-semibold">Quote #:</span> {quoteNumber || 'DRAFT'}</div>
           </div>
