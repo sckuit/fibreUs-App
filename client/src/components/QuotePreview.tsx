@@ -196,7 +196,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
                           )}
                         </td>
                       )}
-                      <td className="py-3 text-right align-top font-medium">
+                      <td className="py-3 text-right align-top font-medium text-[12px]">
                         {item.promoEnabled && item.originalTotal ? (
                           <div className="space-y-1">
                             <div className="text-muted-foreground line-through text-sm">
