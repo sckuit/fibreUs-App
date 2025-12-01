@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Client, User, Project } from "@shared/schema";
+import type { Client, User, Project, Lead } from "@shared/schema";
 
 interface ProjectDialogProps {
   open: boolean;
@@ -38,6 +38,7 @@ export function ProjectDialog({
 }: ProjectDialogProps) {
   const [formData, setFormData] = useState({
     clientId: undefined as string | undefined,
+    leadId: undefined as string | undefined,
     serviceType: undefined as string | undefined,
     projectName: "",
     assignedTechnicianId: undefined as string | undefined,
@@ -53,6 +54,11 @@ export function ProjectDialog({
     enabled: open,
   });
 
+  const { data: leads = [] } = useQuery<Lead[]>({
+    queryKey: ["/api/leads"],
+    enabled: open,
+  });
+
   const { data: users = [] } = useQuery<User[]>({
     queryKey: ["/api/users"],
     enabled: open,
@@ -65,6 +71,7 @@ export function ProjectDialog({
         // Edit mode - populate with existing data
         setFormData({
           clientId: project.clientId || undefined,
+          leadId: project.leadId || undefined,
           serviceType: project.serviceType || undefined,
           projectName: project.projectName || "",
           assignedTechnicianId: project.assignedTechnicianId || undefined,
@@ -78,6 +85,7 @@ export function ProjectDialog({
         // Create mode - reset form
         setFormData({
           clientId: undefined,
+          leadId: undefined,
           serviceType: undefined,
           projectName: "",
           assignedTechnicianId: undefined,
@@ -94,17 +102,25 @@ export function ProjectDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.clientId || !formData.serviceType || !formData.projectName) {
+    // Require either clientId OR leadId (not both required, but at least one)
+    const hasClientOrLead = formData.clientId || formData.leadId;
+    if (!hasClientOrLead || !formData.serviceType || !formData.projectName) {
       return;
     }
     
     const submitData: any = {
-      clientId: formData.clientId,
       serviceType: formData.serviceType,
       projectName: formData.projectName,
       status: formData.status,
     };
 
+    // Include clientId or leadId (can have both, but at least one is required)
+    if (formData.clientId) {
+      submitData.clientId = formData.clientId;
+    }
+    if (formData.leadId) {
+      submitData.leadId = formData.leadId;
+    }
     if (formData.assignedTechnicianId) {
       submitData.assignedTechnicianId = formData.assignedTechnicianId;
     }
@@ -129,6 +145,9 @@ export function ProjectDialog({
     onSubmit(submitData);
   };
 
+  // Helper to determine if form is valid
+  const hasClientOrLead = formData.clientId || formData.leadId;
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -148,24 +167,85 @@ export function ProjectDialog({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="clientId" className="text-right">
-                Client *
+                Client
               </Label>
-              <Select
-                value={formData.clientId}
-                onValueChange={(value) => handleChange("clientId", value)}
-              >
-                <SelectTrigger className="col-span-3" data-testid="select-client">
-                  <SelectValue placeholder="Select a client" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name} {client.company ? `(${client.company})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="col-span-3 flex gap-2">
+                <Select
+                  value={formData.clientId}
+                  onValueChange={(value) => {
+                    handleChange("clientId", value);
+                    handleChange("leadId", "");
+                  }}
+                  disabled={!!formData.leadId}
+                >
+                  <SelectTrigger className="flex-1" data-testid="select-client">
+                    <SelectValue placeholder={formData.leadId ? "Lead selected" : "Select a client"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name} {client.company ? `(${client.company})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.clientId && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleChange("clientId", "")}
+                    data-testid="button-clear-client"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="leadId" className="text-right">
+                Lead
+              </Label>
+              <div className="col-span-3 flex gap-2">
+                <Select
+                  value={formData.leadId}
+                  onValueChange={(value) => {
+                    handleChange("leadId", value);
+                    handleChange("clientId", "");
+                  }}
+                  disabled={!!formData.clientId}
+                >
+                  <SelectTrigger className="flex-1" data-testid="select-lead">
+                    <SelectValue placeholder={formData.clientId ? "Client selected" : "Select a lead"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leads.map((lead) => (
+                      <SelectItem key={lead.id} value={lead.id}>
+                        {lead.name} {lead.company ? `(${lead.company})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.leadId && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleChange("leadId", "")}
+                    data-testid="button-clear-lead"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {!hasClientOrLead && (
+              <p className="text-sm text-muted-foreground text-center">
+                Select either a Client or a Lead
+              </p>
+            )}
 
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="serviceType" className="text-right">
@@ -309,7 +389,7 @@ export function ProjectDialog({
             </Button>
             <Button 
               type="submit" 
-              disabled={isPending || !formData.clientId || !formData.serviceType || !formData.projectName} 
+              disabled={isPending || !hasClientOrLead || !formData.serviceType || !formData.projectName} 
               data-testid="button-submit-project"
             >
               {isPending ? (project ? "Updating..." : "Creating...") : (project ? "Update Project" : "Create Project")}
