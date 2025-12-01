@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { SystemConfig, LegalDocuments, Lead, Client } from "@shared/schema";
+import type { SystemConfig, LegalDocuments, Lead, Client, Project } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/currency";
@@ -36,6 +36,7 @@ interface QuotePreviewProps {
   notes?: string;
   leadId?: string;
   clientId?: string;
+  projectId?: string;
   quoteNumber?: string;
   quoteId?: string;
   shareToken?: string;
@@ -52,6 +53,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
   notes,
   leadId,
   clientId,
+  projectId,
   quoteNumber,
   quoteId,
   shareToken,
@@ -73,12 +75,17 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
     queryKey: ['/api/clients'],
   });
 
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
+  });
+
   const { data: serviceTypes = [] } = useQuery<ServiceType[]>({
     queryKey: ['/api/service-types'],
   });
 
   const selectedLead = leadId ? leads.find(l => l.id === leadId) : null;
   const selectedClient = clientId ? clients.find(c => c.id === clientId) : null;
+  const selectedProject = projectId ? projects.find(p => p.id === projectId) : null;
   const customer = selectedClient || selectedLead;
 
   const companyName = systemConfig?.companyName || 'FibreUS';
@@ -152,6 +159,11 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(({
         <Separator />
 
         <div>
+          {selectedProject && (
+            <div className="mb-2 text-sm">
+              <span className="font-semibold">Project:</span> {selectedProject.projectName}
+            </div>
+          )}
           <h3 className="font-semibold mb-4">ITEMS</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
