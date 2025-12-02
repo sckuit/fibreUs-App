@@ -248,7 +248,7 @@ export const QuotePreview = forwardRef<HTMLDivElement, QuotePreviewProps>(
                         <td className="py-3 text-center align-top text-[12px]">
                           {item.quantity}
                         </td>
-                        <td className="py-3 align-top text-[12px]">
+                        <td className="py-3 align-top text-[12px] pt-[8px] pb-[8px]">
                           {item.itemName}
                           {item.promoEnabled && (
                             <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
